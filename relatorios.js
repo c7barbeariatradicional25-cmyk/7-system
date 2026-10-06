@@ -87,3 +87,44 @@ async function loadReport(){
         .map(([key,total])=>row(paymentLabels[key]||key,"Recebido",money(total)))
         .join("")
     : '<div class="cash-empty">Sem recebimentos no período.</div>';
+
+
+  const serviceTotal=tx.filter(t=>t.transaction_type==="service"&&t.direction==="in")
+    .reduce((s,t)=>s+Number(t.net_amount||0),0);
+  const productTotal=tx.filter(t=>t.transaction_type==="product"&&t.direction==="in")
+    .reduce((s,t)=>s+Number(t.net_amount||0),0);
+
+  $("salesTypeReportList").innerHTML=[
+    row("Serviços","Receita de atendimentos",money(serviceTotal)),
+    row("Produtos","Receita de produtos",money(productTotal))
+  ].join("");
+
+  const recurring=customers.filter(c=>Number(c.completed_visits||0)>=3).length;
+  const dormant=customers.filter(c=>{
+    if(!c.last_visit_at||c.next_visit_at) return false;
+    return (Date.now()-new Date(c.last_visit_at).getTime())/86400000>=45;
+  }).length;
+
+  $("customerReportList").innerHTML=[
+    row("Clientes recorrentes","3 ou mais atendimentos",String(recurring)),
+    row("Sem retorno","45 dias ou mais",String(dormant))
+  ].join("");
+}
+
+async function init(){
+  const {data:{session}}=await supabase.auth.getSession();
+  if(!session) return;
+
+  const now=new Date();
+  const start=new Date(now.getFullYear(),now.getMonth(),1);
+  $("reportStart").value=dateInput(start);
+  $("reportEnd").value=dateInput(now);
+
+  document.querySelectorAll('.nav-item[data-section="relatorios"]').forEach(btn=>{
+    btn.addEventListener("click",loadReport);
+  });
+
+  $("loadReportBtn")?.addEventListener("click",loadReport);
+}
+
+init();
