@@ -61,10 +61,10 @@
 
       <section id="dashboard" class="section active">
         <div class="stats">
-          <article><span>Atendimentos hoje</span><strong>—</strong><small>Agenda</small></article>
-          <article><span>Faturamento hoje</span><strong>—</strong><small>Caixa</small></article>
-          <article><span>Próximos horários</span><strong>—</strong><small>Agenda</small></article>
-          <article><span>Clientes aguardando</span><strong>—</strong><small>Operações</small></article>
+          <article><span>Atendimentos hoje</span><strong id="statAppointments">0</strong><small>Agenda</small></article>
+          <article><span>Faturamento previsto</span><strong id="statRevenue">R$ 0</strong><small>Agenda</small></article>
+          <article><span>Próximos horários</span><strong id="statUpcoming">0</strong><small>Agenda</small></article>
+          <article><span>Clientes aguardando</span><strong id="statWaiting">0</strong><small>Operações</small></article>
         </div>
         <div class="dashboard-grid">
           <article class="panel"><span>HOJE</span><h2>Agenda</h2><p>O módulo de Agenda será o próximo a ser construído.</p></article>
@@ -72,7 +72,33 @@
         </div>
       </section>
 
-      <section id="agenda" class="section"><div class="placeholder"><span>02</span><h2>Agenda</h2><p>Horários, barbeiros, serviços, bloqueios, encaixes e status.</p></div></section>
+      <section id="agenda" class="section">
+        <div class="agenda-toolbar">
+          <div class="agenda-date-nav">
+            <button id="prevDay" type="button" aria-label="Dia anterior">←</button>
+            <input id="agendaDate" type="date">
+            <button id="nextDay" type="button" aria-label="Próximo dia">→</button>
+            <button id="todayBtn" type="button" class="ghost-btn">HOJE</button>
+          </div>
+
+          <div class="agenda-actions">
+            <select id="professionalFilter" aria-label="Filtrar profissional">
+              <option value="">Todos os profissionais</option>
+            </select>
+            <button id="newAppointmentBtn" class="primary-btn" type="button">+ NOVO AGENDAMENTO</button>
+          </div>
+        </div>
+
+        <div class="agenda-summary">
+          <div><span>DATA</span><strong id="agendaDateLabel">—</strong></div>
+          <div><span>AGENDADOS</span><strong id="agendaCount">0</strong></div>
+          <div><span>PREVISTO</span><strong id="agendaTotal">R$ 0</strong></div>
+        </div>
+
+        <div id="agendaList" class="agenda-list">
+          <div class="agenda-empty">Carregando agenda...</div>
+        </div>
+      </section>
       <section id="clientes" class="section"><div class="placeholder"><span>03</span><h2>Clientes</h2><p>CRM, histórico, frequência e preferências.</p></div></section>
       <section id="caixa" class="section"><div class="placeholder"><span>04</span><h2>Caixa</h2><p>Abertura, fechamento, entradas, saídas e comissões.</p></div></section>
       <section id="operacoes" class="section"><div class="placeholder"><span>05</span><h2>Operações</h2><p>Painel ao vivo do salão.</p></div></section>
@@ -81,6 +107,60 @@
       <section id="equipe" class="section"><div class="placeholder"><span>08</span><h2>Equipe</h2><p>Usuários, cargos e permissões.</p></div></section>
       <section id="relatorios" class="section"><div class="placeholder"><span>09</span><h2>Relatórios</h2><p>Indicadores e desempenho.</p></div></section>
       <section id="configuracoes" class="section"><div class="placeholder"><span>10</span><h2>Configurações</h2><p>Dados da C7, horários e integrações.</p></div></section>
+    </section>
+  </div>
+
+  <div id="appointmentModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="appointmentModalTitle">
+    <div class="modal-backdrop" data-close-modal></div>
+    <section class="modal-card">
+      <div class="modal-head">
+        <div>
+          <span>NOVO</span>
+          <h2 id="appointmentModalTitle">Agendamento</h2>
+        </div>
+        <button type="button" class="modal-close" data-close-modal>×</button>
+      </div>
+
+      <form id="appointmentForm" class="appointment-form">
+        <div class="form-grid two">
+          <label><span>Cliente</span><input id="clientName" type="text" required placeholder="Nome do cliente"></label>
+          <label><span>WhatsApp / telefone</span><input id="clientPhone" type="tel" required placeholder="(62) 99999-9999"></label>
+        </div>
+
+        <div class="form-grid two">
+          <label><span>Profissional</span><select id="appointmentProfessional" required></select></label>
+          <label><span>Serviço</span><select id="appointmentService" required></select></label>
+        </div>
+
+        <div class="form-grid three">
+          <label><span>Data</span><input id="appointmentDate" type="date" required></label>
+          <label><span>Horário</span><input id="appointmentTime" type="time" required></label>
+          <label><span>Origem</span>
+            <select id="appointmentSource">
+              <option value="manual">Manual</option>
+              <option value="whatsapp">WhatsApp</option>
+              <option value="booksy">Booksy</option>
+              <option value="site">Site</option>
+              <option value="other">Outro</option>
+            </select>
+          </label>
+        </div>
+
+        <label><span>Observações</span><textarea id="appointmentNotes" rows="3" placeholder="Opcional"></textarea></label>
+
+        <div class="appointment-preview">
+          <div><span>DURAÇÃO</span><strong id="previewDuration">—</strong></div>
+          <div><span>VALOR</span><strong id="previewPrice">—</strong></div>
+          <div><span>TÉRMINO</span><strong id="previewEnd">—</strong></div>
+        </div>
+
+        <p id="appointmentMessage" class="form-message"></p>
+
+        <div class="modal-actions">
+          <button type="button" class="ghost-btn" data-close-modal>CANCELAR</button>
+          <button type="submit" class="primary-btn">SALVAR AGENDAMENTO</button>
+        </div>
+      </form>
     </section>
   </div>
 
