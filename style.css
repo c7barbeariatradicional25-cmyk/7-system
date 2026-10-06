@@ -221,3 +221,291 @@
 .finance-actions button{height:30px;padding:0 8px;border:1px solid var(--line);background:transparent;color:#fff;font:600 8px Oswald,sans-serif;cursor:pointer}
 .finance-value{font:600 14px Oswald,sans-serif;white-space:nowrap}
 @media(max-width:900px){.finance-grid{grid-template-columns:1fr}}
+
+
+/* =========================
+   C7 SYSTEM — LIGHT PREMIUM UI
+   ========================= */
+:root{
+  --bg:#f3f3f1;
+  --panel:#ffffff;
+  --white:#111111;
+  --muted:#747474;
+  --line:#ddddda;
+  --surface:#ffffff;
+  --surface-soft:#f8f8f6;
+  --text:#161616;
+  --text-soft:#6e6e6a;
+  --black:#0b0b0b;
+  --shadow:0 12px 30px rgba(0,0,0,.055);
+}
+
+body{background:var(--bg);color:var(--text)}
+.app-shell{background:var(--bg)}
+.sidebar{
+  background:#0b0b0b;
+  border-right:0;
+  box-shadow:4px 0 22px rgba(0,0,0,.08)
+}
+.brand{border-color:rgba(255,255,255,.09)}
+.brand strong{color:#fff}
+.brand small{color:#8b8b8b}
+.nav-item{color:#a9a9a9;border-radius:10px;transition:.18s ease}
+.nav-item:hover{background:#191919;color:#fff}
+.nav-item.active{background:#fff;color:#111;box-shadow:0 6px 18px rgba(0,0,0,.18)}
+.logout{border-color:rgba(255,255,255,.12);color:#aaa;border-radius:10px}
+.logout:hover{color:#fff;background:#151515}
+
+.main-panel{padding:28px 34px 42px}
+.topbar{
+  padding:4px 2px 22px;
+  border-bottom:1px solid #dededb
+}
+.topbar>div:first-child>span{color:#8d8d88}
+.topbar h1{color:#111;font-size:32px}
+.user-chip{
+  min-width:160px;
+  padding:10px 14px;
+  border:1px solid #dededb;
+  border-radius:12px;
+  background:#fff;
+  box-shadow:0 5px 16px rgba(0,0,0,.035)
+}
+.user-chip strong{color:#111}
+.user-chip small{color:#8a8a86}
+
+.section{padding-top:26px}
+.stats{gap:14px}
+.stats article,
+.agenda-summary>div,
+.crm-stats article,
+.cash-stats article,
+.ops-stats article,
+.product-admin-stats article,
+.report-stats article,
+.promo-overview article{
+  border:1px solid #e1e1de;
+  background:#fff;
+  border-radius:14px;
+  box-shadow:var(--shadow)
+}
+.stats article{min-height:138px}
+.stats span,
+.agenda-summary span,
+.crm-stats span,
+.cash-stats span,
+.ops-stats span,
+.product-admin-stats span,
+.report-stats span,
+.promo-overview span{color:#8a8a85}
+.stats strong,
+.agenda-summary strong,
+.crm-stats strong,
+.cash-stats strong,
+.ops-stats strong,
+.product-admin-stats strong,
+.report-stats strong,
+.promo-overview strong{color:#111}
+.stats small{color:#8f8f8b}
+
+.dashboard-grid{gap:14px}
+.panel,
+.cash-panel,
+.team-admin-panel,
+.report-panel,
+.settings-card,
+.promo-panel{
+  background:#fff;
+  border:1px solid #e1e1de;
+  border-radius:14px;
+  box-shadow:var(--shadow)
+}
+.panel>span,.panel p{color:#777771}
+.panel h2{color:#111}
+.panel p{margin-top:44px}
+
+.agenda-date-nav button,
+.agenda-date-nav input,
+.agenda-actions select,
+.ghost-btn,
+.primary-btn,
+.report-period input{
+  border:1px solid #d9d9d5;
+  border-radius:10px;
+  background:#fff;
+  color:#222;
+  transition:.18s ease
+}
+.ghost-btn:hover{background:#f0f0ed;border-color:#c9c9c5}
+.primary-btn{
+  background:#111;
+  color:#fff;
+  border-color:#111;
+  box-shadow:0 5px 13px rgba(0,0,0,.12)
+}
+.primary-btn:hover{background:#2a2a2a}
+.active-view{background:#111!important;color:#fff!important;border-color:#111!important}
+
+.agenda-empty,.cash-empty,.ops-empty{color:#8d8d88;border-color:#dcdcd8}
+.appointment-card,
+.block-card,
+.catalog-row,
+.report-row,
+.finance-row,
+.access-row,
+.working-hour-row{
+  background:#fff;
+  border:1px solid #e1e1de;
+  border-radius:12px;
+  color:#161616;
+  box-shadow:0 4px 12px rgba(0,0,0,.025)
+}
+.appointment-info span,
+.appointment-time small,
+.catalog-main span,
+.catalog-meta small,
+.report-row span,
+.finance-row span,
+.access-row span{color:#7f7f7a}
+
+.status-select,
+.working-hour-row input[type="time"]{
+  border:1px solid #d8d8d4;
+  border-radius:8px;
+  background:#fff;
+  color:#222
+}
+.source-badge{border-color:#dededa;color:#777;border-radius:8px}
+.block-delete,.catalog-actions button,.finance-actions button,.access-row button{
+  border:1px solid #d8d8d4;
+  background:#fff;
+  color:#222;
+  border-radius:8px
+}
+.block-delete:hover,.catalog-actions button:hover,.finance-actions button:hover,.access-row button:hover{background:#f0f0ed}
+
+.agenda-timeline{border-color:#e1e1de;background:#fff;border-radius:14px;box-shadow:var(--shadow)}
+.timeline-head{background:#f7f7f5;border-color:#e1e1de}
+.timeline-head>div,.timeline-time{border-color:#e1e1de}
+.timeline-row{border-color:#ecece8}
+.timeline-cell{border-color:#ecece8}
+.timeline-cell.outside-hours{background:repeating-linear-gradient(135deg,#f4f4f1 0 5px,#fafaf8 5px 10px)}
+.timeline-booking{background:#111;color:#fff;border-color:#111;border-radius:8px}
+.timeline-booking span{color:#bbb}
+.timeline-block{background:#f3f3f0;border-color:#c9c9c5;color:#666;border-radius:8px}
+
+.modal-backdrop{background:rgba(0,0,0,.45);backdrop-filter:blur(6px)}
+.modal-card{
+  background:#fff;
+  color:#171717;
+  border:0;
+  border-radius:18px;
+  box-shadow:0 30px 80px rgba(0,0,0,.22)
+}
+.modal-head{border-color:#e2e2de}
+.modal-head span{color:#8b8b86}
+.modal-close{color:#555}
+.appointment-form label>span{color:#777772}
+.appointment-form input,
+.appointment-form select,
+.appointment-form textarea{
+  border:1px solid #d9d9d5;
+  border-radius:10px;
+  background:#fafaf8;
+  color:#181818
+}
+.appointment-form input:focus,
+.appointment-form select:focus,
+.appointment-form textarea:focus{
+  border-color:#111;
+  box-shadow:0 0 0 3px rgba(0,0,0,.05)
+}
+.appointment-preview>div{
+  border:1px solid #dfdfdc;
+  background:#f7f7f5;
+  border-radius:10px
+}
+.appointment-preview span{color:#8a8a85}
+.form-message{color:#666}
+.check-row span{color:#555!important}
+
+.ops-column{background:#fff;border:1px solid #e1e1de;border-radius:14px;overflow:hidden;box-shadow:var(--shadow)}
+.ops-column-head{border-color:#e1e1de;background:#f8f8f6}
+.ops-card{background:#fff;border:1px solid #e5e5e1;border-radius:10px;color:#161616}
+.ops-card-meta{color:#777}
+.ops-card-actions button{border:1px solid #dadad6;background:#fff;color:#222;border-radius:8px}
+.ops-card-actions button.primary{background:#111;color:#fff;border-color:#111}
+
+.stock-adjustment{background:#f8f8f5;border:1px solid #e1e1de;border-radius:12px}
+.stock-adjustment>span{color:#777}
+.settings-card{max-width:860px}
+
+.dashboard-alert{
+  background:#f7f7f4;
+  border:1px solid #e1e1de;
+  border-radius:10px;
+  color:#71716d
+}
+.dashboard-alert strong{color:#111}
+
+.promo-overview{
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:12px;
+  margin-top:16px
+}
+.promo-overview article{padding:16px}
+.promo-overview span{display:block;font:500 8px Oswald,sans-serif;letter-spacing:1.4px}
+.promo-overview strong{display:block;margin-top:8px;font:600 22px Oswald,sans-serif}
+.promo-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px}
+.promo-panel{padding:16px}
+.promo-panel-head{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.promo-panel-head span{display:block;color:#8a8a85;font:500 8px Oswald,sans-serif;letter-spacing:1.4px}
+.promo-panel-head h3{margin-top:3px;font:600 18px Oswald,sans-serif;color:#111}
+.promo-list{display:grid;gap:8px;margin-top:14px}
+.promo-row{
+  display:grid;
+  grid-template-columns:1fr auto;
+  gap:12px;
+  align-items:center;
+  padding:12px;
+  border:1px solid #e3e3df;
+  border-radius:11px;
+  background:#fafaf8
+}
+.promo-row strong{display:block;color:#151515;font-size:10px}
+.promo-row span{display:block;margin-top:4px;color:#777;font-size:8px;line-height:1.45}
+.promo-row-actions{display:flex;gap:6px;align-items:center;flex-wrap:wrap;justify-content:flex-end}
+.promo-row-actions button{
+  height:30px;
+  padding:0 8px;
+  border:1px solid #d8d8d4;
+  border-radius:8px;
+  background:#fff;
+  color:#222;
+  font:600 8px Oswald,sans-serif;
+  cursor:pointer
+}
+.promo-row-value{font:600 14px Oswald,sans-serif;color:#111;white-space:nowrap}
+.promo-status{display:inline-block!important;width:max-content;margin-top:6px!important;padding:4px 7px;border-radius:999px;background:#ededeb;color:#555!important}
+.inventory-history-panel{margin-top:14px}
+
+@media(max-width:900px){
+  .promo-overview{grid-template-columns:1fr 1fr}
+  .promo-grid{grid-template-columns:1fr}
+}
+@media(max-width:640px){
+  .main-panel{padding:18px 15px 90px}
+  .sidebar{background:#0b0b0b}
+  .promo-overview{grid-template-columns:1fr 1fr}
+  .user-chip{min-width:auto}
+}
+
+/* mantém o login institucional, mas com acabamento melhor */
+.login-card{
+  border-radius:18px;
+  border-color:rgba(255,255,255,.10);
+  box-shadow:0 30px 80px rgba(0,0,0,.35)
+}
+.login-form input,.login-form .secondary-btn{border-radius:10px}
+.login-form button{border-radius:10px}
