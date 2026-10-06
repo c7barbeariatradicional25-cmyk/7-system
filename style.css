@@ -583,3 +583,186 @@ body{background:var(--bg);color:var(--text)}
   .appointment-save-actions{display:grid;grid-template-columns:1fr}
   .appointment-save-actions button{width:100%}
 }
+
+
+/* CENTRAL DE NOTIFICAÇÕES */
+.topbar-actions{display:flex;align-items:center;gap:10px}
+.notification-btn{
+  position:relative;
+  width:44px;height:44px;
+  display:grid;place-items:center;
+  border:1px solid #dededb;
+  border-radius:12px;
+  background:#fff;
+  cursor:pointer;
+  box-shadow:0 5px 16px rgba(0,0,0,.035)
+}
+.notification-icon{font-size:17px;filter:grayscale(1)}
+.notification-badge{
+  position:absolute;
+  top:-5px;right:-5px;
+  min-width:20px;height:20px;
+  padding:0 5px;
+  display:grid;place-items:center;
+  border-radius:999px;
+  background:#111;
+  color:#fff;
+  border:2px solid #f3f3f1;
+  font:700 8px Montserrat,sans-serif
+}
+.notification-drawer{
+  position:fixed;
+  z-index:250;
+  top:0;right:0;
+  width:min(520px,94vw);
+  height:100vh;
+  display:flex;
+  flex-direction:column;
+  background:#f7f7f5;
+  color:#171717;
+  border-left:1px solid #deded9;
+  box-shadow:-24px 0 70px rgba(0,0,0,.18)
+}
+.notification-drawer-backdrop{
+  position:fixed;
+  z-index:240;
+  inset:0;
+  background:rgba(0,0,0,.30);
+  backdrop-filter:blur(2px)
+}
+.notification-drawer-head{
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-start;
+  gap:14px;
+  padding:26px 24px 20px;
+  background:#fff;
+  border-bottom:1px solid #e2e2de
+}
+.notification-drawer-head span{
+  color:#8b8b86;
+  font:500 8px Oswald,sans-serif;
+  letter-spacing:2px
+}
+.notification-drawer-head h2{
+  margin-top:4px;
+  font:600 28px Oswald,sans-serif
+}
+.notification-close{
+  border:0;
+  background:transparent;
+  color:#555;
+  font-size:30px;
+  cursor:pointer
+}
+.notification-toolbar{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:12px;
+  padding:12px 18px;
+  background:#fff;
+  border-bottom:1px solid #e4e4e0
+}
+.notification-filters{display:flex;gap:6px;flex-wrap:wrap}
+.notification-filter,
+.notification-archive-all{
+  height:34px;
+  padding:0 10px;
+  border:1px solid #dadad6;
+  border-radius:8px;
+  background:#fff;
+  color:#555;
+  font:600 8px Oswald,sans-serif;
+  letter-spacing:.8px;
+  cursor:pointer
+}
+.notification-filter.active{
+  background:#111;
+  color:#fff;
+  border-color:#111
+}
+.notification-archive-all{
+  border:0;
+  background:transparent;
+  color:#777;
+  white-space:nowrap
+}
+.notification-list{
+  flex:1;
+  overflow:auto;
+  padding:14px
+}
+.notification-item{
+  display:grid;
+  grid-template-columns:10px 1fr;
+  gap:12px;
+  padding:16px 14px;
+  margin-bottom:10px;
+  border:1px solid #e1e1dd;
+  border-radius:14px;
+  background:#fff;
+  box-shadow:0 6px 18px rgba(0,0,0,.035)
+}
+.notification-item.unread{border-color:#bdbdb8}
+.notification-dot{
+  width:8px;height:8px;
+  margin-top:4px;
+  border-radius:50%;
+  background:#d7d7d2
+}
+.notification-item.unread .notification-dot{background:#111}
+.notification-item-top{
+  display:flex;
+  justify-content:space-between;
+  gap:12px
+}
+.notification-item-top strong{
+  color:#222;
+  font:700 10px Montserrat,sans-serif;
+  text-transform:uppercase
+}
+.notification-item-top span{color:#999;font-size:8px}
+.notification-content h3{
+  margin-top:8px;
+  color:#292929;
+  font-size:13px
+}
+.notification-content p{
+  margin-top:5px;
+  color:#74746f;
+  font-size:10px
+}
+.notification-actions{
+  display:flex;
+  gap:6px;
+  flex-wrap:wrap;
+  margin-top:12px
+}
+.notification-actions button{
+  height:30px;
+  padding:0 9px;
+  border:1px solid #d9d9d5;
+  border-radius:8px;
+  background:#fafaf8;
+  color:#444;
+  font:600 7px Oswald,sans-serif;
+  letter-spacing:.7px;
+  cursor:pointer
+}
+.notification-actions button:hover{background:#efefec}
+.notification-empty{
+  min-height:160px;
+  display:grid;
+  place-items:center;
+  color:#888;
+  font-size:10px
+}
+
+@media(max-width:640px){
+  .topbar-actions{gap:6px}
+  .notification-btn{width:40px;height:40px}
+  .user-chip{padding:9px 10px}
+  .notification-toolbar{align-items:flex-start;flex-direction:column}
+  .notification-drawer{width:100vw}
+}
