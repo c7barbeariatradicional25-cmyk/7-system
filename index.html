@@ -85,6 +85,9 @@
             <select id="professionalFilter" aria-label="Filtrar profissional">
               <option value="">Todos os profissionais</option>
             </select>
+            <button id="listViewBtn" class="ghost-btn active-view" type="button">LISTA</button>
+            <button id="timelineViewBtn" class="ghost-btn" type="button">GRADE</button>
+            <button id="blockTimeBtn" class="ghost-btn" type="button">BLOQUEAR HORÁRIO</button>
             <button id="newAppointmentBtn" class="primary-btn" type="button">+ NOVO AGENDAMENTO</button>
           </div>
         </div>
@@ -98,6 +101,8 @@
         <div id="agendaList" class="agenda-list">
           <div class="agenda-empty">Carregando agenda...</div>
         </div>
+
+        <div id="agendaTimeline" class="agenda-timeline hidden"></div>
       </section>
       <section id="clientes" class="section"><div class="placeholder"><span>03</span><h2>Clientes</h2><p>CRM, histórico, frequência e preferências.</p></div></section>
       <section id="caixa" class="section"><div class="placeholder"><span>04</span><h2>Caixa</h2><p>Abertura, fechamento, entradas, saídas e comissões.</p></div></section>
@@ -159,6 +164,38 @@
         <div class="modal-actions">
           <button type="button" class="ghost-btn" data-close-modal>CANCELAR</button>
           <button type="submit" class="primary-btn">SALVAR AGENDAMENTO</button>
+        </div>
+      </form>
+    </section>
+  </div>
+
+  <div id="blockModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="blockModalTitle">
+    <div class="modal-backdrop" data-close-block></div>
+    <section class="modal-card modal-small">
+      <div class="modal-head">
+        <div>
+          <span>AGENDA</span>
+          <h2 id="blockModalTitle">Bloquear horário</h2>
+        </div>
+        <button type="button" class="modal-close" data-close-block>×</button>
+      </div>
+
+      <form id="blockForm" class="appointment-form">
+        <label><span>Profissional</span><select id="blockProfessional" required></select></label>
+
+        <div class="form-grid three">
+          <label><span>Data</span><input id="blockDate" type="date" required></label>
+          <label><span>Início</span><input id="blockStart" type="time" required></label>
+          <label><span>Fim</span><input id="blockEnd" type="time" required></label>
+        </div>
+
+        <label><span>Motivo</span><input id="blockReason" type="text" placeholder="Ex.: almoço, compromisso, folga"></label>
+
+        <p id="blockMessage" class="form-message"></p>
+
+        <div class="modal-actions">
+          <button type="button" class="ghost-btn" data-close-block>CANCELAR</button>
+          <button type="submit" class="primary-btn">SALVAR BLOQUEIO</button>
         </div>
       </form>
     </section>
