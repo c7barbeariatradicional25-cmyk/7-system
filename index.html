@@ -623,10 +623,24 @@
             </select>
           </label>
         </div>
+        <div class="form-grid two">
+          <label><span>Benefício</span>
+            <select id="receiveBenefit">
+              <option value="">Sem benefício</option>
+            </select>
+          </label>
+          <label><span>Cupom</span>
+            <div class="coupon-apply-row">
+              <input id="receiveCouponCode" type="text" placeholder="Digite o código">
+              <button id="applyReceiveCouponBtn" class="ghost-btn" type="button">APLICAR</button>
+            </div>
+          </label>
+        </div>
+
         <div class="appointment-preview">
           <div><span>VALOR FINAL</span><strong id="receiveNet">R$ 0</strong></div>
           <div><span>CLIENTE</span><strong id="receiveCustomer">—</strong></div>
-          <div><span>PROFISSIONAL</span><strong id="receiveProfessional">—</strong></div>
+          <div><span>BENEFÍCIO</span><strong id="receiveBenefitPreview">Nenhum</strong></div>
         </div>
         <p id="receiveMessage" class="form-message"></p>
         <div class="modal-actions">
