@@ -6,6 +6,12 @@ const supabase = createClient(
 );
 
 const $ = (id) => document.getElementById(id);
+const escapeHtml = (value="") => String(value)
+  .replaceAll("&","&amp;")
+  .replaceAll("<","&lt;")
+  .replaceAll(">","&gt;")
+  .replaceAll('"',"&quot;")
+  .replaceAll("'","&#039;");
 
 const loginView=$("loginView");
 const appView=$("appView");
@@ -22,13 +28,23 @@ const agendaDateLabel=$("agendaDateLabel");
 const agendaCount=$("agendaCount");
 const agendaTotal=$("agendaTotal");
 const agendaList=$("agendaList");
+const agendaTimeline=$("agendaTimeline");
 const professionalFilter=$("professionalFilter");
 const newAppointmentBtn=$("newAppointmentBtn");
+const listViewBtn=$("listViewBtn");
+const timelineViewBtn=$("timelineViewBtn");
+const blockTimeBtn=$("blockTimeBtn");
+
 const appointmentModal=$("appointmentModal");
 const appointmentForm=$("appointmentForm");
 const appointmentMessage=$("appointmentMessage");
 const appointmentProfessional=$("appointmentProfessional");
 const appointmentService=$("appointmentService");
+
+const blockModal=$("blockModal");
+const blockForm=$("blockForm");
+const blockProfessional=$("blockProfessional");
+const blockMessage=$("blockMessage");
 
 const roleLabels={admin:"Administrador",reception:"Recepção",barber:"Barbeiro"};
 const statusLabels={
@@ -46,6 +62,9 @@ let currentUser=null;
 let professionals=[];
 let services=[];
 let currentAppointments=[];
+let currentBlocks=[];
+let currentWorkingHours=[];
+let agendaView="list";
 
 function localDateInput(date=new Date()){
   const y=date.getFullYear();
@@ -75,6 +94,24 @@ function formatDateLabel(value){
   return new Date(y,m-1,d).toLocaleDateString("pt-BR",{weekday:"long",day:"2-digit",month:"long"});
 }
 
+function minutesFromHHMM(value){
+  if(!value) return 0;
+  const [h,m]=value.slice(0,5).split(":").map(Number);
+  return h*60+m;
+}
+
+function hhmmFromMinutes(total){
+  const h=Math.floor(total/60);
+  const m=total%60;
+  return `${String(h).padStart(2,"0")}:${String(m).padStart(2,"0")}`;
+}
+
+function selectedWeekday(){
+  if(!agendaDate.value) return 0;
+  const [y,m,d]=agendaDate.value.split("-").map(Number);
+  return new Date(y,m-1,d).getDay();
+}
+
 function showLogin(){loginView.classList.remove("hidden");appView.classList.add("hidden")}
 function showApp(){loginView.classList.add("hidden");appView.classList.remove("hidden")}
 
@@ -98,8 +135,9 @@ async function loadProfile(userId){
     item.classList.toggle("hidden",hide);
   });
 
-  if(data.role==="barber") newAppointmentBtn.classList.add("hidden");
-  else newAppointmentBtn.classList.remove("hidden");
+  const canManageAgenda=["admin","reception"].includes(data.role);
+  newAppointmentBtn.classList.toggle("hidden",!canManageAgenda);
+  blockTimeBtn.classList.toggle("hidden",!canManageAgenda);
 
   showApp();
   await initAgenda();
@@ -119,12 +157,14 @@ loginForm.addEventListener("submit",async e=>{
 firstAccessBtn.addEventListener("click",async()=>{
   const email=$("email").value.trim();
   const password=$("password").value;
+
   if(!email||password.length<8){
     loginMessage.textContent="Informe o e-mail e uma senha com pelo menos 8 caracteres.";
     return;
   }
 
   loginMessage.textContent="Criando acesso...";
+
   const {data,error}=await supabase.auth.signUp({
     email,
     password,
@@ -144,7 +184,10 @@ firstAccessBtn.addEventListener("click",async()=>{
   }
 });
 
-logoutBtn.addEventListener("click",async()=>{await supabase.auth.signOut();showLogin()});
+logoutBtn.addEventListener("click",async()=>{
+  await supabase.auth.signOut();
+  showLogin();
+});
 
 function openSection(id){
   document.querySelectorAll(".section").forEach(el=>el.classList.toggle("active",el.id===id));
@@ -154,22 +197,30 @@ function openSection(id){
   if(id==="agenda") loadAgenda();
 }
 
-document.querySelectorAll(".nav-item").forEach(btn=>btn.addEventListener("click",()=>openSection(btn.dataset.section)));
+document.querySelectorAll(".nav-item").forEach(btn=>{
+  btn.addEventListener("click",()=>openSection(btn.dataset.section));
+});
 
 async function initAgenda(){
   agendaDate.value=agendaDate.value||localDateInput();
 
   const [{data:proData},{data:serviceData}] = await Promise.all([
-    supabase.from("professionals").select("id,full_name,active").eq("active",true).order("full_name"),
+    supabase.from("professionals").select("id,full_name,specialty,active").eq("active",true).order("full_name"),
     supabase.from("services").select("id,name,duration,price,sort_order").eq("active",true).order("sort_order")
   ]);
 
   professionals=proData||[];
   services=serviceData||[];
 
-  professionalFilter.innerHTML='<option value="">Todos os profissionais</option>'+professionals.map(p=>`<option value="${p.id}">${p.full_name}</option>`).join("");
-  appointmentProfessional.innerHTML='<option value="">Selecione</option>'+professionals.map(p=>`<option value="${p.id}">${p.full_name}</option>`).join("");
-  appointmentService.innerHTML='<option value="">Selecione</option>'+services.map(s=>`<option value="${s.id}">${s.name} — ${money(s.price)}</option>`).join("");
+  const proOptions=professionals.map(p=>`<option value="${p.id}">${escapeHtml(p.full_name)}</option>`).join("");
+
+  professionalFilter.innerHTML='<option value="">Todos os profissionais</option>'+proOptions;
+  appointmentProfessional.innerHTML='<option value="">Selecione</option>'+proOptions;
+  blockProfessional.innerHTML='<option value="">Selecione</option>'+proOptions;
+
+  appointmentService.innerHTML='<option value="">Selecione</option>'+services.map(
+    s=>`<option value="${s.id}">${escapeHtml(s.name)} — ${money(s.price)}</option>`
+  ).join("");
 
   await loadAgenda();
 }
@@ -180,76 +231,222 @@ async function loadAgenda(){
   const selected=agendaDate.value;
   const start=new Date(`${selected}T00:00:00`);
   const end=new Date(`${selected}T23:59:59.999`);
+  const weekday=selectedWeekday();
 
-  let query=supabase
+  let appointmentQuery=supabase
     .from("appointments")
-    .select("id,starts_at,ends_at,status,source,total_amount,notes,customer:customers(id,full_name,phone),professional:professionals(id,full_name),appointment_services(id,service_name,duration_minutes,price)")
+    .select("id,professional_id,starts_at,ends_at,status,source,total_amount,notes,customer:customers(id,full_name,phone),professional:professionals(id,full_name),appointment_services(id,service_name,duration_minutes,price)")
     .gte("starts_at",start.toISOString())
     .lte("starts_at",end.toISOString())
     .order("starts_at",{ascending:true});
 
-  if(professionalFilter.value) query=query.eq("professional_id",professionalFilter.value);
+  let blockQuery=supabase
+    .from("schedule_blocks")
+    .select("id,professional_id,starts_at,ends_at,reason,professional:professionals(id,full_name)")
+    .lt("starts_at",end.toISOString())
+    .gt("ends_at",start.toISOString())
+    .order("starts_at",{ascending:true});
 
-  const {data,error}=await query;
+  if(professionalFilter.value){
+    appointmentQuery=appointmentQuery.eq("professional_id",professionalFilter.value);
+    blockQuery=blockQuery.eq("professional_id",professionalFilter.value);
+  }
+
+  const [appointmentsResult,blocksResult,hoursResult]=await Promise.all([
+    appointmentQuery,
+    blockQuery,
+    supabase.from("professional_working_hours")
+      .select("professional_id,weekday,starts_at,ends_at,active")
+      .eq("weekday",weekday)
+      .eq("active",true)
+  ]);
 
   agendaDateLabel.textContent=formatDateLabel(selected);
 
-  if(error){
+  if(appointmentsResult.error||blocksResult.error||hoursResult.error){
     agendaList.innerHTML='<div class="agenda-empty">Não foi possível carregar a agenda.</div>';
+    agendaTimeline.innerHTML='<div class="agenda-empty">Não foi possível carregar a grade.</div>';
     return;
   }
 
-  currentAppointments=data||[];
-  renderAgenda(currentAppointments);
+  currentAppointments=appointmentsResult.data||[];
+  currentBlocks=blocksResult.data||[];
+  currentWorkingHours=hoursResult.data||[];
+
+  renderAgendaList();
+  renderTimeline();
+  updateAgendaSummary();
   updateDashboard(currentAppointments,selected);
 }
 
-function renderAgenda(items){
-  const active=items.filter(a=>a.status!=="cancelled");
+function updateAgendaSummary(){
+  const active=currentAppointments.filter(a=>a.status!=="cancelled");
   agendaCount.textContent=active.length;
   agendaTotal.textContent=money(active.reduce((sum,a)=>sum+Number(a.total_amount||0),0));
+}
 
-  if(!items.length){
-    agendaList.innerHTML='<div class="agenda-empty">Nenhum agendamento para este dia.</div>';
-    return;
-  }
-
-  agendaList.innerHTML=items.map(a=>{
-    const customer=a.customer?.full_name||"Cliente sem cadastro";
-    const phone=a.customer?.phone||"";
-    const professional=a.professional?.full_name||"Sem profissional";
-    const service=(a.appointment_services||[]).map(s=>s.service_name).join(" + ")||"Serviço não informado";
+function renderAgendaList(){
+  const appointmentRows=currentAppointments.map(a=>{
+    const customer=escapeHtml(a.customer?.full_name||"Cliente sem cadastro");
+    const phone=escapeHtml(a.customer?.phone||"");
+    const professional=escapeHtml(a.professional?.full_name||"Sem profissional");
+    const service=escapeHtml((a.appointment_services||[]).map(s=>s.service_name).join(" + ")||"Serviço não informado");
     const disabled=currentRole==="barber"?"disabled":"";
 
-    return `
-      <article class="appointment-card">
-        <div class="appointment-time">
-          <strong>${formatTime(a.starts_at)}</strong>
-          <small>até ${formatTime(a.ends_at)}</small>
-        </div>
-        <div class="appointment-info">
-          <strong>${customer}</strong>
-          <span>${service} • ${professional}${phone?` • ${phone}`:""}</span>
-        </div>
-        <div class="appointment-meta">
-          <span class="source-badge">${a.source}</span>
-          <strong class="amount-badge">${money(a.total_amount)}</strong>
-          <select class="status-select" data-appointment-status="${a.id}" ${disabled}>
-            ${Object.entries(statusLabels).map(([value,label])=>`<option value="${value}" ${a.status===value?"selected":""}>${label}</option>`).join("")}
-          </select>
-        </div>
-      </article>
-    `;
-  }).join("");
+    return {
+      start:new Date(a.starts_at),
+      html:`
+        <article class="appointment-card">
+          <div class="appointment-time">
+            <strong>${formatTime(a.starts_at)}</strong>
+            <small>até ${formatTime(a.ends_at)}</small>
+          </div>
+          <div class="appointment-info">
+            <strong>${customer}</strong>
+            <span>${service} • ${professional}${phone?` • ${phone}`:""}</span>
+          </div>
+          <div class="appointment-meta">
+            <span class="source-badge">${escapeHtml(a.source)}</span>
+            <strong class="amount-badge">${money(a.total_amount)}</strong>
+            <select class="status-select" data-appointment-status="${a.id}" ${disabled}>
+              ${Object.entries(statusLabels).map(([value,label])=>`<option value="${value}" ${a.status===value?"selected":""}>${label}</option>`).join("")}
+            </select>
+          </div>
+        </article>`
+    };
+  });
+
+  const blockRows=currentBlocks.map(b=>{
+    const canDelete=["admin","reception"].includes(currentRole);
+    return {
+      start:new Date(b.starts_at),
+      html:`
+        <article class="block-card">
+          <div class="appointment-time">
+            <strong>${formatTime(b.starts_at)}</strong>
+            <small>até ${formatTime(b.ends_at)}</small>
+          </div>
+          <div>
+            <strong>HORÁRIO BLOQUEADO</strong>
+            <span>${escapeHtml(b.professional?.full_name||"Profissional")} • ${escapeHtml(b.reason||"Sem motivo informado")}</span>
+          </div>
+          ${canDelete?`<button class="block-delete" data-delete-block="${b.id}" type="button">REMOVER</button>`:""}
+        </article>`
+    };
+  });
+
+  const rows=[...appointmentRows,...blockRows].sort((a,b)=>a.start-b.start);
+
+  if(!rows.length){
+    agendaList.innerHTML='<div class="agenda-empty">Nenhum agendamento ou bloqueio para este dia.</div>';
+  } else {
+    agendaList.innerHTML=rows.map(r=>r.html).join("");
+  }
 
   document.querySelectorAll("[data-appointment-status]").forEach(select=>{
     select.addEventListener("change",async()=>{
-      const id=select.dataset.appointmentStatus;
-      const {error}=await supabase.from("appointments").update({status:select.value,updated_at:new Date().toISOString()}).eq("id",id);
-      if(error){alert("Não foi possível atualizar o status.");await loadAgenda();return}
+      const {error}=await supabase.from("appointments")
+        .update({status:select.value,updated_at:new Date().toISOString()})
+        .eq("id",select.dataset.appointmentStatus);
+
+      if(error){
+        alert("Não foi possível atualizar o status.");
+      }
       await loadAgenda();
     });
   });
+
+  document.querySelectorAll("[data-delete-block]").forEach(btn=>{
+    btn.addEventListener("click",async()=>{
+      if(!confirm("Remover este bloqueio de horário?")) return;
+      const {error}=await supabase.from("schedule_blocks").delete().eq("id",btn.dataset.deleteBlock);
+      if(error) alert("Não foi possível remover o bloqueio.");
+      await loadAgenda();
+    });
+  });
+}
+
+function professionalsForView(){
+  if(professionalFilter.value){
+    return professionals.filter(p=>p.id===professionalFilter.value);
+  }
+  return professionals;
+}
+
+function renderTimeline(){
+  const pros=professionalsForView();
+
+  if(!pros.length){
+    agendaTimeline.innerHTML='<div class="agenda-empty">Nenhum profissional cadastrado.</div>';
+    return;
+  }
+
+  const dayHours=currentWorkingHours.filter(h=>pros.some(p=>p.id===h.professional_id));
+
+  const starts=dayHours.map(h=>minutesFromHHMM(h.starts_at));
+  const ends=dayHours.map(h=>minutesFromHHMM(h.ends_at));
+
+  let minMinute=starts.length?Math.min(...starts):8*60;
+  let maxMinute=ends.length?Math.max(...ends):20*60;
+
+  minMinute=Math.floor(minMinute/30)*30;
+  maxMinute=Math.ceil(maxMinute/30)*30;
+
+  const slots=[];
+  for(let min=minMinute;min<maxMinute;min+=30) slots.push(min);
+
+  const selected=agendaDate.value;
+
+  const head=`
+    <div class="timeline-head" style="--pro-count:${pros.length}">
+      <div class="timeline-corner">HORÁRIO</div>
+      ${pros.map(p=>`
+        <div class="pro-head">
+          <strong>${escapeHtml(p.full_name)}</strong>
+          <small>${escapeHtml(p.specialty||"Profissional")}</small>
+        </div>
+      `).join("")}
+    </div>`;
+
+  const rows=slots.map(slotMin=>{
+    return `
+      <div class="timeline-row" style="--pro-count:${pros.length}">
+        <div class="timeline-time">${hhmmFromMinutes(slotMin)}</div>
+        ${pros.map(p=>{
+          const working=currentWorkingHours.find(h=>h.professional_id===p.id);
+          const within=working && slotMin>=minutesFromHHMM(working.starts_at) && slotMin<minutesFromHHMM(working.ends_at);
+
+          const slotStart=new Date(`${selected}T${hhmmFromMinutes(slotMin)}:00`);
+          const slotEnd=new Date(slotStart.getTime()+30*60000);
+
+          const appointment=currentAppointments.find(a=>
+            a.professional_id===p.id &&
+            a.status!=="cancelled" &&
+            new Date(a.starts_at)<slotEnd &&
+            new Date(a.ends_at)>slotStart
+          );
+
+          const block=currentBlocks.find(b=>
+            b.professional_id===p.id &&
+            new Date(b.starts_at)<slotEnd &&
+            new Date(b.ends_at)>slotStart
+          );
+
+          let content="";
+          if(appointment){
+            const customer=escapeHtml(appointment.customer?.full_name||"Cliente");
+            const service=escapeHtml((appointment.appointment_services||[]).map(s=>s.service_name).join(" + "));
+            content=`<div class="timeline-booking"><strong>${formatTime(appointment.starts_at)} • ${customer}</strong><span>${service}</span></div>`;
+          } else if(block){
+            content=`<div class="timeline-block"><strong>BLOQUEADO</strong><span>${escapeHtml(block.reason||"Indisponível")}</span></div>`;
+          }
+
+          return `<div class="timeline-cell ${within?"":"outside-hours"}">${content}</div>`;
+        }).join("")}
+      </div>`;
+  }).join("");
+
+  agendaTimeline.innerHTML=`<div class="timeline-grid">${head}${rows}</div>`;
 }
 
 function updateDashboard(items,selectedDate){
@@ -262,39 +459,37 @@ function updateDashboard(items,selectedDate){
   $("statWaiting").textContent=active.filter(a=>a.status==="waiting").length;
 }
 
+function setAgendaView(view){
+  agendaView=view;
+  const list=view==="list";
+  agendaList.classList.toggle("hidden",!list);
+  agendaTimeline.classList.toggle("hidden",list);
+  listViewBtn.classList.toggle("active-view",list);
+  timelineViewBtn.classList.toggle("active-view",!list);
+}
+
+listViewBtn.addEventListener("click",()=>setAgendaView("list"));
+timelineViewBtn.addEventListener("click",()=>setAgendaView("timeline"));
+
 $("prevDay").addEventListener("click",()=>{
   const [y,m,d]=agendaDate.value.split("-").map(Number);
-  const date=new Date(y,m-1,d-1);
-  agendaDate.value=localDateInput(date);
+  agendaDate.value=localDateInput(new Date(y,m-1,d-1));
   loadAgenda();
 });
 
 $("nextDay").addEventListener("click",()=>{
   const [y,m,d]=agendaDate.value.split("-").map(Number);
-  const date=new Date(y,m-1,d+1);
-  agendaDate.value=localDateInput(date);
+  agendaDate.value=localDateInput(new Date(y,m-1,d+1));
   loadAgenda();
 });
 
-$("todayBtn").addEventListener("click",()=>{agendaDate.value=localDateInput();loadAgenda()});
+$("todayBtn").addEventListener("click",()=>{
+  agendaDate.value=localDateInput();
+  loadAgenda();
+});
+
 agendaDate.addEventListener("change",loadAgenda);
 professionalFilter.addEventListener("change",loadAgenda);
-
-function openAppointmentModal(){
-  appointmentForm.reset();
-  appointmentMessage.textContent="";
-  $("appointmentDate").value=agendaDate.value||localDateInput();
-  $("appointmentSource").value="manual";
-  updateAppointmentPreview();
-  appointmentModal.classList.remove("hidden");
-}
-
-function closeAppointmentModal(){
-  appointmentModal.classList.add("hidden");
-}
-
-newAppointmentBtn.addEventListener("click",openAppointmentModal);
-document.querySelectorAll("[data-close-modal]").forEach(el=>el.addEventListener("click",closeAppointmentModal));
 
 function selectedService(){
   return services.find(s=>String(s.id)===appointmentService.value);
@@ -325,6 +520,22 @@ function updateAppointmentPreview(){
   }
 }
 
+function openAppointmentModal(){
+  appointmentForm.reset();
+  appointmentMessage.textContent="";
+  $("appointmentDate").value=agendaDate.value||localDateInput();
+  $("appointmentSource").value="manual";
+  if(professionalFilter.value) appointmentProfessional.value=professionalFilter.value;
+  updateAppointmentPreview();
+  appointmentModal.classList.remove("hidden");
+}
+
+function closeAppointmentModal(){
+  appointmentModal.classList.add("hidden");
+}
+
+newAppointmentBtn.addEventListener("click",openAppointmentModal);
+document.querySelectorAll("[data-close-modal]").forEach(el=>el.addEventListener("click",closeAppointmentModal));
 appointmentService.addEventListener("change",updateAppointmentPreview);
 $("appointmentDate").addEventListener("change",updateAppointmentPreview);
 $("appointmentTime").addEventListener("input",updateAppointmentPreview);
@@ -355,6 +566,27 @@ appointmentForm.addEventListener("submit",async e=>{
 
   appointmentMessage.textContent="Verificando horário...";
 
+  const weekday=new Date(`${date}T12:00:00`).getDay();
+  const {data:hours}=await supabase.from("professional_working_hours")
+    .select("starts_at,ends_at,active")
+    .eq("professional_id",professionalId)
+    .eq("weekday",weekday)
+    .eq("active",true)
+    .maybeSingle();
+
+  if(!hours){
+    appointmentMessage.textContent="Esse profissional não possui expediente configurado para este dia.";
+    return;
+  }
+
+  const startMinutes=start.getHours()*60+start.getMinutes();
+  const endMinutes=end.getHours()*60+end.getMinutes();
+
+  if(startMinutes<minutesFromHHMM(hours.starts_at)||endMinutes>minutesFromHHMM(hours.ends_at)){
+    appointmentMessage.textContent="O horário está fora do expediente desse profissional.";
+    return;
+  }
+
   const [{data:conflicts},{data:blocks}] = await Promise.all([
     supabase.from("appointments")
       .select("id")
@@ -379,12 +611,17 @@ appointmentForm.addEventListener("submit",async e=>{
   appointmentMessage.textContent="Salvando...";
 
   let customerId=null;
-  const {data:existingCustomer}=await supabase.from("customers").select("id,full_name").eq("phone",phone).maybeSingle();
+  const {data:existingCustomer}=await supabase.from("customers")
+    .select("id,full_name")
+    .eq("phone",phone)
+    .maybeSingle();
 
   if(existingCustomer){
     customerId=existingCustomer.id;
     if(existingCustomer.full_name!==name){
-      await supabase.from("customers").update({full_name:name,updated_at:new Date().toISOString()}).eq("id",customerId);
+      await supabase.from("customers")
+        .update({full_name:name,updated_at:new Date().toISOString()})
+        .eq("id",customerId);
     }
   } else {
     const {data:newCustomer,error:customerError}=await supabase
@@ -397,6 +634,7 @@ appointmentForm.addEventListener("submit",async e=>{
       appointmentMessage.textContent="Não foi possível cadastrar o cliente.";
       return;
     }
+
     customerId=newCustomer.id;
   }
 
@@ -441,6 +679,88 @@ appointmentForm.addEventListener("submit",async e=>{
   await loadAgenda();
 });
 
+function openBlockModal(){
+  blockForm.reset();
+  blockMessage.textContent="";
+  $("blockDate").value=agendaDate.value||localDateInput();
+  $("blockStart").value="12:00";
+  $("blockEnd").value="13:00";
+  if(professionalFilter.value) blockProfessional.value=professionalFilter.value;
+  blockModal.classList.remove("hidden");
+}
+
+function closeBlockModal(){
+  blockModal.classList.add("hidden");
+}
+
+blockTimeBtn.addEventListener("click",openBlockModal);
+document.querySelectorAll("[data-close-block]").forEach(el=>el.addEventListener("click",closeBlockModal));
+
+blockForm.addEventListener("submit",async e=>{
+  e.preventDefault();
+
+  if(!["admin","reception"].includes(currentRole)){
+    blockMessage.textContent="Seu perfil não possui permissão para bloquear horários.";
+    return;
+  }
+
+  const professionalId=blockProfessional.value;
+  const date=$("blockDate").value;
+  const startTime=$("blockStart").value;
+  const endTime=$("blockEnd").value;
+  const reason=$("blockReason").value.trim();
+
+  if(!professionalId||!date||!startTime||!endTime){
+    blockMessage.textContent="Preencha os campos obrigatórios.";
+    return;
+  }
+
+  const start=new Date(`${date}T${startTime}:00`);
+  const end=new Date(`${date}T${endTime}:00`);
+
+  if(end<=start){
+    blockMessage.textContent="O horário final precisa ser depois do inicial.";
+    return;
+  }
+
+  blockMessage.textContent="Verificando agenda...";
+
+  const {data:conflicts}=await supabase.from("appointments")
+    .select("id")
+    .eq("professional_id",professionalId)
+    .neq("status","cancelled")
+    .lt("starts_at",end.toISOString())
+    .gt("ends_at",start.toISOString())
+    .limit(1);
+
+  if(conflicts?.length){
+    blockMessage.textContent="Já existe um agendamento dentro desse período.";
+    return;
+  }
+
+  const {error}=await supabase.from("schedule_blocks").insert({
+    professional_id:professionalId,
+    starts_at:start.toISOString(),
+    ends_at:end.toISOString(),
+    reason:reason||null,
+    created_by:currentUser
+  });
+
+  if(error){
+    blockMessage.textContent="Não foi possível salvar o bloqueio.";
+    return;
+  }
+
+  agendaDate.value=date;
+  closeBlockModal();
+  await loadAgenda();
+});
+
+setAgendaView("list");
+
 const {data:{session}}=await supabase.auth.getSession();
 if(session) await loadProfile(session.user.id); else showLogin();
-supabase.auth.onAuthStateChange((_event,session)=>{if(!session)showLogin()});
+
+supabase.auth.onAuthStateChange((_event,session)=>{
+  if(!session) showLogin();
+});
