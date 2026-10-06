@@ -245,9 +245,55 @@
         <div id="professionalAdminList" class="catalog-list">
           <div class="agenda-empty">Carregando equipe...</div>
         </div>
+
+        <div class="team-admin-grid">
+          <article class="team-admin-panel">
+            <div class="cash-panel-head">
+              <div><span>EXPEDIENTE</span><h3>Horários dos barbeiros</h3></div>
+            </div>
+            <div class="form-grid two team-hours-toolbar">
+              <label><span>Profissional</span><select id="workingHoursProfessional"></select></label>
+              <div class="team-hours-action"><button id="loadWorkingHoursBtn" class="ghost-btn" type="button">CARREGAR HORÁRIOS</button></div>
+            </div>
+            <div id="workingHoursList" class="working-hours-list">
+              <div class="agenda-empty">Selecione um barbeiro.</div>
+            </div>
+          </article>
+
+          <article class="team-admin-panel">
+            <div class="cash-panel-head">
+              <div><span>ACESSOS</span><h3>Usuários do sistema</h3></div>
+              <button id="newAccessBtn" class="ghost-btn" type="button">+ ACESSO</button>
+            </div>
+            <div id="systemAccessList" class="access-list">
+              <div class="agenda-empty">Carregando acessos...</div>
+            </div>
+          </article>
+        </div>
       </section>
       <section id="relatorios" class="section"><div class="placeholder"><span>09</span><h2>Relatórios</h2><p>Indicadores e desempenho.</p></div></section>
-      <section id="configuracoes" class="section"><div class="placeholder"><span>10</span><h2>Configurações</h2><p>Dados da C7, horários e integrações.</p></div></section>
+      <section id="configuracoes" class="section">
+        <div class="catalog-toolbar">
+          <div>
+            <span class="eyebrow">SISTEMA</span>
+            <h2>Configurações</h2>
+            <p>Dados gerais e links usados pela C7.</p>
+          </div>
+        </div>
+
+        <form id="settingsForm" class="settings-card appointment-form">
+          <div class="form-grid two">
+            <label><span>Nome da empresa</span><input id="settingsBusinessName" type="text" required></label>
+            <label><span>Telefone</span><input id="settingsPhone" type="text"></label>
+          </div>
+          <label><span>Endereço</span><input id="settingsAddress" type="text"></label>
+          <label><span>Link de agendamento atual</span><input id="settingsBookingUrl" type="url"></label>
+          <label><span>Link do Google Maps</span><input id="settingsMapsUrl" type="url"></label>
+          <label><span>Fuso horário</span><input id="settingsTimezone" type="text" value="America/Sao_Paulo"></label>
+          <p id="settingsMessage" class="form-message"></p>
+          <div class="modal-actions"><button type="submit" class="primary-btn">SALVAR CONFIGURAÇÕES</button></div>
+        </form>
+      </section>
     </section>
   </div>
 
@@ -638,7 +684,35 @@
     </section>
   </div>
 
+  <div id="accessModal" class="modal hidden" role="dialog" aria-modal="true">
+    <div class="modal-backdrop" data-close-access></div>
+    <section class="modal-card modal-small">
+      <div class="modal-head">
+        <div><span>ACESSO</span><h2 id="accessModalTitle">Usuário do sistema</h2></div>
+        <button type="button" class="modal-close" data-close-access>×</button>
+      </div>
+      <form id="accessForm" class="appointment-form">
+        <label><span>Nome</span><input id="accessFullName" type="text" required></label>
+        <label><span>E-mail</span><input id="accessEmail" type="email" required></label>
+        <label><span>Perfil</span>
+          <select id="accessRole" required>
+            <option value="admin">Administrador</option>
+            <option value="reception">Recepção</option>
+            <option value="barber">Barbeiro</option>
+          </select>
+        </label>
+        <label class="check-row"><input id="accessActive" type="checkbox" checked><span>Acesso ativo</span></label>
+        <p id="accessMessage" class="form-message"></p>
+        <div class="modal-actions">
+          <button type="button" class="ghost-btn" data-close-access>CANCELAR</button>
+          <button type="submit" class="primary-btn">SALVAR ACESSO</button>
+        </div>
+      </form>
+    </section>
+  </div>
+
   <script type="module" src="catalogo.js"></script>
   <script type="module" src="equipe.js"></script>
+  <script type="module" src="configuracoes.js"></script>
 </body>
 </html>
