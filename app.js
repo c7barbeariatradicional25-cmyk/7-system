@@ -66,7 +66,8 @@ let services=[];
 let currentAppointments=[];
 let currentBlocks=[];
 let currentWorkingHours=[];
-let agendaView="list";
+let agendaView="timeline";
+let timelineClock=null;
 
 function localDateInput(date=new Date()){
   const y=date.getFullYear();
@@ -418,7 +419,6 @@ function renderTimeline(){
   }
 
   const dayHours=currentWorkingHours.filter(h=>pros.some(p=>p.id===h.professional_id));
-
   const starts=dayHours.map(h=>minutesFromHHMM(h.starts_at));
   const ends=dayHours.map(h=>minutesFromHHMM(h.ends_at));
 
@@ -428,67 +428,128 @@ function renderTimeline(){
   minMinute=Math.floor(minMinute/30)*30;
   maxMinute=Math.ceil(maxMinute/30)*30;
 
-  const slots=[];
-  for(let min=minMinute;min<maxMinute;min+=30) slots.push(min);
-
+  const pxPerMinute=2;
+  const totalMinutes=maxMinute-minMinute;
+  const timelineHeight=totalMinutes*pxPerMinute;
   const selected=agendaDate.value;
 
-  const head=`
-    <div class="timeline-head" style="--pro-count:${pros.length}">
-      <div class="timeline-corner">HORÁRIO</div>
-      ${pros.map(p=>`
-        <div class="pro-head">
-          <strong>${escapeHtml(p.full_name)}</strong>
-          <small>${escapeHtml(p.specialty||"Profissional")}</small>
-        </div>
-      `).join("")}
-    </div>`;
+  const timeLabels=[];
+  for(let min=minMinute;min<=maxMinute;min+=30){
+    timeLabels.push(`
+      <div class="live-time-label" style="top:${(min-minMinute)*pxPerMinute}px">
+        <span>${hhmmFromMinutes(min)}</span>
+      </div>
+    `);
+  }
 
-  const rows=slots.map(slotMin=>{
+  const columns=pros.map(p=>{
+    const working=currentWorkingHours.find(h=>h.professional_id===p.id);
+    const workStart=working?minutesFromHHMM(working.starts_at):null;
+    const workEnd=working?minutesFromHHMM(working.ends_at):null;
+
+    const proAppointments=currentAppointments.filter(a=>
+      a.professional_id===p.id && a.status!=="cancelled"
+    );
+
+    const proBlocks=currentBlocks.filter(b=>b.professional_id===p.id);
+
+    const appointmentHtml=proAppointments.map(a=>{
+      const startDate=new Date(a.starts_at);
+      const endDate=new Date(a.ends_at);
+      const startMin=startDate.getHours()*60+startDate.getMinutes();
+      const endMin=endDate.getHours()*60+endDate.getMinutes();
+      const top=Math.max(0,(startMin-minMinute)*pxPerMinute);
+      const height=Math.max(32,(endMin-startMin)*pxPerMinute-4);
+      const customer=escapeHtml(a.customer?.full_name||"Cliente");
+      const service=escapeHtml((a.appointment_services||[]).map(s=>s.service_name).join(" + ")||"Serviço");
+      const checkout=a.status==="in_service" && ["admin","reception"].includes(currentRole)
+        ? `<button class="live-checkout" type="button" data-timeline-checkout="${a.id}">CHECKOUT</button>`
+        : "";
+
+      return `
+        <article class="live-booking status-${a.status}" style="top:${top}px;height:${height}px">
+          <div class="live-booking-time">${formatTime(a.starts_at)}–${formatTime(a.ends_at)}</div>
+          <strong>${customer}</strong>
+          <span>${service}</span>
+          <small>${escapeHtml(statusLabels[a.status]||a.status)}</small>
+          ${checkout}
+        </article>
+      `;
+    }).join("");
+
+    const blockHtml=proBlocks.map(b=>{
+      const startDate=new Date(b.starts_at);
+      const endDate=new Date(b.ends_at);
+      const startMin=startDate.getHours()*60+startDate.getMinutes();
+      const endMin=endDate.getHours()*60+endDate.getMinutes();
+      const top=Math.max(0,(startMin-minMinute)*pxPerMinute);
+      const height=Math.max(32,(endMin-startMin)*pxPerMinute-4);
+
+      return `
+        <article class="live-block" style="top:${top}px;height:${height}px">
+          <strong>BLOQUEADO</strong>
+          <span>${formatTime(b.starts_at)}–${formatTime(b.ends_at)}</span>
+          <small>${escapeHtml(b.reason||"Indisponível")}</small>
+        </article>
+      `;
+    }).join("");
+
+    const outsideBefore=workStart!==null && workStart>minMinute
+      ? `<div class="live-outside-hours" style="top:0;height:${(workStart-minMinute)*pxPerMinute}px"></div>`
+      : "";
+    const outsideAfter=workEnd!==null && workEnd<maxMinute
+      ? `<div class="live-outside-hours" style="top:${(workEnd-minMinute)*pxPerMinute}px;height:${(maxMinute-workEnd)*pxPerMinute}px"></div>`
+      : "";
+
     return `
-      <div class="timeline-row" style="--pro-count:${pros.length}">
-        <div class="timeline-time">${hhmmFromMinutes(slotMin)}</div>
-        ${pros.map(p=>{
-          const working=currentWorkingHours.find(h=>h.professional_id===p.id);
-          const within=working && slotMin>=minutesFromHHMM(working.starts_at) && slotMin<minutesFromHHMM(working.ends_at);
-
-          const slotStart=new Date(`${selected}T${hhmmFromMinutes(slotMin)}:00`);
-          const slotEnd=new Date(slotStart.getTime()+30*60000);
-
-          const appointment=currentAppointments.find(a=>
-            a.professional_id===p.id &&
-            a.status!=="cancelled" &&
-            new Date(a.starts_at)<slotEnd &&
-            new Date(a.ends_at)>slotStart
-          );
-
-          const block=currentBlocks.find(b=>
-            b.professional_id===p.id &&
-            new Date(b.starts_at)<slotEnd &&
-            new Date(b.ends_at)>slotStart
-          );
-
-          let content="";
-          if(appointment){
-            const customer=escapeHtml(appointment.customer?.full_name||"Cliente");
-            const service=escapeHtml((appointment.appointment_services||[]).map(s=>s.service_name).join(" + "));
-            const checkout=appointment.status==="in_service" && ["admin","reception"].includes(currentRole)
-              ? `<button class="timeline-checkout" type="button" data-timeline-checkout="${appointment.id}">CHECKOUT</button>`
-              : "";
-            content=`<div class="timeline-booking"><strong>${formatTime(appointment.starts_at)} • ${customer}</strong><span>${service}</span>${checkout}</div>`;
-          } else if(block){
-            content=`<div class="timeline-block"><strong>BLOQUEADO</strong><span>${escapeHtml(block.reason||"Indisponível")}</span></div>`;
-          }
-
-          return `<div class="timeline-cell ${within?"":"outside-hours"}">${content}</div>`;
-        }).join("")}
-      </div>`;
+      <div class="live-pro-column" data-live-professional="${p.id}" style="height:${timelineHeight}px">
+        ${outsideBefore}
+        ${outsideAfter}
+        ${blockHtml}
+        ${appointmentHtml}
+      </div>
+    `;
   }).join("");
 
-  agendaTimeline.innerHTML=`<div class="timeline-grid">${head}${rows}</div>`;
+  const head=`
+    <div class="live-timeline-head" style="--pro-count:${pros.length}">
+      <div class="live-time-corner">
+        <span>HOJE</span>
+        <strong id="liveClockText">—</strong>
+      </div>
+      ${pros.map(p=>`
+        <div class="live-pro-head">
+          <div class="live-pro-avatar">${escapeHtml((p.full_name||"?").slice(0,1).toUpperCase())}</div>
+          <div>
+            <strong>${escapeHtml(p.full_name)}</strong>
+            <small>${escapeHtml(p.specialty||"Barbeiro")}</small>
+          </div>
+          ${["admin","reception"].includes(currentRole)?`<button type="button" class="quick-block-btn" data-quick-block="${p.id}">BLOQUEAR</button>`:""}
+        </div>
+      `).join("")}
+    </div>
+  `;
+
+  agendaTimeline.innerHTML=`
+    <div class="live-timeline-shell">
+      ${head}
+      <div class="live-timeline-scroll">
+        <div class="live-timeline-body" style="--pro-count:${pros.length};--timeline-height:${timelineHeight}px">
+          <div class="live-time-rail" style="height:${timelineHeight}px">${timeLabels.join("")}</div>
+          <div class="live-columns" style="--pro-count:${pros.length};height:${timelineHeight}px">
+            ${columns}
+            <div id="liveNowLine" class="live-now-line hidden">
+              <span id="liveNowLabel">AGORA</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
 
   agendaTimeline.querySelectorAll("[data-timeline-checkout]").forEach(btn=>{
-    btn.addEventListener("click",async()=>{
+    btn.addEventListener("click",async e=>{
+      e.stopPropagation();
       if(window.C7Cash?.checkoutAppointment){
         await window.C7Cash.checkoutAppointment(btn.dataset.timelineCheckout);
       }else{
@@ -496,8 +557,68 @@ function renderTimeline(){
       }
     });
   });
-}
 
+  agendaTimeline.querySelectorAll("[data-quick-block]").forEach(btn=>{
+    btn.addEventListener("click",()=>{
+      openBlockModal({
+        professionalId:btn.dataset.quickBlock,
+        date:selected
+      });
+    });
+  });
+
+  agendaTimeline.querySelectorAll("[data-live-professional]").forEach(column=>{
+    column.addEventListener("dblclick",e=>{
+      if(!["admin","reception"].includes(currentRole)) return;
+      if(e.target.closest(".live-booking,.live-block")) return;
+
+      const rect=column.getBoundingClientRect();
+      const y=e.clientY-rect.top;
+      const rawMinute=minMinute+(y/pxPerMinute);
+      const snapped=Math.round(rawMinute/15)*15;
+      const start=Math.max(minMinute,Math.min(snapped,maxMinute-15));
+      const end=Math.min(start+60,maxMinute);
+
+      openBlockModal({
+        professionalId:column.dataset.liveProfessional,
+        date:selected,
+        start:hhmmFromMinutes(start),
+        end:hhmmFromMinutes(end)
+      });
+    });
+  });
+
+  function updateLiveLine(){
+    const now=new Date();
+    const today=localDateInput(now);
+    const line=$("liveNowLine");
+    const label=$("liveNowLabel");
+    const clock=$("liveClockText");
+
+    if(clock){
+      clock.textContent=now.toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"});
+    }
+
+    if(!line||selected!==today){
+      line?.classList.add("hidden");
+      return;
+    }
+
+    const nowMinutes=now.getHours()*60+now.getMinutes()+now.getSeconds()/60;
+    if(nowMinutes<minMinute||nowMinutes>maxMinute){
+      line.classList.add("hidden");
+      return;
+    }
+
+    line.classList.remove("hidden");
+    line.style.top=`${(nowMinutes-minMinute)*pxPerMinute}px`;
+    if(label) label.textContent=now.toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"});
+  }
+
+  if(timelineClock) clearInterval(timelineClock);
+  updateLiveLine();
+  timelineClock=setInterval(updateLiveLine,1000);
+}
 async function updateDashboard(){
   const today=localDateInput();
   const start=new Date(`${today}T00:00:00`);
@@ -847,13 +968,17 @@ saveAndNewAppointmentBtn?.addEventListener("click",async()=>{
   await saveAppointment({keepOpen:true});
 });
 
-function openBlockModal(){
+function openBlockModal(preset={}){
   blockForm.reset();
   blockMessage.textContent="";
-  $("blockDate").value=agendaDate.value||localDateInput();
-  $("blockStart").value="12:00";
-  $("blockEnd").value="13:00";
-  if(professionalFilter.value) blockProfessional.value=professionalFilter.value;
+  $("blockDate").value=preset.date||agendaDate.value||localDateInput();
+  $("blockStart").value=preset.start||"12:00";
+  $("blockEnd").value=preset.end||"13:00";
+  if(preset.professionalId){
+    blockProfessional.value=preset.professionalId;
+  }else if(professionalFilter.value){
+    blockProfessional.value=professionalFilter.value;
+  }
   blockModal.classList.remove("hidden");
 }
 
@@ -924,7 +1049,7 @@ blockForm.addEventListener("submit",async e=>{
   await loadAgenda();
 });
 
-setAgendaView("list");
+setAgendaView("timeline");
 
 const {data:{session}}=await supabase.auth.getSession();
 if(session) await loadProfile(session.user.id); else showLogin();
