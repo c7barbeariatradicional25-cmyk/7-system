@@ -88,3 +88,70 @@ function renderColumn(targetId,items){
     target.appendChild(card);
   });
 }
+
+
+async function setStatus(id,status,extra={}){
+  const payload={status,updated_at:new Date().toISOString(),...extra};
+  const {error}=await supabase.from("appointments").update(payload).eq("id",id);
+  if(error){
+    alert("Não foi possível atualizar o atendimento.");
+    return;
+  }
+  await loadOperations();
+}
+
+async function loadOperations(){
+  const start=new Date();
+  start.setHours(0,0,0,0);
+  const end=new Date();
+  end.setHours(23,59,59,999);
+
+  const {data,error}=await supabase
+    .from("appointments")
+    .select("id,starts_at,status,arrived_at,service_started_at,completed_at,customer:customers(full_name),professional:professionals(full_name),appointment_services(service_name)")
+    .gte("starts_at",start.toISOString())
+    .lte("starts_at",end.toISOString())
+    .not("status","eq","cancelled")
+    .order("starts_at",{ascending:true});
+
+  if(error) return;
+
+  const rows=data||[];
+  const scheduled=rows.filter(a=>["scheduled","confirmed"].includes(a.status));
+  const waiting=rows.filter(a=>a.status==="waiting");
+  const inService=rows.filter(a=>a.status==="in_service");
+  const completed=rows.filter(a=>a.status==="completed");
+
+  $("opsScheduledCount").textContent=scheduled.length;
+  $("opsWaitingCount").textContent=waiting.length;
+  $("opsInServiceCount").textContent=inService.length;
+  $("opsCompletedCount").textContent=completed.length;
+
+  renderColumn("opsScheduledList",scheduled);
+  renderColumn("opsWaitingList",waiting);
+  renderColumn("opsInServiceList",inService);
+  renderColumn("opsCompletedList",completed);
+}
+
+async function initOperations(){
+  if(!await loadContext()) return;
+
+  document.querySelectorAll('.nav-item[data-section="operacoes"]').forEach(btn=>{
+    btn.addEventListener("click",loadOperations);
+  });
+
+  $("refreshOperationsBtn")?.addEventListener("click",loadOperations);
+
+  const channel=supabase
+    .channel("c7-operations")
+    .on(
+      "postgres_changes",
+      {event:"*",schema:"public",table:"appointments"},
+      ()=>loadOperations()
+    )
+    .subscribe();
+
+  window.addEventListener("beforeunload",()=>supabase.removeChannel(channel));
+}
+
+initOperations();
