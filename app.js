@@ -195,6 +195,7 @@ function openSection(id){
   const btn=document.querySelector(`.nav-item[data-section="${id}"]`);
   pageTitle.textContent=btn?btn.textContent:"C7 System";
   if(id==="agenda") loadAgenda();
+  if(id==="dashboard") updateDashboard();
 }
 
 document.querySelectorAll(".nav-item").forEach(btn=>{
@@ -449,14 +450,91 @@ function renderTimeline(){
   agendaTimeline.innerHTML=`<div class="timeline-grid">${head}${rows}</div>`;
 }
 
-function updateDashboard(items,selectedDate){
-  if(selectedDate!==localDateInput()) return;
-  const active=items.filter(a=>a.status!=="cancelled");
+async function updateDashboard(){
+  const today=localDateInput();
+  const start=new Date(`${today}T00:00:00`);
+  const end=new Date(`${today}T23:59:59.999`);
   const now=new Date();
-  $("statAppointments").textContent=active.length;
-  $("statRevenue").textContent=money(active.reduce((sum,a)=>sum+Number(a.total_amount||0),0));
-  $("statUpcoming").textContent=active.filter(a=>new Date(a.starts_at)>now).length;
-  $("statWaiting").textContent=active.filter(a=>a.status==="waiting").length;
+
+  const [
+    appointmentsResult,
+    transactionsResult,
+    productsResult,
+    cashResult,
+    professionalsResult
+  ]=await Promise.all([
+    supabase.from("appointments")
+      .select("id,starts_at,status,customer:customers(full_name),professional:professionals(full_name)")
+      .gte("starts_at",start.toISOString())
+      .lte("starts_at",end.toISOString())
+      .neq("status","cancelled")
+      .order("starts_at",{ascending:true}),
+    supabase.from("cash_transactions")
+      .select("direction,net_amount,status,created_at")
+      .gte("created_at",start.toISOString())
+      .lte("created_at",end.toISOString())
+      .eq("status","posted"),
+    supabase.from("products")
+      .select("id,name,stock_quantity,min_stock,active")
+      .eq("active",true),
+    supabase.from("open_cash_summary").select("*").limit(1).maybeSingle(),
+    supabase.from("professionals").select("id,full_name,active").eq("active",true)
+  ]);
+
+  const appointments=appointmentsResult.data||[];
+  const transactions=transactionsResult.data||[];
+  const products=productsResult.data||[];
+  const openCash=cashResult.data||null;
+  const activePros=professionalsResult.data||[];
+
+  const relevantAppointments=appointments.filter(a=>["waiting","in_service","completed"].includes(a.status));
+  const waiting=appointments.filter(a=>a.status==="waiting");
+  const revenue=transactions.filter(t=>t.direction==="in")
+    .reduce((sum,t)=>sum+Number(t.net_amount||0),0);
+  const lowStock=products.filter(p=>Number(p.stock_quantity||0)<=Number(p.min_stock||0));
+
+  $("statAppointments").textContent=relevantAppointments.length;
+  $("statRevenue").textContent=money(revenue);
+  $("statWaiting").textContent=waiting.length;
+  $("statLowStock").textContent=lowStock.length;
+
+  if(openCash){
+    $("dashboardCashStatus").textContent="Aberto";
+    $("dashboardCashText").textContent=`Saldo esperado: ${money(openCash.expected_balance)} • Entradas: ${money(openCash.total_in)} • Saídas: ${money(openCash.total_out)}`;
+  }else{
+    $("dashboardCashStatus").textContent="Fechado";
+    $("dashboardCashText").textContent="Nenhum caixa aberto no momento.";
+  }
+
+  const next=appointments.find(a=>new Date(a.starts_at)>=now && ["scheduled","confirmed"].includes(a.status));
+  if(next){
+    $("dashboardNextClient").textContent=next.customer?.full_name||"Cliente";
+    $("dashboardNextText").textContent=`${formatTime(next.starts_at)} • ${next.professional?.full_name||"Sem profissional"}`;
+  }else{
+    $("dashboardNextClient").textContent="—";
+    $("dashboardNextText").textContent="Nenhum horário próximo.";
+  }
+
+  $("dashboardActivePros").textContent=`${activePros.length} ${activePros.length===1?"barbeiro ativo":"barbeiros ativos"}`;
+  $("dashboardTeamText").textContent=waiting.length
+    ? `${waiting.length} cliente${waiting.length===1?"":"s"} aguardando atendimento.`
+    : "Nenhum cliente aguardando.";
+
+  const alerts=[];
+  if(lowStock.length){
+    alerts.push({title:"Estoque baixo",text:lowStock.slice(0,4).map(p=>p.name).join(", ")+(lowStock.length>4?"...":"")});
+  }
+  if(!openCash && ["admin","reception"].includes(currentRole)){
+    alerts.push({title:"Caixa fechado",text:"Abra o caixa antes de registrar recebimentos."});
+  }
+  if(waiting.length){
+    alerts.push({title:"Cliente aguardando",text:`${waiting.length} atendimento${waiting.length===1?"":"s"} na fila.`});
+  }
+
+  $("dashboardAlertCount").textContent=`${alerts.length} ${alerts.length===1?"pendência":"pendências"}`;
+  $("dashboardAlerts").innerHTML=alerts.length
+    ? alerts.map(a=>`<div class="dashboard-alert"><strong>${escapeHtml(a.title)}</strong>${escapeHtml(a.text)}</div>`).join("")
+    : '<div class="dashboard-alert">Nenhuma pendência importante agora.</div>';
 }
 
 function setAgendaView(view){
