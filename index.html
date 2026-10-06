@@ -104,7 +104,25 @@
 
         <div id="agendaTimeline" class="agenda-timeline hidden"></div>
       </section>
-      <section id="clientes" class="section"><div class="placeholder"><span>03</span><h2>Clientes</h2><p>CRM, histórico, frequência e preferências.</p></div></section>
+      <section id="clientes" class="section">
+        <div class="crm-toolbar">
+          <div class="crm-search-wrap">
+            <input id="customerSearch" type="search" placeholder="Buscar cliente por nome ou telefone...">
+          </div>
+          <button id="newCustomerBtn" class="primary-btn" type="button">+ NOVO CLIENTE</button>
+        </div>
+
+        <div class="crm-stats">
+          <article><span>CLIENTES</span><strong id="crmTotalCustomers">0</strong></article>
+          <article><span>RECORRENTES</span><strong id="crmRecurringCustomers">0</strong></article>
+          <article><span>SEM RETORNO</span><strong id="crmDormantCustomers">0</strong></article>
+          <article><span>FATURAMENTO HISTÓRICO</span><strong id="crmTotalSpent">R$ 0</strong></article>
+        </div>
+
+        <div id="customerList" class="customer-list">
+          <div class="agenda-empty">Carregando clientes...</div>
+        </div>
+      </section>
       <section id="caixa" class="section"><div class="placeholder"><span>04</span><h2>Caixa</h2><p>Abertura, fechamento, entradas, saídas e comissões.</p></div></section>
       <section id="operacoes" class="section"><div class="placeholder"><span>05</span><h2>Operações</h2><p>Painel ao vivo do salão.</p></div></section>
       <section id="servicos" class="section"><div class="placeholder"><span>06</span><h2>Serviços</h2><p>Gestão dos serviços.</p></div></section>
@@ -196,6 +214,59 @@
         <div class="modal-actions">
           <button type="button" class="ghost-btn" data-close-block>CANCELAR</button>
           <button type="submit" class="primary-btn">SALVAR BLOQUEIO</button>
+        </div>
+      </form>
+    </section>
+  </div>
+
+  <div id="customerModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="customerModalTitle">
+    <div class="modal-backdrop" data-close-customer></div>
+    <section class="modal-card">
+      <div class="modal-head">
+        <div>
+          <span>CRM</span>
+          <h2 id="customerModalTitle">Cliente</h2>
+        </div>
+        <button type="button" class="modal-close" data-close-customer>×</button>
+      </div>
+
+      <form id="customerForm" class="appointment-form">
+        <input id="customerId" type="hidden">
+
+        <div class="form-grid two">
+          <label><span>Nome</span><input id="crmCustomerName" type="text" required></label>
+          <label><span>Telefone</span><input id="crmCustomerPhone" type="tel"></label>
+        </div>
+
+        <div class="form-grid two">
+          <label><span>E-mail</span><input id="crmCustomerEmail" type="email"></label>
+          <label><span>Aniversário</span><input id="crmCustomerBirthDate" type="date"></label>
+        </div>
+
+        <div class="form-grid two">
+          <label><span>Profissional preferido</span><select id="crmPreferredProfessional"></select></label>
+          <label><span>Tags</span><input id="crmCustomerTags" type="text" placeholder="VIP, mensal, indicação..."></label>
+        </div>
+
+        <label><span>Observações</span><textarea id="crmCustomerNotes" rows="4"></textarea></label>
+
+        <label class="check-row">
+          <input id="crmMarketingOptIn" type="checkbox">
+          <span>Cliente autorizou receber comunicações</span>
+        </label>
+
+        <div id="customerHistory" class="customer-history hidden">
+          <div class="customer-history-head">
+            <div><span>HISTÓRICO</span><h3>Atendimentos</h3></div>
+          </div>
+          <div id="customerHistoryList"></div>
+        </div>
+
+        <p id="customerMessage" class="form-message"></p>
+
+        <div class="modal-actions">
+          <button type="button" class="ghost-btn" data-close-customer>CANCELAR</button>
+          <button type="submit" class="primary-btn">SALVAR CLIENTE</button>
         </div>
       </form>
     </section>
