@@ -151,7 +151,7 @@ loginForm.addEventListener("submit",async e=>{
   const {data,error}=await supabase.auth.signInWithPassword({email,password});
   if(error){loginMessage.textContent="E-mail ou senha inválidos.";return}
   loginMessage.textContent="";
-  await loadProfile(data.user.id);
+  window.location.reload();
 });
 
 firstAccessBtn.addEventListener("click",async()=>{
@@ -178,7 +178,7 @@ firstAccessBtn.addEventListener("click",async()=>{
 
   if(data.session){
     loginMessage.textContent="";
-    await loadProfile(data.user.id);
+    window.location.reload();
   } else {
     loginMessage.textContent="Acesso criado. Confira seu e-mail para confirmar a conta.";
   }
