@@ -268,7 +268,10 @@ async function loadWorkingHours(){
 async function loadSystemAccess(){
   if(!canAdmin()) return;
 
-  const {data,error}=await supabase.rpc("list_system_access");
+  const {data,error}=await supabase
+    .from("admin_allowlist")
+    .select("email,full_name,role,active,created_at")
+    .order("full_name",{ascending:true});
   const target=$("systemAccessList");
   if(!target) return;
 
@@ -312,7 +315,10 @@ async function loadSystemAccess(){
     toggle.type="button";
     toggle.textContent=item.active?"DESATIVAR":"ATIVAR";
     toggle.addEventListener("click",async()=>{
-      await supabase.rpc("set_system_access_active",{p_email:item.email,p_active:!item.active});
+      await supabase
+        .from("admin_allowlist")
+        .update({active:!item.active})
+        .eq("email",item.email);
       await loadSystemAccess();
     });
 
@@ -352,12 +358,14 @@ async function saveAccess(e){
 
   $("accessMessage").textContent="Salvando acesso...";
 
-  const {error}=await supabase.rpc("upsert_system_access",{
-    p_email:email,
-    p_full_name:fullName,
-    p_role:role,
-    p_active:$("accessActive").checked
-  });
+  const {error}=await supabase
+    .from("admin_allowlist")
+    .upsert({
+      email,
+      full_name:fullName,
+      role,
+      active:$("accessActive").checked
+    },{onConflict:"email"});
 
   if(error){
     $("accessMessage").textContent="Não foi possível salvar o acesso.";
