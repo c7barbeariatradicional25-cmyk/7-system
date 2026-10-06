@@ -512,6 +512,7 @@ $("receiveForm")?.addEventListener("submit",async e=>{
 
   await supabase.from("appointments").update({
     status:"completed",
+    completed_at:new Date().toISOString(),
     updated_at:new Date().toISOString()
   }).eq("id",appointment.id);
 
