@@ -55,3 +55,10 @@ async function loadProfessionals(){
     select.innerHTML='<option value="">Sem preferência</option>'+professionals.map(p=>`<option value="${p.id}">${esc(p.full_name)}</option>`).join("");
   }
 }
+
+async function loadCustomers(){
+  const result=await supabase.from("customer_crm_summary").select("*").order("full_name",{ascending:true});
+  if(result.error) return;
+  customers=result.data||[];
+  renderCustomers(customers);
+}
