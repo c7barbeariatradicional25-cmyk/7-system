@@ -58,3 +58,32 @@ async function loadReport(){
   $("reportAppointments").textContent=completed.length;
   $("reportTicket").textContent=money(completed.length?revenue/completed.length:0);
   $("reportCommissions").textContent=money(commissionsTotal);
+
+
+  const byProfessional=new Map();
+  tx.filter(t=>t.direction==="in"&&t.professional?.full_name).forEach(t=>{
+    const name=t.professional.full_name;
+    byProfessional.set(name,(byProfessional.get(name)||0)+Number(t.net_amount||0));
+  });
+
+  $("professionalReportList").innerHTML=byProfessional.size
+    ? [...byProfessional.entries()]
+        .sort((a,b)=>b[1]-a[1])
+        .map(([name,total])=>row(name,"Faturamento",money(total)))
+        .join("")
+    : '<div class="cash-empty">Sem dados no período.</div>';
+
+  const paymentLabels={cash:"Dinheiro",pix:"Pix",credit:"Crédito",debit:"Débito",other:"Outro"};
+  const byPayment=new Map();
+
+  tx.filter(t=>t.direction==="in").forEach(t=>{
+    const key=t.payment_method||"other";
+    byPayment.set(key,(byPayment.get(key)||0)+Number(t.net_amount||0));
+  });
+
+  $("paymentReportList").innerHTML=byPayment.size
+    ? [...byPayment.entries()]
+        .sort((a,b)=>b[1]-a[1])
+        .map(([key,total])=>row(paymentLabels[key]||key,"Recebido",money(total)))
+        .join("")
+    : '<div class="cash-empty">Sem recebimentos no período.</div>';
