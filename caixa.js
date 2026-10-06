@@ -339,3 +339,93 @@ $("sellProductBtn")?.addEventListener("click",()=>{
 document.querySelectorAll("[data-close-product-sale]").forEach(el=>el.addEventListener("click",()=>closeModal("productSaleModal")));
 $("cashProduct")?.addEventListener("change",updateProductPreview);
 $("cashProductQty")?.addEventListener("input",updateProductPreview);
+
+
+$("productSaleForm")?.addEventListener("submit",async e=>{
+  e.preventDefault();
+
+  const product=products.find(p=>String(p.id)===$("cashProduct").value);
+  const qty=Math.max(1,Number($("cashProductQty").value||1));
+
+  if(!product){
+    $("productSaleMessage").textContent="Selecione um produto.";
+    return;
+  }
+
+  const total=Number(product.price||0)*qty;
+  $("productSaleMessage").textContent="Registrando venda...";
+
+  const {data:transaction,error}=await supabase.from("cash_transactions").insert({
+    session_id:openSession.id,
+    transaction_type:"product",
+    direction:"in",
+    payment_method:$("cashProductMethod").value,
+    description:`Venda - ${product.name}`,
+    gross_amount:total,
+    discount_amount:0,
+    net_amount:total,
+    created_by:currentUser
+  }).select("id").single();
+
+  if(error){
+    $("productSaleMessage").textContent="Não foi possível registrar a venda.";
+    return;
+  }
+
+  await supabase.from("cash_transaction_items").insert({
+    transaction_id:transaction.id,
+    item_type:"product",
+    product_id:product.id,
+    description:product.name,
+    quantity:qty,
+    unit_price:Number(product.price||0),
+    total_amount:total
+  });
+
+  closeModal("productSaleModal");
+  await loadCash();
+});
+
+$("cashMovementBtn")?.addEventListener("click",()=>{
+  $("movementForm").reset();
+  $("movementMessage").textContent="";
+  openModal("movementModal");
+});
+
+document.querySelectorAll("[data-close-movement]").forEach(el=>el.addEventListener("click",()=>closeModal("movementModal")));
+
+$("movementForm")?.addEventListener("submit",async e=>{
+  e.preventDefault();
+
+  const type=$("movementType").value;
+  const amount=Number($("movementAmount").value||0);
+  const direction=type==="income"?"in":"out";
+
+  if(amount<=0){
+    $("movementMessage").textContent="Informe um valor válido.";
+    return;
+  }
+
+  $("movementMessage").textContent="Salvando movimentação...";
+
+  const {error}=await supabase.from("cash_transactions").insert({
+    session_id:openSession.id,
+    transaction_type:type,
+    direction,
+    payment_method:type==="income"?"cash":null,
+    description:$("movementDescription").value.trim(),
+    gross_amount:amount,
+    discount_amount:0,
+    net_amount:amount,
+    notes:$("movementNotes").value.trim()||null,
+    created_by:currentUser
+  });
+
+  if(error){
+    $("movementMessage").textContent="Não foi possível salvar a movimentação.";
+    return;
+  }
+
+  closeModal("movementModal");
+  await loadCash();
+});
