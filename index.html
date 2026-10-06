@@ -790,7 +790,10 @@
       </div>
       <form id="productAdminForm" class="appointment-form">
         <input id="productAdminId" type="hidden">
-        <label><span>Nome</span><input id="productAdminName" type="text" required></label>
+        <div class="form-grid two">
+          <label><span>Nome</span><input id="productAdminName" type="text" required></label>
+          <label><span>Categoria</span><input id="productAdminCategory" type="text" placeholder="Ex.: Pomadas, Barba, Cabelo" required></label>
+        </div>
         <div class="form-grid three">
           <label><span>Preço de venda</span><input id="productAdminPrice" type="number" min="0" step="0.01" required></label>
           <label><span>Custo</span><input id="productAdminCost" type="number" min="0" step="0.01"></label>
