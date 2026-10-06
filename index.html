@@ -271,7 +271,50 @@
           </article>
         </div>
       </section>
-      <section id="relatorios" class="section"><div class="placeholder"><span>09</span><h2>Relatórios</h2><p>Indicadores e desempenho.</p></div></section>
+      <section id="relatorios" class="section">
+        <div class="report-toolbar">
+          <div>
+            <span class="eyebrow">DESEMPENHO</span>
+            <h2>Relatórios</h2>
+            <p>Financeiro, atendimentos e comissões em um só lugar.</p>
+          </div>
+          <div class="report-period">
+            <input id="reportStart" type="date">
+            <span>até</span>
+            <input id="reportEnd" type="date">
+            <button id="loadReportBtn" class="primary-btn" type="button">ATUALIZAR</button>
+          </div>
+        </div>
+
+        <div class="report-stats">
+          <article><span>FATURAMENTO</span><strong id="reportRevenue">R$ 0</strong></article>
+          <article><span>ATENDIMENTOS</span><strong id="reportAppointments">0</strong></article>
+          <article><span>TICKET MÉDIO</span><strong id="reportTicket">R$ 0</strong></article>
+          <article><span>COMISSÕES</span><strong id="reportCommissions">R$ 0</strong></article>
+        </div>
+
+        <div class="report-grid">
+          <article class="report-panel">
+            <div class="cash-panel-head"><div><span>EQUIPE</span><h3>Desempenho por barbeiro</h3></div></div>
+            <div id="professionalReportList" class="report-list"></div>
+          </article>
+
+          <article class="report-panel">
+            <div class="cash-panel-head"><div><span>PAGAMENTOS</span><h3>Formas de pagamento</h3></div></div>
+            <div id="paymentReportList" class="report-list"></div>
+          </article>
+
+          <article class="report-panel">
+            <div class="cash-panel-head"><div><span>VENDAS</span><h3>Serviços x Produtos</h3></div></div>
+            <div id="salesTypeReportList" class="report-list"></div>
+          </article>
+
+          <article class="report-panel">
+            <div class="cash-panel-head"><div><span>CLIENTES</span><h3>Retenção</h3></div></div>
+            <div id="customerReportList" class="report-list"></div>
+          </article>
+        </div>
+      </section>
       <section id="configuracoes" class="section">
         <div class="catalog-toolbar">
           <div>
@@ -714,5 +757,6 @@
   <script type="module" src="catalogo.js"></script>
   <script type="module" src="equipe.js"></script>
   <script type="module" src="configuracoes.js"></script>
+  <script type="module" src="relatorios.js"></script>
 </body>
 </html>
