@@ -61,14 +61,33 @@
 
       <section id="dashboard" class="section active">
         <div class="stats">
-          <article><span>Atendimentos hoje</span><strong id="statAppointments">0</strong><small>Agenda</small></article>
-          <article><span>Faturamento previsto</span><strong id="statRevenue">R$ 0</strong><small>Agenda</small></article>
-          <article><span>Próximos horários</span><strong id="statUpcoming">0</strong><small>Agenda</small></article>
+          <article><span>Atendimentos hoje</span><strong id="statAppointments">0</strong><small>Concluídos + em andamento</small></article>
+          <article><span>Faturamento hoje</span><strong id="statRevenue">R$ 0</strong><small>Recebido no caixa</small></article>
           <article><span>Clientes aguardando</span><strong id="statWaiting">0</strong><small>Operações</small></article>
+          <article><span>Estoque baixo</span><strong id="statLowStock">0</strong><small>Produtos</small></article>
         </div>
+
         <div class="dashboard-grid">
-          <article class="panel"><span>HOJE</span><h2>Agenda</h2><p>O módulo de Agenda será o próximo a ser construído.</p></article>
-          <article class="panel"><span>OPERAÇÃO</span><h2>Equipe</h2><p>Status dos barbeiros e atendimentos aparecerá aqui.</p></article>
+          <article class="panel">
+            <span>CAIXA</span>
+            <h2 id="dashboardCashStatus">Fechado</h2>
+            <p id="dashboardCashText">Nenhum caixa aberto no momento.</p>
+          </article>
+          <article class="panel">
+            <span>PRÓXIMO ATENDIMENTO</span>
+            <h2 id="dashboardNextClient">—</h2>
+            <p id="dashboardNextText">Nenhum horário próximo.</p>
+          </article>
+          <article class="panel">
+            <span>ALERTAS</span>
+            <h2 id="dashboardAlertCount">0 pendências</h2>
+            <div id="dashboardAlerts" class="dashboard-alerts"></div>
+          </article>
+          <article class="panel">
+            <span>EQUIPE</span>
+            <h2 id="dashboardActivePros">0 barbeiros ativos</h2>
+            <p id="dashboardTeamText">Equipe operacional.</p>
+          </article>
         </div>
       </section>
 
