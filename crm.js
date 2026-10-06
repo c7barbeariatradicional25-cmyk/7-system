@@ -121,3 +121,48 @@ function renderCustomers(items){
     list.appendChild(card);
   });
 }
+
+function applySearch(){
+  const term=($("customerSearch")?.value||"").trim().toLowerCase();
+  if(!term){renderCustomers(customers);return}
+  renderCustomers(customers.filter(c=>
+    String(c.full_name||"").toLowerCase().includes(term) ||
+    String(c.phone||"").toLowerCase().includes(term)
+  ));
+}
+
+async function loadHistory(customerId){
+  const result=await supabase
+    .from("appointments")
+    .select("starts_at,status,total_amount,professional:professionals(full_name),appointment_services(service_name)")
+    .eq("customer_id",customerId)
+    .order("starts_at",{ascending:false});
+
+  const target=$("customerHistoryList");
+  target.replaceChildren();
+
+  if(result.error){
+    target.appendChild(makeEl("div","agenda-empty","Não foi possível carregar o histórico."));
+    return;
+  }
+
+  if(!result.data?.length){
+    target.appendChild(makeEl("div","agenda-empty","Nenhum atendimento registrado."));
+    return;
+  }
+
+  result.data.forEach(item=>{
+    const row=makeEl("div","history-row");
+    const left=makeEl("div");
+    left.appendChild(makeEl("strong","",new Date(item.starts_at).toLocaleDateString("pt-BR")));
+    left.appendChild(makeEl("span","",statusLabels[item.status]||item.status));
+
+    const center=makeEl("div");
+    const services=(item.appointment_services||[]).map(s=>s.service_name).join(" + ")||"Serviço";
+    center.appendChild(makeEl("strong","",services));
+    center.appendChild(makeEl("span","",item.professional?.full_name||"Sem profissional"));
+
+    row.append(left,center,makeEl("div","history-value",money(item.total_amount)));
+    target.appendChild(row);
+  });
+}
