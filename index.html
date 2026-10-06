@@ -202,8 +202,37 @@
           </article>
         </div>
       </section>
-      <section id="servicos" class="section"><div class="placeholder"><span>06</span><h2>Serviços</h2><p>Gestão dos serviços.</p></div></section>
-      <section id="produtos" class="section"><div class="placeholder"><span>07</span><h2>Produtos</h2><p>Catálogo, estoque e vendas.</p></div></section>
+      <section id="servicos" class="section">
+        <div class="catalog-toolbar">
+          <div>
+            <span class="eyebrow">CATÁLOGO</span>
+            <h2>Serviços</h2>
+            <p>Alterações aqui refletem no link público da C7.</p>
+          </div>
+          <button id="newServiceBtn" class="primary-btn" type="button">+ NOVO SERVIÇO</button>
+        </div>
+        <div id="adminServiceList" class="catalog-list">
+          <div class="agenda-empty">Carregando serviços...</div>
+        </div>
+      </section>
+      <section id="produtos" class="section">
+        <div class="catalog-toolbar">
+          <div>
+            <span class="eyebrow">CATÁLOGO + ESTOQUE</span>
+            <h2>Produtos</h2>
+            <p>Preço e disponibilidade refletem no link público; estoque fica interno.</p>
+          </div>
+          <button id="newProductBtn" class="primary-btn" type="button">+ NOVO PRODUTO</button>
+        </div>
+        <div class="product-admin-stats">
+          <article><span>PRODUTOS ATIVOS</span><strong id="adminProductActiveCount">0</strong></article>
+          <article><span>ESTOQUE BAIXO</span><strong id="adminProductLowStockCount">0</strong></article>
+          <article><span>ITENS EM ESTOQUE</span><strong id="adminProductStockTotal">0</strong></article>
+        </div>
+        <div id="adminProductList" class="catalog-list">
+          <div class="agenda-empty">Carregando produtos...</div>
+        </div>
+      </section>
       <section id="equipe" class="section"><div class="placeholder"><span>08</span><h2>Equipe</h2><p>Usuários, cargos e permissões.</p></div></section>
       <section id="relatorios" class="section"><div class="placeholder"><span>09</span><h2>Relatórios</h2><p>Indicadores e desempenho.</p></div></section>
       <section id="configuracoes" class="section"><div class="placeholder"><span>10</span><h2>Configurações</h2><p>Dados da C7, horários e integrações.</p></div></section>
@@ -495,6 +524,80 @@
   <script type="module" src="app.js"></script>
   <script type="module" src="crm.js"></script>
   <script type="module" src="caixa.js"></script>
+  <div id="serviceAdminModal" class="modal hidden" role="dialog" aria-modal="true">
+    <div class="modal-backdrop" data-close-service-admin></div>
+    <section class="modal-card modal-small">
+      <div class="modal-head">
+        <div><span>CATÁLOGO</span><h2 id="serviceAdminTitle">Serviço</h2></div>
+        <button type="button" class="modal-close" data-close-service-admin>×</button>
+      </div>
+      <form id="serviceAdminForm" class="appointment-form">
+        <input id="serviceAdminId" type="hidden">
+        <label><span>Nome</span><input id="serviceAdminName" type="text" required></label>
+        <div class="form-grid two">
+          <label><span>Categoria</span><input id="serviceAdminCategory" type="text" required></label>
+          <label><span>Duração</span><input id="serviceAdminDuration" type="text" placeholder="Ex.: 30min" required></label>
+        </div>
+        <div class="form-grid two">
+          <label><span>Preço</span><input id="serviceAdminPrice" type="number" min="0" step="0.01" required></label>
+          <label><span>Ordem</span><input id="serviceAdminSort" type="number" min="0" step="1" value="0"></label>
+        </div>
+        <label class="check-row"><input id="serviceAdminActive" type="checkbox" checked><span>Serviço ativo no link público</span></label>
+        <p id="serviceAdminMessage" class="form-message"></p>
+        <div class="modal-actions">
+          <button type="button" class="ghost-btn" data-close-service-admin>CANCELAR</button>
+          <button type="submit" class="primary-btn">SALVAR SERVIÇO</button>
+        </div>
+      </form>
+    </section>
+  </div>
+
+  <div id="productAdminModal" class="modal hidden" role="dialog" aria-modal="true">
+    <div class="modal-backdrop" data-close-product-admin></div>
+    <section class="modal-card">
+      <div class="modal-head">
+        <div><span>CATÁLOGO</span><h2 id="productAdminTitle">Produto</h2></div>
+        <button type="button" class="modal-close" data-close-product-admin>×</button>
+      </div>
+      <form id="productAdminForm" class="appointment-form">
+        <input id="productAdminId" type="hidden">
+        <label><span>Nome</span><input id="productAdminName" type="text" required></label>
+        <div class="form-grid three">
+          <label><span>Preço de venda</span><input id="productAdminPrice" type="number" min="0" step="0.01" required></label>
+          <label><span>Custo</span><input id="productAdminCost" type="number" min="0" step="0.01"></label>
+          <label><span>Estoque mínimo</span><input id="productAdminMinStock" type="number" min="0" step="1" value="0"></label>
+        </div>
+        <div class="form-grid two">
+          <label><span>Ordem</span><input id="productAdminSort" type="number" min="0" step="1" value="0"></label>
+          <label><span>Estoque atual</span><input id="productAdminStock" type="number" readonly></label>
+        </div>
+        <label class="check-row"><input id="productAdminActive" type="checkbox" checked><span>Produto ativo no link público</span></label>
+
+        <div id="stockAdjustmentArea" class="stock-adjustment hidden">
+          <span>AJUSTAR ESTOQUE</span>
+          <div class="form-grid three">
+            <label><span>Tipo</span>
+              <select id="stockAdjustmentType">
+                <option value="adjustment_in">Entrada</option>
+                <option value="adjustment_out">Saída</option>
+              </select>
+            </label>
+            <label><span>Quantidade</span><input id="stockAdjustmentQty" type="number" min="0.01" step="1"></label>
+            <label><span>Motivo</span><input id="stockAdjustmentNotes" type="text" placeholder="Compra, acerto..."></label>
+          </div>
+          <button id="applyStockAdjustmentBtn" class="ghost-btn" type="button">APLICAR AJUSTE</button>
+        </div>
+
+        <p id="productAdminMessage" class="form-message"></p>
+        <div class="modal-actions">
+          <button type="button" class="ghost-btn" data-close-product-admin>CANCELAR</button>
+          <button type="submit" class="primary-btn">SALVAR PRODUTO</button>
+        </div>
+      </form>
+    </section>
+  </div>
+
   <script type="module" src="operacoes.js"></script>
+  <script type="module" src="catalogo.js"></script>
 </body>
 </html>
