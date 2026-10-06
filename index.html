@@ -184,6 +184,28 @@
             </div>
           </article>
         </div>
+
+        <div class="finance-grid">
+          <article class="cash-panel">
+            <div class="cash-panel-head">
+              <div><span>COMISSÕES</span><h3>Pendentes por barbeiro</h3></div>
+              <button id="refreshCommissionsBtn" class="ghost-btn" type="button">ATUALIZAR</button>
+            </div>
+            <div id="commissionList" class="finance-list">
+              <div class="agenda-empty">Carregando comissões...</div>
+            </div>
+          </article>
+
+          <article class="cash-panel">
+            <div class="cash-panel-head">
+              <div><span>HISTÓRICO</span><h3>Caixas anteriores</h3></div>
+              <button id="refreshCashHistoryBtn" class="ghost-btn" type="button">ATUALIZAR</button>
+            </div>
+            <div id="cashHistoryList" class="finance-list">
+              <div class="agenda-empty">Carregando histórico...</div>
+            </div>
+          </article>
+        </div>
       </section>
       <section id="operacoes" class="section">
         <div class="ops-toolbar">
@@ -777,5 +799,6 @@
   <script type="module" src="equipe.js"></script>
   <script type="module" src="configuracoes.js"></script>
   <script type="module" src="relatorios.js"></script>
+  <script type="module" src="financeiro.js"></script>
 </body>
 </html>
