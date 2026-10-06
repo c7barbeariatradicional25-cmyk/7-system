@@ -534,3 +534,52 @@ body{background:var(--bg);color:var(--text)}
   cursor:pointer
 }
 .timeline-checkout:hover{background:#e9e9e6}
+
+
+/* MULTISSERVIÇOS NO AGENDAMENTO */
+.service-picker-field{display:grid;gap:7px}
+.service-picker-field>span{color:#777772;font-size:9px}
+.service-picker-field>small{color:#81817d;font-size:9px}
+.appointment-service-list{
+  max-height:220px;
+  overflow:auto;
+  display:grid;
+  gap:7px;
+  padding:8px;
+  border:1px solid #d9d9d5;
+  border-radius:12px;
+  background:#fafaf8
+}
+.service-option{
+  display:flex!important;
+  grid-template-columns:none!important;
+  align-items:center;
+  gap:10px!important;
+  min-height:48px;
+  padding:9px 10px;
+  border:1px solid #e4e4e0;
+  border-radius:10px;
+  background:#fff;
+  cursor:pointer;
+  transition:.16s ease
+}
+.service-option:hover{border-color:#bfbfba;background:#f6f6f3}
+.service-option:has(input:checked){border-color:#111;background:#f0f0ed}
+.service-option input{
+  width:17px!important;
+  height:17px!important;
+  padding:0!important;
+  accent-color:#111;
+  flex:0 0 auto
+}
+.service-option-main{min-width:0;display:block}
+.service-option-main strong{display:block;color:#161616;font-size:10px}
+.service-option-main small{display:block;margin-top:4px;color:#7b7b76;font-size:8px}
+.appointment-save-actions{flex-wrap:wrap}
+.appointment-save-actions #saveAndNewAppointmentBtn{margin-right:auto}
+
+@media(max-width:700px){
+  .appointment-service-list{max-height:180px}
+  .appointment-save-actions{display:grid;grid-template-columns:1fr}
+  .appointment-save-actions button{width:100%}
+}
