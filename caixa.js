@@ -703,6 +703,36 @@ $("closeCashForm")?.addEventListener("submit",async e=>{
   await loadCash();
 });
 
+async function checkoutAppointment(appointmentId){
+  if(!["admin","reception"].includes(currentRole)){
+    alert("Seu perfil ainda não possui permissão para registrar pagamentos.");
+    return false;
+  }
+
+  await loadCash();
+
+  if(!openSession){
+    alert("O caixa está fechado. Abra o caixa antes de finalizar o atendimento.");
+    return false;
+  }
+
+  await loadPendingAppointments();
+
+  const appointment=pendingAppointments.find(a=>String(a.id)===String(appointmentId));
+  if(!appointment){
+    alert("Este atendimento já foi recebido ou não está disponível para checkout.");
+    return false;
+  }
+
+  await openReceiveModal(appointmentId);
+  return true;
+}
+
+window.C7Cash={
+  checkoutAppointment,
+  refresh:loadCash
+};
+
 async function initCash(){
   if(!await loadContext()) return;
 
