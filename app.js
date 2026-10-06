@@ -346,6 +346,18 @@ function renderAgendaList(){
 
   document.querySelectorAll("[data-appointment-status]").forEach(select=>{
     select.addEventListener("change",async()=>{
+      const appointment=currentAppointments.find(a=>String(a.id)===String(select.dataset.appointmentStatus));
+
+      if(select.value==="completed" && appointment?.status!=="completed"){
+        select.value=appointment?.status||"in_service";
+        if(window.C7Cash?.checkoutAppointment){
+          await window.C7Cash.checkoutAppointment(select.dataset.appointmentStatus);
+        }else{
+          alert("O checkout ainda não terminou de carregar. Tente novamente.");
+        }
+        return;
+      }
+
       const {error}=await supabase.from("appointments")
         .update({status:select.value,updated_at:new Date().toISOString()})
         .eq("id",select.dataset.appointmentStatus);
@@ -437,7 +449,10 @@ function renderTimeline(){
           if(appointment){
             const customer=escapeHtml(appointment.customer?.full_name||"Cliente");
             const service=escapeHtml((appointment.appointment_services||[]).map(s=>s.service_name).join(" + "));
-            content=`<div class="timeline-booking"><strong>${formatTime(appointment.starts_at)} • ${customer}</strong><span>${service}</span></div>`;
+            const checkout=appointment.status==="in_service" && ["admin","reception"].includes(currentRole)
+              ? `<button class="timeline-checkout" type="button" data-timeline-checkout="${appointment.id}">CHECKOUT</button>`
+              : "";
+            content=`<div class="timeline-booking"><strong>${formatTime(appointment.starts_at)} • ${customer}</strong><span>${service}</span>${checkout}</div>`;
           } else if(block){
             content=`<div class="timeline-block"><strong>BLOQUEADO</strong><span>${escapeHtml(block.reason||"Indisponível")}</span></div>`;
           }
@@ -448,6 +463,16 @@ function renderTimeline(){
   }).join("");
 
   agendaTimeline.innerHTML=`<div class="timeline-grid">${head}${rows}</div>`;
+
+  agendaTimeline.querySelectorAll("[data-timeline-checkout]").forEach(btn=>{
+    btn.addEventListener("click",async()=>{
+      if(window.C7Cash?.checkoutAppointment){
+        await window.C7Cash.checkoutAppointment(btn.dataset.timelineCheckout);
+      }else{
+        alert("O checkout ainda não terminou de carregar. Tente novamente.");
+      }
+    });
+  });
 }
 
 async function updateDashboard(){
