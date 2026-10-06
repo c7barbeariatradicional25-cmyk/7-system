@@ -13,6 +13,8 @@ let currentRole = null;
 let openSession = null;
 let pendingAppointments = [];
 let products = [];
+let receiveBenefits = [];
+let appliedCoupon = null;
 
 async function loadContext(){
   const {data:{session}}=await supabase.auth.getSession();
@@ -121,7 +123,7 @@ async function loadPendingAppointments(){
 
   const {data,error}=await supabase
     .from("appointments")
-    .select("id,customer_id,professional_id,starts_at,total_amount,status,customer:customers(full_name),professional:professionals(full_name),appointment_services(service_name)")
+    .select("id,customer_id,professional_id,starts_at,total_amount,status,customer:customers(id,full_name,birth_date),professional:professionals(full_name),appointment_services(service_id,service_name,price)")
     .gte("starts_at",start.toISOString())
     .lte("starts_at",end.toISOString())
     .in("status",["confirmed","waiting","in_service","completed"])
@@ -221,16 +223,101 @@ function fillReceiveOptions(){
     }).join("");
 }
 
+function benefitDiscount(gross,benefit){
+  if(!benefit) return 0;
+  if(benefit.discount_type==="percent"){
+    return Math.min(gross,gross*Math.min(Number(benefit.discount_value||0),100)/100);
+  }
+  return Math.min(gross,Number(benefit.discount_value||0));
+}
+
+function selectedBenefit(){
+  const value=$("receiveBenefit")?.value;
+  return receiveBenefits.find(b=>b.key===value)||null;
+}
+
 function updateReceivePreview(){
   const item=pendingAppointments.find(a=>a.id===$("receiveAppointment").value);
   const gross=Number($("receiveGross").value||0);
   const discount=Math.min(Number($("receiveDiscount").value||0),gross);
+  const benefit=selectedBenefit();
+
   $("receiveNet").textContent=money(gross-discount);
   $("receiveCustomer").textContent=item?.customer?.full_name||"—";
-  $("receiveProfessional").textContent=item?.professional?.full_name||"—";
+  $("receiveBenefitPreview").textContent=appliedCoupon
+    ? `Cupom ${appliedCoupon.code}`
+    : (benefit?.label||"Nenhum");
 }
 
-function openReceiveModal(id=null){
+async function loadReceiveBenefits(item){
+  receiveBenefits=[];
+  appliedCoupon=null;
+  $("receiveCouponCode").value="";
+
+  if(!item){
+    $("receiveBenefit").innerHTML='<option value="">Sem benefício</option>';
+    return;
+  }
+
+  const now=new Date();
+
+  const [promoResult,membershipResult,birthdayResult]=await Promise.all([
+    supabase.from("promotions").select("*").eq("active",true),
+    supabase.from("customer_memberships")
+      .select("id,starts_at,ends_at,status,plan:membership_plans(id,name,discount_percent,active)")
+      .eq("customer_id",item.customer_id)
+      .eq("status","active"),
+    supabase.from("birthday_campaigns").select("*").eq("active",true).order("created_at",{ascending:false}).limit(1).maybeSingle()
+  ]);
+
+  (promoResult.data||[]).forEach(p=>{
+    if(p.starts_at&&new Date(p.starts_at)>now) return;
+    if(p.ends_at&&new Date(p.ends_at)<now) return;
+    receiveBenefits.push({
+      key:`promotion:${p.id}`,
+      source:"promotion",
+      label:p.name,
+      discount_type:p.discount_type,
+      discount_value:p.discount_value
+    });
+  });
+
+  (membershipResult.data||[]).forEach(m=>{
+    if(!m.plan?.active) return;
+    if(m.starts_at&&new Date(m.starts_at+"T00:00:00")>now) return;
+    if(m.ends_at&&new Date(m.ends_at+"T23:59:59")<now) return;
+    if(Number(m.plan.discount_percent||0)<=0) return;
+    receiveBenefits.push({
+      key:`plan:${m.id}`,
+      source:"plan",
+      label:`Plano ${m.plan.name}`,
+      discount_type:"percent",
+      discount_value:m.plan.discount_percent
+    });
+  });
+
+  const birthday=birthdayResult.data;
+  const birthDate=item.customer?.birth_date;
+  if(birthday&&birthDate){
+    const [,month,day]=birthDate.split("-").map(Number);
+    const thisBirthday=new Date(now.getFullYear(),month-1,day);
+    const diffDays=Math.floor((now-thisBirthday)/86400000);
+    if(diffDays>=-Number(birthday.valid_days_before||0)&&diffDays<=Number(birthday.valid_days_after||0)){
+      receiveBenefits.push({
+        key:`birthday:${birthday.id}`,
+        source:"birthday",
+        label:birthday.name||"Aniversário C7",
+        discount_type:birthday.discount_type,
+        discount_value:birthday.discount_value
+      });
+    }
+  }
+
+  $("receiveBenefit").innerHTML='<option value="">Sem benefício</option>'+
+    receiveBenefits.map(b=>`<option value="${b.key}">${b.label} — ${b.discount_type==="percent"?Number(b.discount_value)+"%":money(b.discount_value)}</option>`).join("");
+}
+
+async function openReceiveModal(id=null){
   $("receiveForm").reset();
   $("receiveDiscount").value="0";
   $("receiveMessage").textContent="";
@@ -240,6 +327,7 @@ function openReceiveModal(id=null){
 
   const item=pendingAppointments.find(a=>a.id===$("receiveAppointment").value);
   $("receiveGross").value=item?Number(item.total_amount||0).toFixed(2):"";
+  await loadReceiveBenefits(item);
   updateReceivePreview();
   openModal("receiveModal");
 }
@@ -247,13 +335,88 @@ function openReceiveModal(id=null){
 $("receiveAppointmentBtn")?.addEventListener("click",()=>openReceiveModal());
 document.querySelectorAll("[data-close-receive]").forEach(el=>el.addEventListener("click",()=>closeModal("receiveModal")));
 
-$("receiveAppointment")?.addEventListener("change",()=>{
+$("receiveAppointment")?.addEventListener("change",async()=>{
   const item=pendingAppointments.find(a=>a.id===$("receiveAppointment").value);
   $("receiveGross").value=item?Number(item.total_amount||0).toFixed(2):"";
+  $("receiveDiscount").value="0";
+  await loadReceiveBenefits(item);
   updateReceivePreview();
 });
-$("receiveGross")?.addEventListener("input",updateReceivePreview);
-$("receiveDiscount")?.addEventListener("input",updateReceivePreview);
+
+$("receiveBenefit")?.addEventListener("change",()=>{
+  appliedCoupon=null;
+  $("receiveCouponCode").value="";
+  const gross=Number($("receiveGross").value||0);
+  $("receiveDiscount").value=benefitDiscount(gross,selectedBenefit()).toFixed(2);
+  updateReceivePreview();
+});
+
+$("receiveGross")?.addEventListener("input",()=>{
+  const gross=Number($("receiveGross").value||0);
+  if(appliedCoupon){
+    $("receiveDiscount").value=benefitDiscount(gross,appliedCoupon).toFixed(2);
+  }else if(selectedBenefit()){
+    $("receiveDiscount").value=benefitDiscount(gross,selectedBenefit()).toFixed(2);
+  }
+  updateReceivePreview();
+});
+
+$("receiveDiscount")?.addEventListener("input",()=>{
+  appliedCoupon=null;
+  if($("receiveBenefit")) $("receiveBenefit").value="";
+  if($("receiveCouponCode")) $("receiveCouponCode").value="";
+  updateReceivePreview();
+});
+
+$("applyReceiveCouponBtn")?.addEventListener("click",async()=>{
+  const code=$("receiveCouponCode").value.trim().toUpperCase();
+  const gross=Number($("receiveGross").value||0);
+  const item=pendingAppointments.find(a=>a.id===$("receiveAppointment").value);
+
+  if(!code||!item){
+    $("receiveMessage").textContent="Selecione o atendimento e informe o cupom.";
+    return;
+  }
+
+  const {data,error}=await supabase.from("coupons")
+    .select("*")
+    .eq("code",code)
+    .eq("active",true)
+    .maybeSingle();
+
+  const now=new Date();
+
+  if(error||!data){
+    $("receiveMessage").textContent="Cupom inválido ou inativo.";
+    return;
+  }
+  if(data.starts_at&&new Date(data.starts_at)>now){
+    $("receiveMessage").textContent="Esse cupom ainda não está válido.";
+    return;
+  }
+  if(data.ends_at&&new Date(data.ends_at)<now){
+    $("receiveMessage").textContent="Esse cupom expirou.";
+    return;
+  }
+  if(data.max_uses!=null&&Number(data.used_count||0)>=Number(data.max_uses)){
+    $("receiveMessage").textContent="Esse cupom atingiu o limite de usos.";
+    return;
+  }
+  if(gross<Number(data.min_amount||0)){
+    $("receiveMessage").textContent=`Valor mínimo para este cupom: ${money(data.min_amount)}.`;
+    return;
+  }
+
+  appliedCoupon={
+    ...data,
+    source:"coupon",
+    label:`Cupom ${data.code}`
+  };
+  $("receiveBenefit").value="";
+  $("receiveDiscount").value=benefitDiscount(gross,appliedCoupon).toFixed(2);
+  $("receiveMessage").textContent="Cupom aplicado.";
+  updateReceivePreview();
+});
 
 
 $("receiveForm")?.addEventListener("submit",async e=>{
