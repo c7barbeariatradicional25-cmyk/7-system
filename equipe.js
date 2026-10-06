@@ -51,12 +51,24 @@ function renderProfessionals(){
     row.className="catalog-row";
 
     const main=document.createElement("div");
-    main.className="catalog-main";
+    main.className="catalog-main professional-main";
+    const avatar=document.createElement("div");
+    avatar.className="professional-list-avatar";
+    if(p.avatar_url){
+      const img=document.createElement("img");
+      img.src=p.avatar_url;
+      img.alt=p.full_name;
+      avatar.appendChild(img);
+    }else{
+      avatar.textContent=(p.full_name||"C").slice(0,1).toUpperCase();
+    }
+    const identity=document.createElement("div");
     const name=document.createElement("strong");
     name.textContent=p.full_name;
     const meta=document.createElement("span");
     meta.textContent=(p.specialty||"Barbeiro")+" • "+(p.phone||"Sem telefone");
-    main.append(name,meta);
+    identity.append(name,meta);
+    main.append(avatar,identity);
 
     const commission=document.createElement("div");
     commission.className="catalog-meta";
@@ -114,8 +126,39 @@ function openProfessional(id=null){
   $("professionalAdminCommission").value=p?.commission_percent??"";
   $("professionalAdminSort").value=p?.sort_order??0;
   $("professionalAdminActive").checked=p?.active??true;
+  $("professionalAdminPhoto").value="";
+  renderProfessionalPhotoPreview(p?.avatar_url,p?.full_name||"C7");
   $("professionalAdminMessage").textContent="";
   $("professionalAdminModal").classList.remove("hidden");
+}
+
+function renderProfessionalPhotoPreview(url,name){
+  const preview=$("professionalPhotoPreview");
+  if(!preview) return;
+  preview.replaceChildren();
+  if(url){
+    const img=document.createElement("img");
+    img.src=url;
+    img.alt=name||"Barbeiro";
+    preview.appendChild(img);
+  }else{
+    preview.textContent=(name||"C7").slice(0,2).toUpperCase();
+  }
+}
+
+async function uploadProfessionalPhoto(professionalId,file){
+  if(!file) return null;
+  const ext=(file.name.split(".").pop()||"jpg").toLowerCase().replace(/[^a-z0-9]/g,"");
+  const path=`team/${professionalId}-${Date.now()}.${ext||"jpg"}`;
+
+  const {error}=await supabase.storage.from("c7-assets").upload(path,file,{
+    cacheControl:"3600",
+    upsert:false
+  });
+  if(error) throw error;
+
+  const {data}=supabase.storage.from("c7-assets").getPublicUrl(path);
+  return data.publicUrl;
 }
 
 function closeProfessional(){
@@ -144,12 +187,29 @@ async function saveProfessional(e){
   }
 
   const result=id
-    ? await supabase.from("professionals").update(payload).eq("id",id)
-    : await supabase.from("professionals").insert(payload);
+    ? await supabase.from("professionals").update(payload).eq("id",id).select("id").single()
+    : await supabase.from("professionals").insert(payload).select("id").single();
 
   if(result.error){
     $("professionalAdminMessage").textContent="Não foi possível salvar o barbeiro.";
     return;
+  }
+
+  const professionalId=result.data?.id||id;
+  const photoFile=$("professionalAdminPhoto").files?.[0];
+
+  if(photoFile){
+    try{
+      $("professionalAdminMessage").textContent="Enviando foto...";
+      const avatarUrl=await uploadProfessionalPhoto(professionalId,photoFile);
+      await supabase.from("professionals")
+        .update({avatar_url:avatarUrl,updated_at:new Date().toISOString()})
+        .eq("id",professionalId);
+    }catch(error){
+      $("professionalAdminMessage").textContent="Barbeiro salvo, mas não foi possível enviar a foto.";
+      await loadProfessionals();
+      return;
+    }
   }
 
   closeProfessional();
@@ -172,6 +232,13 @@ async function init(){
   $("newAccessBtn")?.classList.toggle("hidden",!canAdmin());
   $("newAccessBtn")?.addEventListener("click",()=>openAccess());
   $("accessForm")?.addEventListener("submit",saveAccess);
+  $("accessRole")?.addEventListener("change",toggleAccessProfessionalField);
+  $("professionalAdminPhoto")?.addEventListener("change",()=>{
+    const file=$("professionalAdminPhoto").files?.[0];
+    if(!file) return;
+    const url=URL.createObjectURL(file);
+    renderProfessionalPhotoPreview(url,$("professionalAdminName").value||"Barbeiro");
+  });
   document.querySelectorAll("[data-close-access]").forEach(el=>el.addEventListener("click",closeAccess));
 }
 
@@ -270,7 +337,7 @@ async function loadSystemAccess(){
 
   const {data,error}=await supabase
     .from("admin_allowlist")
-    .select("email,full_name,role,active,created_at")
+    .select("email,full_name,role,active,created_at,professional_id")
     .order("full_name",{ascending:true});
   const target=$("systemAccessList");
   if(!target) return;
@@ -335,8 +402,21 @@ function openAccess(item=null){
   $("accessRole").value=item?.role||"barber";
   $("accessActive").checked=item?.active??true;
   $("accessEmail").readOnly=Boolean(item);
+
+  const options='<option value="">Selecione</option>'+
+    professionals.filter(p=>p.active).map(p=>`<option value="${p.id}">${p.full_name}</option>`).join("");
+  $("accessProfessional").innerHTML=options;
+  $("accessProfessional").value=item?.professional_id||"";
+  toggleAccessProfessionalField();
+
   $("accessMessage").textContent="";
   $("accessModal").classList.remove("hidden");
+}
+
+function toggleAccessProfessionalField(){
+  const isBarber=$("accessRole").value==="barber";
+  $("accessProfessionalWrap").classList.toggle("hidden",!isBarber);
+  $("accessProfessional").required=isBarber;
 }
 
 function closeAccess(){
@@ -350,9 +430,15 @@ async function saveAccess(e){
   const email=$("accessEmail").value.trim().toLowerCase();
   const fullName=$("accessFullName").value.trim();
   const role=$("accessRole").value;
+  const professionalId=role==="barber"?$("accessProfessional").value:null;
 
   if(!email||!fullName){
     $("accessMessage").textContent="Informe nome e e-mail.";
+    return;
+  }
+
+  if(role==="barber"&&!professionalId){
+    $("accessMessage").textContent="Selecione qual barbeiro pertence a este login.";
     return;
   }
 
@@ -364,6 +450,7 @@ async function saveAccess(e){
       email,
       full_name:fullName,
       role,
+      professional_id:professionalId||null,
       active:$("accessActive").checked
     },{onConflict:"email"});
 
