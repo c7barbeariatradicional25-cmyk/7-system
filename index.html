@@ -57,7 +57,13 @@
     <section class="main-panel">
       <header class="topbar">
         <div><span>C7 BARBEARIA TRADICIONAL</span><h1 id="pageTitle">Dashboard</h1></div>
-        <div class="user-chip"><strong id="userName">Usuário</strong><small id="userRole">perfil</small></div>
+        <div class="topbar-actions">
+          <button id="notificationBtn" class="notification-btn" type="button" aria-label="Notificações">
+            <span class="notification-icon">🔔</span>
+            <span id="notificationBadge" class="notification-badge hidden">0</span>
+          </button>
+          <div class="user-chip"><strong id="userName">Usuário</strong><small id="userRole">perfil</small></div>
+        </div>
       </header>
 
       <section id="dashboard" class="section active">
@@ -879,6 +885,30 @@
   <script type="module" src="catalogo.js"></script>
   <script type="module" src="equipe.js"></script>
   <script type="module" src="configuracoes.js"></script>
+  <aside id="notificationDrawer" class="notification-drawer hidden" aria-label="Central de notificações">
+    <div class="notification-drawer-head">
+      <div>
+        <span>C7 SYSTEM</span>
+        <h2>Notificações</h2>
+      </div>
+      <button id="closeNotificationBtn" class="notification-close" type="button">×</button>
+    </div>
+
+    <div class="notification-toolbar">
+      <div class="notification-filters">
+        <button class="notification-filter active" type="button" data-notification-filter="active">ATIVAS</button>
+        <button class="notification-filter" type="button" data-notification-filter="unread">NÃO LIDAS</button>
+        <button class="notification-filter" type="button" data-notification-filter="archived">ARQUIVADAS</button>
+      </div>
+      <button id="archiveAllNotificationsBtn" class="notification-archive-all" type="button">Arquivar tudo</button>
+    </div>
+
+    <div id="notificationList" class="notification-list">
+      <div class="notification-empty">Carregando notificações...</div>
+    </div>
+  </aside>
+  <div id="notificationDrawerBackdrop" class="notification-drawer-backdrop hidden"></div>
+
   <div id="promotionModal" class="modal hidden" role="dialog" aria-modal="true">
     <div class="modal-backdrop" data-close-promotion></div>
     <section class="modal-card modal-small">
@@ -976,5 +1006,6 @@
   <script type="module" src="relatorios.js"></script>
   <script type="module" src="financeiro.js"></script>
   <script type="module" src="promocoes.js"></script>
+  <script type="module" src="notificacoes.js"></script>
 </body>
 </html>
