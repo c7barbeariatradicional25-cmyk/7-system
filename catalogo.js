@@ -1,0 +1,307 @@
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
+const supabase=createClient(
+  "https://cjtgjqxkyvgjlhylrvas.supabase.co",
+  "sb_publishable_q7Qoya_KF0yyjvVdC-ckBQ_Wv6VXaEE"
+);
+
+const $=id=>document.getElementById(id);
+const money=v=>new Intl.NumberFormat("pt-BR",{style:"currency",currency:"BRL"}).format(Number(v||0));
+let currentRole=null;
+let currentUser=null;
+let services=[];
+let products=[];
+
+async function loadContext(){
+  const {data:{session}}=await supabase.auth.getSession();
+  if(!session) return false;
+  currentUser=session.user.id;
+  const {data}=await supabase.from("profiles").select("role").eq("user_id",currentUser).single();
+  currentRole=data?.role||null;
+  return true;
+}
+
+function canAdmin(){return currentRole==="admin"}
+
+async function loadServices(){
+  const {data,error}=await supabase.from("services").select("*").order("sort_order").order("name");
+  if(error) return;
+  services=data||[];
+  renderServices();
+}
+
+function renderServices(){
+  const list=$("adminServiceList");
+  list.replaceChildren();
+
+  if(!services.length){
+    const empty=document.createElement("div");
+    empty.className="agenda-empty";
+    empty.textContent="Nenhum serviço cadastrado.";
+    list.appendChild(empty);
+    return;
+  }
+
+  services.forEach(s=>{
+    const row=document.createElement("div");
+    row.className="catalog-row";
+
+    const main=document.createElement("div");
+    main.className="catalog-main";
+    const name=document.createElement("strong");
+    name.textContent=s.name;
+    const meta=document.createElement("span");
+    meta.textContent=(s.category||"Sem categoria")+" • "+(s.duration||"Sem duração");
+    main.append(name,meta);
+
+    const price=document.createElement("div");
+    price.className="catalog-meta";
+    const p=document.createElement("strong");
+    p.textContent=money(s.price);
+    const ps=document.createElement("small");
+    ps.textContent="PREÇO";
+    price.append(p,ps);
+
+    const status=document.createElement("div");
+    status.className="catalog-meta";
+    const st=document.createElement("strong");
+    st.textContent=s.active?"ATIVO":"INATIVO";
+    const sts=document.createElement("small");
+    sts.textContent="LINK PÚBLICO";
+    status.append(st,sts);
+
+    const actions=document.createElement("div");
+    actions.className="catalog-actions";
+
+    if(canAdmin()){
+      const edit=document.createElement("button");
+      edit.textContent="EDITAR";
+      edit.addEventListener("click",()=>openService(s.id));
+
+      const toggle=document.createElement("button");
+      toggle.className="active-toggle"+(s.active?"":" off");
+      toggle.textContent=s.active?"DESATIVAR":"ATIVAR";
+      toggle.addEventListener("click",()=>toggleService(s));
+
+      actions.append(edit,toggle);
+    }
+
+    row.append(main,price,status,actions);
+    list.appendChild(row);
+  });
+}
+
+async function toggleService(service){
+  await supabase.from("services").update({active:!service.active}).eq("id",service.id);
+  await loadServices();
+}
+
+function openService(id=null){
+  const s=services.find(x=>x.id===id);
+  $("serviceAdminForm").reset();
+  $("serviceAdminId").value=s?.id||"";
+  $("serviceAdminTitle").textContent=s?"Editar serviço":"Novo serviço";
+  $("serviceAdminName").value=s?.name||"";
+  $("serviceAdminCategory").value=s?.category||"";
+  $("serviceAdminDuration").value=s?.duration||"";
+  $("serviceAdminPrice").value=s?.price??"";
+  $("serviceAdminSort").value=s?.sort_order??0;
+  $("serviceAdminActive").checked=s?.active??true;
+  $("serviceAdminMessage").textContent="";
+  $("serviceAdminModal").classList.remove("hidden");
+}
+
+function closeService(){ $("serviceAdminModal").classList.add("hidden") }
+
+async function saveService(e){
+  e.preventDefault();
+  if(!canAdmin()) return;
+  const id=$("serviceAdminId").value;
+  const payload={
+    name:$("serviceAdminName").value.trim(),
+    category:$("serviceAdminCategory").value.trim(),
+    duration:$("serviceAdminDuration").value.trim(),
+    price:Number($("serviceAdminPrice").value||0),
+    sort_order:Number($("serviceAdminSort").value||0),
+    active:$("serviceAdminActive").checked
+  };
+  const result=id
+    ? await supabase.from("services").update(payload).eq("id",id)
+    : await supabase.from("services").insert(payload);
+  if(result.error){
+    $("serviceAdminMessage").textContent="Não foi possível salvar o serviço.";
+    return;
+  }
+  closeService();
+  await loadServices();
+}
+
+async function loadProducts(){
+  const {data,error}=await supabase.from("products").select("*").order("sort_order").order("name");
+  if(error) return;
+  products=data||[];
+  renderProducts();
+}
+
+function renderProducts(){
+  const list=$("adminProductList");
+  const active=products.filter(p=>p.active);
+  const low=products.filter(p=>Number(p.stock_quantity)<=Number(p.min_stock));
+  $("adminProductActiveCount").textContent=active.length;
+  $("adminProductLowStockCount").textContent=low.length;
+  $("adminProductStockTotal").textContent=products.reduce((sum,p)=>sum+Number(p.stock_quantity||0),0);
+
+  list.replaceChildren();
+
+  if(!products.length){
+    const empty=document.createElement("div");
+    empty.className="agenda-empty";
+    empty.textContent="Nenhum produto cadastrado.";
+    list.appendChild(empty);
+    return;
+  }
+
+  products.forEach(p=>{
+    const row=document.createElement("div");
+    row.className="catalog-row";
+
+    const main=document.createElement("div");
+    main.className="catalog-main";
+    const name=document.createElement("strong");
+    name.textContent=p.name;
+    const stock=document.createElement("span");
+    stock.textContent="Estoque: "+Number(p.stock_quantity||0)+" • Mínimo: "+Number(p.min_stock||0);
+    if(Number(p.stock_quantity)<=Number(p.min_stock)) stock.className="stock-low";
+    main.append(name,stock);
+
+    const price=document.createElement("div");
+    price.className="catalog-meta";
+    const pv=document.createElement("strong");
+    pv.textContent=money(p.price);
+    const pl=document.createElement("small");
+    pl.textContent="VENDA";
+    price.append(pv,pl);
+
+    const status=document.createElement("div");
+    status.className="catalog-meta";
+    const st=document.createElement("strong");
+    st.textContent=p.active?"ATIVO":"INATIVO";
+    const sl=document.createElement("small");
+    sl.textContent="LINK PÚBLICO";
+    status.append(st,sl);
+
+    const actions=document.createElement("div");
+    actions.className="catalog-actions";
+    if(canAdmin()){
+      const edit=document.createElement("button");
+      edit.textContent="EDITAR";
+      edit.addEventListener("click",()=>openProduct(p.id));
+
+      const toggle=document.createElement("button");
+      toggle.textContent=p.active?"DESATIVAR":"ATIVAR";
+      toggle.className="active-toggle"+(p.active?"":" off");
+      toggle.addEventListener("click",()=>toggleProduct(p));
+      actions.append(edit,toggle);
+    }
+
+    row.append(main,price,status,actions);
+    list.appendChild(row);
+  });
+}
+
+async function toggleProduct(product){
+  await supabase.from("products").update({active:!product.active}).eq("id",product.id);
+  await loadProducts();
+}
+
+function openProduct(id=null){
+  const p=products.find(x=>x.id===id);
+  $("productAdminForm").reset();
+  $("productAdminId").value=p?.id||"";
+  $("productAdminTitle").textContent=p?"Editar produto":"Novo produto";
+  $("productAdminName").value=p?.name||"";
+  $("productAdminPrice").value=p?.price??"";
+  $("productAdminCost").value=p?.cost_price??"";
+  $("productAdminMinStock").value=p?.min_stock??0;
+  $("productAdminSort").value=p?.sort_order??0;
+  $("productAdminStock").value=p?.stock_quantity??0;
+  $("productAdminActive").checked=p?.active??true;
+  $("stockAdjustmentArea").classList.toggle("hidden",!p);
+  $("productAdminMessage").textContent="";
+  $("productAdminModal").classList.remove("hidden");
+}
+
+function closeProduct(){ $("productAdminModal").classList.add("hidden") }
+
+async function saveProduct(e){
+  e.preventDefault();
+  if(!canAdmin()) return;
+  const id=$("productAdminId").value;
+  const payload={
+    name:$("productAdminName").value.trim(),
+    price:Number($("productAdminPrice").value||0),
+    cost_price:$("productAdminCost").value===""?null:Number($("productAdminCost").value),
+    min_stock:Number($("productAdminMinStock").value||0),
+    sort_order:Number($("productAdminSort").value||0),
+    active:$("productAdminActive").checked
+  };
+  const result=id
+    ? await supabase.from("products").update(payload).eq("id",id)
+    : await supabase.from("products").insert({...payload,stock_quantity:0});
+  if(result.error){
+    $("productAdminMessage").textContent="Não foi possível salvar o produto.";
+    return;
+  }
+  closeProduct();
+  await loadProducts();
+}
+
+async function adjustStock(){
+  if(!canAdmin()) return;
+  const id=Number($("productAdminId").value);
+  const qty=Number($("stockAdjustmentQty").value||0);
+  if(!id||qty<=0){
+    $("productAdminMessage").textContent="Informe uma quantidade válida.";
+    return;
+  }
+  const type=$("stockAdjustmentType").value;
+  const {error}=await supabase.from("inventory_movements").insert({
+    product_id:id,
+    movement_type:type,
+    direction:type==="adjustment_in"?"in":"out",
+    quantity:qty,
+    notes:$("stockAdjustmentNotes").value.trim()||null,
+    created_by:currentUser
+  });
+  if(error){
+    $("productAdminMessage").textContent="Não foi possível ajustar o estoque.";
+    return;
+  }
+  await loadProducts();
+  const fresh=products.find(p=>p.id===id);
+  $("productAdminStock").value=fresh?.stock_quantity??0;
+  $("stockAdjustmentQty").value="";
+  $("stockAdjustmentNotes").value="";
+  $("productAdminMessage").textContent="Estoque atualizado.";
+}
+
+async function init(){
+  if(!await loadContext()) return;
+
+  $("newServiceBtn")?.classList.toggle("hidden",!canAdmin());
+  $("newProductBtn")?.classList.toggle("hidden",!canAdmin());
+
+  document.querySelectorAll('.nav-item[data-section="servicos"]').forEach(btn=>btn.addEventListener("click",loadServices));
+  document.querySelectorAll('.nav-item[data-section="produtos"]').forEach(btn=>btn.addEventListener("click",loadProducts));
+
+  $("newServiceBtn")?.addEventListener("click",()=>openService());
+  $("serviceAdminForm")?.addEventListener("submit",saveService);
+  document.querySelectorAll("[data-close-service-admin]").forEach(el=>el.addEventListener("click",closeService));
+
+  $("newProductBtn")?.addEventListener("click",()=>openProduct());
+  $("productAdminForm")?.addEventListener("submit",saveProduct);
+  $("applyStockAdjustmentBtn")?.addEventListener("click",adjustStock);
+  document.querySelectorAll("[data-close-product-admin]").forEach(el=>el.addEventListener("click",closeProduct));
+}
+
+init();
