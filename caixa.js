@@ -309,6 +309,24 @@ $("receiveForm")?.addEventListener("submit",async e=>{
     await supabase.from("cash_transaction_items").insert(items);
   }
 
+  const {data:professionalData}=await supabase
+    .from("professionals")
+    .select("commission_percent")
+    .eq("id",appointment.professional_id)
+    .maybeSingle();
+
+  const commissionPercent=Number(professionalData?.commission_percent||0);
+  if(commissionPercent>0){
+    await supabase.from("commission_entries").insert({
+      transaction_id:transaction.id,
+      professional_id:appointment.professional_id,
+      base_amount:net,
+      commission_percent:commissionPercent,
+      commission_amount:Number((net*commissionPercent/100).toFixed(2)),
+      status:"pending"
+    });
+  }
+
   await supabase.from("appointments").update({
     status:"completed",
     updated_at:new Date().toISOString()
@@ -380,6 +398,32 @@ $("productSaleForm")?.addEventListener("submit",async e=>{
     quantity:qty,
     unit_price:Number(product.price||0),
     total_amount:total
+  });
+
+  const {data:stockProduct}=await supabase
+    .from("products")
+    .select("stock_quantity")
+    .eq("id",product.id)
+    .single();
+
+  if(Number(stockProduct?.stock_quantity||0)<qty){
+    await supabase.from("cash_transactions").update({
+      status:"cancelled",
+      cancelled_by:currentUser,
+      cancelled_at:new Date().toISOString()
+    }).eq("id",transaction.id);
+
+    $("productSaleMessage").textContent="Estoque insuficiente para concluir a venda.";
+    return;
+  }
+
+  await supabase.from("inventory_movements").insert({
+    product_id:product.id,
+    transaction_id:transaction.id,
+    movement_type:"sale",
+    direction:"out",
+    quantity:qty,
+    created_by:currentUser
   });
 
   closeModal("productSaleModal");
