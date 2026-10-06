@@ -839,6 +839,14 @@
       </div>
       <form id="professionalAdminForm" class="appointment-form">
         <input id="professionalAdminId" type="hidden">
+        <div class="professional-photo-editor">
+          <div id="professionalPhotoPreview" class="professional-photo-preview">C7</div>
+          <label class="professional-photo-upload">
+            <span>Foto do barbeiro</span>
+            <input id="professionalAdminPhoto" type="file" accept="image/png,image/jpeg,image/webp">
+            <small>PNG, JPG ou WEBP. A foto aparece na agenda e no perfil.</small>
+          </label>
+        </div>
         <label><span>Nome</span><input id="professionalAdminName" type="text" required></label>
         <div class="form-grid two">
           <label><span>Telefone</span><input id="professionalAdminPhone" type="tel"></label>
@@ -873,6 +881,11 @@
             <option value="admin">Administrador</option>
             <option value="reception">Recepção</option>
             <option value="barber">Barbeiro</option>
+          </select>
+        </label>
+        <label id="accessProfessionalWrap" class="hidden"><span>Vincular ao barbeiro</span>
+          <select id="accessProfessional">
+            <option value="">Selecione</option>
           </select>
         </label>
         <label class="check-row"><input id="accessActive" type="checkbox" checked><span>Acesso ativo</span></label>
