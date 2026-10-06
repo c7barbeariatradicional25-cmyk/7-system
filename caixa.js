@@ -111,3 +111,69 @@ async function loadTransactions(){
     `;
   }).join("");
 }
+
+
+async function loadPendingAppointments(){
+  const start=new Date();
+  start.setHours(0,0,0,0);
+  const end=new Date();
+  end.setHours(23,59,59,999);
+
+  const {data,error}=await supabase
+    .from("appointments")
+    .select("id,customer_id,professional_id,starts_at,total_amount,status,customer:customers(full_name),professional:professionals(full_name),appointment_services(service_name)")
+    .gte("starts_at",start.toISOString())
+    .lte("starts_at",end.toISOString())
+    .in("status",["confirmed","waiting","in_service","completed"])
+    .order("starts_at",{ascending:true});
+
+  if(error){
+    $("pendingAppointmentList").innerHTML='<div class="cash-empty">Não foi possível carregar os atendimentos.</div>';
+    return;
+  }
+
+  const ids=(data||[]).map(a=>a.id);
+  let paidIds=new Set();
+
+  if(ids.length){
+    const {data:paid}=await supabase
+      .from("cash_transactions")
+      .select("appointment_id")
+      .in("appointment_id",ids)
+      .eq("transaction_type","service")
+      .eq("status","posted");
+
+    paidIds=new Set((paid||[]).map(x=>x.appointment_id));
+  }
+
+  pendingAppointments=(data||[]).filter(a=>!paidIds.has(a.id));
+  renderPendingAppointments();
+}
+
+function renderPendingAppointments(){
+  const list=$("pendingAppointmentList");
+
+  if(!pendingAppointments.length){
+    list.innerHTML='<div class="cash-empty">Nenhum atendimento pendente.</div>';
+    return;
+  }
+
+  list.innerHTML=pendingAppointments.map(a=>{
+    const time=new Date(a.starts_at).toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"});
+    const services=(a.appointment_services||[]).map(s=>s.service_name).join(" + ")||"Serviço";
+    return `
+      <div class="pending-row">
+        <div class="pending-row-time"><strong>${time}</strong><small>${a.status}</small></div>
+        <div class="pending-row-main">
+          <strong>${a.customer?.full_name||"Cliente"}</strong>
+          <span>${services} • ${a.professional?.full_name||"Sem profissional"}</span>
+        </div>
+        <button class="pending-receive" data-receive-id="${a.id}" type="button">RECEBER</button>
+      </div>
+    `;
+  }).join("");
+
+  document.querySelectorAll("[data-receive-id]").forEach(btn=>{
+    btn.addEventListener("click",()=>openReceiveModal(btn.dataset.receiveId));
+  });
+}
