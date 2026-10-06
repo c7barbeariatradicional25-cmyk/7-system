@@ -78,8 +78,14 @@ function renderColumn(targetId,items){
       if(a.status==="in_service"){
         const btn=document.createElement("button");
         btn.className="primary";
-        btn.textContent="FINALIZAR";
-        btn.addEventListener("click",()=>setStatus(a.id,"completed",{completed_at:new Date().toISOString()}));
+        btn.textContent="CHECKOUT";
+        btn.addEventListener("click",async()=>{
+          if(window.C7Cash?.checkoutAppointment){
+            await window.C7Cash.checkoutAppointment(a.id);
+          }else{
+            alert("O checkout ainda não terminou de carregar. Tente novamente.");
+          }
+        });
         actions.appendChild(btn);
       }
     }
