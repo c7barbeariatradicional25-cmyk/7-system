@@ -43,3 +43,36 @@
 .appointment-preview span{display:block;color:#666;font:500 8px Oswald,sans-serif;letter-spacing:1.5px}.appointment-preview strong{display:block;margin-top:6px;font:600 16px Oswald,sans-serif}
 .form-message{min-height:18px;color:#c7c7c7;font-size:9px}.modal-actions{display:flex;justify-content:flex-end;gap:8px;padding-top:4px}
 @media(max-width:700px){.agenda-toolbar{align-items:stretch}.agenda-date-nav,.agenda-actions{width:100%}.agenda-actions select{flex:1;min-width:0}.primary-btn{flex:1}.agenda-summary{grid-template-columns:1fr 1fr}.agenda-summary>div:first-child{grid-column:1/-1}.appointment-card{grid-template-columns:68px 1fr}.appointment-meta{grid-column:1/-1;justify-content:flex-start}.form-grid.two,.form-grid.three{grid-template-columns:1fr}.appointment-preview{grid-template-columns:1fr 1fr 1fr}}
+
+
+/* AGENDA GRID VIEW */
+.active-view{background:#fff!important;color:#050505!important}
+.agenda-timeline{margin-top:16px;overflow:auto;border:1px solid var(--line);background:#080808}
+.timeline-grid{display:grid;min-width:760px}
+.timeline-head,.timeline-row{display:grid;grid-template-columns:72px repeat(var(--pro-count),minmax(180px,1fr))}
+.timeline-head{position:sticky;top:0;z-index:4;background:#0b0b0b;border-bottom:1px solid var(--line)}
+.timeline-head>div{min-height:58px;padding:12px;border-right:1px solid var(--line);display:flex;align-items:center}
+.timeline-head .timeline-corner{color:#555;font:500 8px Oswald,sans-serif;letter-spacing:1.5px}
+.timeline-head .pro-head{display:block}
+.timeline-head .pro-head strong{display:block;font:600 13px Oswald,sans-serif}
+.timeline-head .pro-head small{display:block;margin-top:4px;color:#666;font-size:8px}
+.timeline-row{min-height:58px;border-bottom:1px solid rgba(255,255,255,.06)}
+.timeline-time{padding:9px 10px;color:#666;font:500 10px Oswald,sans-serif;border-right:1px solid var(--line)}
+.timeline-cell{position:relative;min-height:58px;padding:4px;border-right:1px solid rgba(255,255,255,.06)}
+.timeline-cell.outside-hours{background:repeating-linear-gradient(135deg,rgba(255,255,255,.025) 0 5px,transparent 5px 10px)}
+.timeline-booking{height:100%;min-height:50px;padding:7px;border:1px solid rgba(255,255,255,.18);background:#151515;overflow:hidden}
+.timeline-booking strong{display:block;font-size:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.timeline-booking span{display:block;margin-top:4px;color:#8b8b8b;font-size:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.timeline-block{height:100%;min-height:50px;padding:7px;border:1px dashed rgba(255,255,255,.20);background:#0d0d0d;color:#777}
+.timeline-block strong{display:block;font:600 9px Oswald,sans-serif;letter-spacing:.8px}
+.timeline-block span{display:block;margin-top:4px;font-size:8px}
+.block-card{display:grid;grid-template-columns:84px 1fr auto;gap:16px;align-items:center;padding:14px 16px;border:1px dashed rgba(255,255,255,.16);background:#080808}
+.block-card strong{display:block;font:600 13px Oswald,sans-serif}.block-card span{display:block;margin-top:4px;color:#6f6f6f;font-size:9px}
+.block-delete{height:32px;padding:0 10px;border:1px solid var(--line);background:transparent;color:#777;font-size:9px;cursor:pointer}
+.modal-small{width:min(100%,540px)}
+@media(max-width:700px){
+  .agenda-actions{align-items:stretch}
+  .agenda-actions .ghost-btn,.agenda-actions .primary-btn{flex:1 1 auto}
+  .block-card{grid-template-columns:68px 1fr}
+  .block-delete{grid-column:1/-1;width:max-content}
+}
