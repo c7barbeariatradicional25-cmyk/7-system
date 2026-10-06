@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#050505">
+  <meta name="robots" content="noindex,nofollow">
+  <title>C7 System</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&family=Oswald:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main id="loginView" class="login-screen">
+    <section class="login-card">
+      <img class="login-logo" src="https://cjtgjqxkyvgjlhylrvas.supabase.co/storage/v1/object/public/c7-assets/logos/logo-c7.png.png" alt="C7">
+      <span class="system-label">C7 SYSTEM</span>
+      <h1>Acesso interno</h1>
+      <p>Entre com seu e-mail e senha.</p>
+
+      <form id="loginForm" class="login-form">
+        <label><span>E-mail</span><input id="email" type="email" autocomplete="email" required></label>
+        <label><span>Senha</span><input id="password" type="password" autocomplete="current-password" minlength="8" required></label>
+        <button type="submit">ENTRAR</button>
+        <button id="firstAccessBtn" type="button" class="secondary-btn">PRIMEIRO ACESSO</button>
+      </form>
+      <p class="first-note">No primeiro acesso, use um e-mail autorizado e escolha sua senha.</p>
+      <p id="loginMessage" class="message"></p>
+    </section>
+  </main>
+
+  <div id="appView" class="app-shell hidden">
+    <aside class="sidebar">
+      <div class="brand">
+        <img src="https://cjtgjqxkyvgjlhylrvas.supabase.co/storage/v1/object/public/c7-assets/logos/logo-c7.png.png" alt="C7">
+        <div><strong>C7 SYSTEM</strong><small>Gestão interna</small></div>
+      </div>
+
+      <nav>
+        <button class="nav-item active" data-section="dashboard">Dashboard</button>
+        <button class="nav-item" data-section="agenda">Agenda</button>
+        <button class="nav-item" data-section="clientes">Clientes</button>
+        <button class="nav-item" data-section="caixa">Caixa</button>
+        <button class="nav-item" data-section="operacoes">Operações</button>
+        <button class="nav-item" data-section="servicos">Serviços</button>
+        <button class="nav-item" data-section="produtos">Produtos</button>
+        <button class="nav-item" data-section="equipe">Equipe</button>
+        <button class="nav-item" data-section="relatorios">Relatórios</button>
+        <button class="nav-item" data-section="configuracoes">Configurações</button>
+      </nav>
+
+      <button id="logoutBtn" class="logout">Sair</button>
+    </aside>
+
+    <section class="main-panel">
+      <header class="topbar">
+        <div><span>C7 BARBEARIA TRADICIONAL</span><h1 id="pageTitle">Dashboard</h1></div>
+        <div class="user-chip"><strong id="userName">Usuário</strong><small id="userRole">perfil</small></div>
+      </header>
+
+      <section id="dashboard" class="section active">
+        <div class="stats">
+          <article><span>Atendimentos hoje</span><strong>—</strong><small>Agenda</small></article>
+          <article><span>Faturamento hoje</span><strong>—</strong><small>Caixa</small></article>
+          <article><span>Próximos horários</span><strong>—</strong><small>Agenda</small></article>
+          <article><span>Clientes aguardando</span><strong>—</strong><small>Operações</small></article>
+        </div>
+        <div class="dashboard-grid">
+          <article class="panel"><span>HOJE</span><h2>Agenda</h2><p>O módulo de Agenda será o próximo a ser construído.</p></article>
+          <article class="panel"><span>OPERAÇÃO</span><h2>Equipe</h2><p>Status dos barbeiros e atendimentos aparecerá aqui.</p></article>
+        </div>
+      </section>
+
+      <section id="agenda" class="section"><div class="placeholder"><span>02</span><h2>Agenda</h2><p>Horários, barbeiros, serviços, bloqueios, encaixes e status.</p></div></section>
+      <section id="clientes" class="section"><div class="placeholder"><span>03</span><h2>Clientes</h2><p>CRM, histórico, frequência e preferências.</p></div></section>
+      <section id="caixa" class="section"><div class="placeholder"><span>04</span><h2>Caixa</h2><p>Abertura, fechamento, entradas, saídas e comissões.</p></div></section>
+      <section id="operacoes" class="section"><div class="placeholder"><span>05</span><h2>Operações</h2><p>Painel ao vivo do salão.</p></div></section>
+      <section id="servicos" class="section"><div class="placeholder"><span>06</span><h2>Serviços</h2><p>Gestão dos serviços.</p></div></section>
+      <section id="produtos" class="section"><div class="placeholder"><span>07</span><h2>Produtos</h2><p>Catálogo, estoque e vendas.</p></div></section>
+      <section id="equipe" class="section"><div class="placeholder"><span>08</span><h2>Equipe</h2><p>Usuários, cargos e permissões.</p></div></section>
+      <section id="relatorios" class="section"><div class="placeholder"><span>09</span><h2>Relatórios</h2><p>Indicadores e desempenho.</p></div></section>
+      <section id="configuracoes" class="section"><div class="placeholder"><span>10</span><h2>Configurações</h2><p>Dados da C7, horários e integrações.</p></div></section>
+    </section>
+  </div>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>
