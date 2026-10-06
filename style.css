@@ -209,3 +209,15 @@
 .dashboard-alerts{display:grid;gap:6px;margin-top:10px}
 .dashboard-alert{padding:8px 10px;border:1px solid rgba(255,255,255,.07);background:#070707;color:#8a8a8a;font-size:8px;line-height:1.4}
 .dashboard-alert strong{display:block;margin-bottom:3px;color:#fff;font-size:9px}
+
+
+/* FINANCEIRO */
+.finance-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px}
+.finance-list{display:grid;gap:8px;margin-top:12px}
+.finance-row{display:grid;grid-template-columns:1fr auto;gap:12px;align-items:center;padding:11px;border:1px solid rgba(255,255,255,.07);background:#070707}
+.finance-row strong{display:block;font-size:10px}
+.finance-row span{display:block;margin-top:4px;color:#777;font-size:8px;line-height:1.4}
+.finance-actions{display:flex;gap:6px;align-items:center}
+.finance-actions button{height:30px;padding:0 8px;border:1px solid var(--line);background:transparent;color:#fff;font:600 8px Oswald,sans-serif;cursor:pointer}
+.finance-value{font:600 14px Oswald,sans-serif;white-space:nowrap}
+@media(max-width:900px){.finance-grid{grid-template-columns:1fr}}
