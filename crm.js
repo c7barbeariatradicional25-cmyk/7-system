@@ -236,3 +236,23 @@ async function saveCustomer(event){
   closeCustomer();
   await loadCustomers();
 }
+
+async function initCRM(){
+  if(!await loadContext()) return;
+
+  await loadProfessionals();
+
+  document.querySelectorAll('.nav-item[data-section="clientes"]').forEach(btn=>{
+    btn.addEventListener("click",loadCustomers);
+  });
+
+  $("customerSearch")?.addEventListener("input",applySearch);
+  $("newCustomerBtn")?.addEventListener("click",()=>openCustomer());
+  $("customerForm")?.addEventListener("submit",saveCustomer);
+
+  document.querySelectorAll("[data-close-customer]").forEach(el=>{
+    el.addEventListener("click",closeCustomer);
+  });
+}
+
+initCRM();
