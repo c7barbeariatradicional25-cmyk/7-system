@@ -233,7 +233,19 @@
           <div class="agenda-empty">Carregando produtos...</div>
         </div>
       </section>
-      <section id="equipe" class="section"><div class="placeholder"><span>08</span><h2>Equipe</h2><p>Usuários, cargos e permissões.</p></div></section>
+      <section id="equipe" class="section">
+        <div class="catalog-toolbar">
+          <div>
+            <span class="eyebrow">EQUIPE</span>
+            <h2>Barbeiros</h2>
+            <p>Cadastre, edite e organize os profissionais da C7.</p>
+          </div>
+          <button id="newProfessionalBtn" class="primary-btn" type="button">+ NOVO BARBEIRO</button>
+        </div>
+        <div id="professionalAdminList" class="catalog-list">
+          <div class="agenda-empty">Carregando equipe...</div>
+        </div>
+      </section>
       <section id="relatorios" class="section"><div class="placeholder"><span>09</span><h2>Relatórios</h2><p>Indicadores e desempenho.</p></div></section>
       <section id="configuracoes" class="section"><div class="placeholder"><span>10</span><h2>Configurações</h2><p>Dados da C7, horários e integrações.</p></div></section>
     </section>
@@ -598,6 +610,35 @@
   </div>
 
   <script type="module" src="operacoes.js"></script>
+  <div id="professionalAdminModal" class="modal hidden" role="dialog" aria-modal="true">
+    <div class="modal-backdrop" data-close-professional-admin></div>
+    <section class="modal-card modal-small">
+      <div class="modal-head">
+        <div><span>EQUIPE</span><h2 id="professionalAdminTitle">Barbeiro</h2></div>
+        <button type="button" class="modal-close" data-close-professional-admin>×</button>
+      </div>
+      <form id="professionalAdminForm" class="appointment-form">
+        <input id="professionalAdminId" type="hidden">
+        <label><span>Nome</span><input id="professionalAdminName" type="text" required></label>
+        <div class="form-grid two">
+          <label><span>Telefone</span><input id="professionalAdminPhone" type="tel"></label>
+          <label><span>Especialidade</span><input id="professionalAdminSpecialty" type="text" placeholder="Ex.: Barbeiro"></label>
+        </div>
+        <div class="form-grid two">
+          <label><span>Comissão (%)</span><input id="professionalAdminCommission" type="number" min="0" max="100" step="0.01"></label>
+          <label><span>Ordem</span><input id="professionalAdminSort" type="number" min="0" step="1" value="0"></label>
+        </div>
+        <label class="check-row"><input id="professionalAdminActive" type="checkbox" checked><span>Profissional ativo na agenda</span></label>
+        <p id="professionalAdminMessage" class="form-message"></p>
+        <div class="modal-actions">
+          <button type="button" class="ghost-btn" data-close-professional-admin>CANCELAR</button>
+          <button type="submit" class="primary-btn">SALVAR BARBEIRO</button>
+        </div>
+      </form>
+    </section>
+  </div>
+
   <script type="module" src="catalogo.js"></script>
+  <script type="module" src="equipe.js"></script>
 </body>
 </html>
