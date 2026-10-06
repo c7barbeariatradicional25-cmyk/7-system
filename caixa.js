@@ -177,3 +177,80 @@ function renderPendingAppointments(){
     btn.addEventListener("click",()=>openReceiveModal(btn.dataset.receiveId));
   });
 }
+
+
+function openModal(id){$(id).classList.remove("hidden")}
+function closeModal(id){$(id).classList.add("hidden")}
+
+$("openCashBtn")?.addEventListener("click",()=>{
+  $("openCashForm").reset();
+  $("openingAmount").value="0";
+  $("openCashMessage").textContent="";
+  openModal("openCashModal");
+});
+
+document.querySelectorAll("[data-close-open-cash]").forEach(el=>el.addEventListener("click",()=>closeModal("openCashModal")));
+
+$("openCashForm")?.addEventListener("submit",async e=>{
+  e.preventDefault();
+  if(!["admin","reception"].includes(currentRole)) return;
+
+  $("openCashMessage").textContent="Abrindo caixa...";
+
+  const {data,error}=await supabase.from("cash_sessions").insert({
+    opened_by:currentUser,
+    opening_amount:Number($("openingAmount").value||0),
+    notes:$("openingNotes").value.trim()||null
+  }).select("*").single();
+
+  if(error){
+    $("openCashMessage").textContent="Não foi possível abrir o caixa.";
+    return;
+  }
+
+  openSession=data;
+  closeModal("openCashModal");
+  await loadCash();
+});
+
+function fillReceiveOptions(){
+  $("receiveAppointment").innerHTML='<option value="">Selecione um atendimento</option>'+
+    pendingAppointments.map(a=>{
+      const time=new Date(a.starts_at).toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"});
+      return `<option value="${a.id}">${time} — ${a.customer?.full_name||"Cliente"}</option>`;
+    }).join("");
+}
+
+function updateReceivePreview(){
+  const item=pendingAppointments.find(a=>a.id===$("receiveAppointment").value);
+  const gross=Number($("receiveGross").value||0);
+  const discount=Math.min(Number($("receiveDiscount").value||0),gross);
+  $("receiveNet").textContent=money(gross-discount);
+  $("receiveCustomer").textContent=item?.customer?.full_name||"—";
+  $("receiveProfessional").textContent=item?.professional?.full_name||"—";
+}
+
+function openReceiveModal(id=null){
+  $("receiveForm").reset();
+  $("receiveDiscount").value="0";
+  $("receiveMessage").textContent="";
+  fillReceiveOptions();
+
+  if(id) $("receiveAppointment").value=id;
+
+  const item=pendingAppointments.find(a=>a.id===$("receiveAppointment").value);
+  $("receiveGross").value=item?Number(item.total_amount||0).toFixed(2):"";
+  updateReceivePreview();
+  openModal("receiveModal");
+}
+
+$("receiveAppointmentBtn")?.addEventListener("click",()=>openReceiveModal());
+document.querySelectorAll("[data-close-receive]").forEach(el=>el.addEventListener("click",()=>closeModal("receiveModal")));
+
+$("receiveAppointment")?.addEventListener("change",()=>{
+  const item=pendingAppointments.find(a=>a.id===$("receiveAppointment").value);
+  $("receiveGross").value=item?Number(item.total_amount||0).toFixed(2):"";
+  updateReceivePreview();
+});
+$("receiveGross")?.addEventListener("input",updateReceivePreview);
+$("receiveDiscount")?.addEventListener("input",updateReceivePreview);
