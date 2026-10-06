@@ -145,3 +145,24 @@
 .ops-empty{padding:18px 8px;text-align:center;color:#555;font-size:8px}
 @media(max-width:1000px){.ops-board{grid-template-columns:repeat(4,230px)}}
 @media(max-width:640px){.ops-stats{grid-template-columns:1fr 1fr}}
+
+
+/* CATALOGO ADMIN */
+.catalog-toolbar{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap}
+.catalog-toolbar h2{margin-top:5px;font:600 28px Oswald,sans-serif}
+.catalog-toolbar p{margin-top:5px;color:#6d6d6d;font-size:9px}
+.catalog-list{display:grid;gap:9px;margin-top:16px}
+.catalog-row{display:grid;grid-template-columns:1.5fr .8fr .8fr auto;gap:12px;align-items:center;padding:14px;border:1px solid var(--line);background:#090909}
+.catalog-main strong{display:block;font-size:11px}.catalog-main span{display:block;margin-top:4px;color:#777;font-size:8px}
+.catalog-meta strong{display:block;font:600 15px Oswald,sans-serif}.catalog-meta small{display:block;margin-top:3px;color:#666;font-size:8px}
+.catalog-actions{display:flex;gap:6px;align-items:center;flex-wrap:wrap;justify-content:flex-end}
+.catalog-actions button{height:32px;padding:0 9px;border:1px solid var(--line);background:transparent;color:#fff;font:600 8px Oswald,sans-serif;letter-spacing:.6px;cursor:pointer}
+.catalog-actions button.active-toggle.off{color:#777}
+.product-admin-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:16px}
+.product-admin-stats article{padding:14px;border:1px solid var(--line);background:#090909}
+.product-admin-stats span{display:block;color:#666;font:500 8px Oswald,sans-serif;letter-spacing:1.4px}
+.product-admin-stats strong{display:block;margin-top:8px;font:600 20px Oswald,sans-serif}
+.stock-low{color:#bbb!important}
+.stock-adjustment{margin-top:4px;padding:14px;border:1px solid var(--line);background:#060606}
+.stock-adjustment>span{display:block;margin-bottom:10px;color:#666;font:500 8px Oswald,sans-serif;letter-spacing:1.5px}
+@media(max-width:760px){.catalog-row{grid-template-columns:1fr 1fr}.catalog-actions{grid-column:1/-1;justify-content:flex-start}.product-admin-stats{grid-template-columns:1fr 1fr}.product-admin-stats article:last-child{grid-column:1/-1}}
