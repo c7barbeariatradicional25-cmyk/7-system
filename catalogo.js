@@ -292,7 +292,10 @@ async function init(){
   $("newProductBtn")?.classList.toggle("hidden",!canAdmin());
 
   document.querySelectorAll('.nav-item[data-section="servicos"]').forEach(btn=>btn.addEventListener("click",loadServices));
-  document.querySelectorAll('.nav-item[data-section="produtos"]').forEach(btn=>btn.addEventListener("click",loadProducts));
+  document.querySelectorAll('.nav-item[data-section="produtos"]').forEach(btn=>btn.addEventListener("click",async()=>{
+    await loadProducts();
+    await loadInventoryHistory();
+  }));
 
   $("newServiceBtn")?.addEventListener("click",()=>openService());
   $("serviceAdminForm")?.addEventListener("submit",saveService);
@@ -301,7 +304,52 @@ async function init(){
   $("newProductBtn")?.addEventListener("click",()=>openProduct());
   $("productAdminForm")?.addEventListener("submit",saveProduct);
   $("applyStockAdjustmentBtn")?.addEventListener("click",adjustStock);
+  $("refreshInventoryHistoryBtn")?.addEventListener("click",loadInventoryHistory);
   document.querySelectorAll("[data-close-product-admin]").forEach(el=>el.addEventListener("click",closeProduct));
 }
 
 init();
+
+
+async function loadInventoryHistory(){
+  const target=$("inventoryHistoryList");
+  if(!target) return;
+
+  const {data,error}=await supabase
+    .from("inventory_movements")
+    .select("id,movement_type,direction,quantity,notes,created_at,product:products(name)")
+    .order("created_at",{ascending:false})
+    .limit(40);
+
+  if(error){
+    target.innerHTML='<div class="agenda-empty">Não foi possível carregar o histórico.</div>';
+    return;
+  }
+
+  const labels={
+    sale:"Venda",
+    purchase:"Compra",
+    adjustment_in:"Entrada manual",
+    adjustment_out:"Saída manual",
+    return:"Devolução"
+  };
+
+  if(!data?.length){
+    target.innerHTML='<div class="agenda-empty">Nenhuma movimentação de estoque registrada.</div>';
+    return;
+  }
+
+  target.innerHTML=data.map(item=>{
+    const when=new Date(item.created_at).toLocaleString("pt-BR",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"});
+    const sign=item.direction==="out"?"-":"+";
+    return `
+      <div class="finance-row">
+        <div>
+          <strong>${item.product?.name||"Produto"}</strong>
+          <span>${labels[item.movement_type]||item.movement_type} • ${when}${item.notes?" • "+item.notes:""}</span>
+        </div>
+        <div class="finance-value">${sign}${Number(item.quantity||0).toLocaleString("pt-BR")}</div>
+      </div>
+    `;
+  }).join("");
+}
