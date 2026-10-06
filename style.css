@@ -166,3 +166,20 @@
 .stock-adjustment{margin-top:4px;padding:14px;border:1px solid var(--line);background:#060606}
 .stock-adjustment>span{display:block;margin-bottom:10px;color:#666;font:500 8px Oswald,sans-serif;letter-spacing:1.5px}
 @media(max-width:760px){.catalog-row{grid-template-columns:1fr 1fr}.catalog-actions{grid-column:1/-1;justify-content:flex-start}.product-admin-stats{grid-template-columns:1fr 1fr}.product-admin-stats article:last-child{grid-column:1/-1}}
+
+
+/* EQUIPE / CONFIGURACOES */
+.team-admin-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:18px}
+.team-admin-panel{padding:16px;border:1px solid var(--line);background:#090909}
+.team-hours-toolbar{margin-top:14px;align-items:end}.team-hours-action{display:flex;align-items:end}.team-hours-action button{width:100%}
+.working-hours-list,.access-list{display:grid;gap:8px;margin-top:12px}
+.working-hour-row,.access-row{display:grid;grid-template-columns:1fr 110px 110px auto;gap:8px;align-items:center;padding:10px;border:1px solid rgba(255,255,255,.07);background:#070707}
+.working-hour-row label{display:grid;gap:5px}.working-hour-row label span{font-size:8px;color:#777}
+.working-hour-row input[type="time"]{height:36px;padding:0 8px;border:1px solid var(--line);background:#050505;color:#fff}
+.day-toggle{display:flex;align-items:center;gap:8px;font-size:9px;color:#aaa}
+.day-toggle input{width:15px;height:15px}
+.access-row strong{display:block;font-size:10px}.access-row span{display:block;margin-top:4px;color:#777;font-size:8px}
+.access-row button{height:30px;padding:0 8px;border:1px solid var(--line);background:transparent;color:#fff;font:600 8px Oswald,sans-serif;cursor:pointer}
+.settings-card{max-width:760px;margin-top:16px;padding:18px;border:1px solid var(--line);background:#090909}
+@media(max-width:900px){.team-admin-grid{grid-template-columns:1fr}}
+@media(max-width:640px){.working-hour-row,.access-row{grid-template-columns:1fr 1fr}.working-hour-row>*:first-child,.access-row>*:first-child{grid-column:1/-1}}
