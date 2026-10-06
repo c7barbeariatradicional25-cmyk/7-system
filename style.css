@@ -1285,3 +1285,20 @@ input,select,textarea{
   .report-toolbar h2{font-size:27px}
   .nav-item{font-size:10px}
 }
+
+
+.service-picker-category{display:grid;gap:7px}
+.service-picker-category+.service-picker-category{margin-top:9px}
+.service-picker-category-title{
+  position:sticky;
+  top:-8px;
+  z-index:2;
+  margin:0 -8px;
+  padding:8px 10px 7px;
+  background:#efefec;
+  border-bottom:1px solid #d9d9d4;
+  color:#333;
+  font:800 10px Manrope,sans-serif;
+  letter-spacing:.7px;
+  text-transform:uppercase
+}
