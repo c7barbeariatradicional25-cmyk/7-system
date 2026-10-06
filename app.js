@@ -39,7 +39,9 @@ const appointmentModal=$("appointmentModal");
 const appointmentForm=$("appointmentForm");
 const appointmentMessage=$("appointmentMessage");
 const appointmentProfessional=$("appointmentProfessional");
-const appointmentService=$("appointmentService");
+const appointmentServiceList=$("appointmentServiceList");
+const appointmentServiceCount=$("appointmentServiceCount");
+const saveAndNewAppointmentBtn=$("saveAndNewAppointmentBtn");
 
 const blockModal=$("blockModal");
 const blockForm=$("blockForm");
@@ -219,9 +221,19 @@ async function initAgenda(){
   appointmentProfessional.innerHTML='<option value="">Selecione</option>'+proOptions;
   blockProfessional.innerHTML='<option value="">Selecione</option>'+proOptions;
 
-  appointmentService.innerHTML='<option value="">Selecione</option>'+services.map(
-    s=>`<option value="${s.id}">${escapeHtml(s.name)} — ${money(s.price)}</option>`
-  ).join("");
+  appointmentServiceList.innerHTML=services.map(s=>`
+    <label class="service-option">
+      <input type="checkbox" value="${s.id}" data-service-id="${s.id}">
+      <span class="service-option-main">
+        <strong>${escapeHtml(s.name)}</strong>
+        <small>${escapeHtml(s.duration)} • ${money(s.price)}</small>
+      </span>
+    </label>
+  `).join("");
+
+  appointmentServiceList.querySelectorAll('input[type="checkbox"]').forEach(input=>{
+    input.addEventListener("change",updateAppointmentPreview);
+  });
 
   await loadAgenda();
 }
@@ -594,29 +606,43 @@ $("todayBtn").addEventListener("click",()=>{
 agendaDate.addEventListener("change",loadAgenda);
 professionalFilter.addEventListener("change",loadAgenda);
 
-function selectedService(){
-  return services.find(s=>String(s.id)===appointmentService.value);
+function selectedServices(){
+  const ids=[...appointmentServiceList.querySelectorAll('input[type="checkbox"]:checked')].map(input=>String(input.value));
+  return services.filter(s=>ids.includes(String(s.id)));
+}
+
+function formatDuration(minutes){
+  const h=Math.floor(minutes/60);
+  const m=minutes%60;
+  if(h&&m) return `${h}h ${m}min`;
+  if(h) return `${h}h`;
+  return `${m}min`;
 }
 
 function updateAppointmentPreview(){
-  const service=selectedService();
+  const selected=selectedServices();
   const date=$("appointmentDate").value;
   const time=$("appointmentTime").value;
+  const totalMinutes=selected.reduce((sum,s)=>sum+durationToMinutes(s.duration),0);
+  const totalPrice=selected.reduce((sum,s)=>sum+Number(s.price||0),0);
 
-  if(!service){
+  appointmentServiceCount.textContent=selected.length
+    ? `${selected.length} ${selected.length===1?"serviço selecionado":"serviços selecionados"}`
+    : "Nenhum serviço selecionado";
+
+  if(!selected.length){
     $("previewDuration").textContent="—";
     $("previewPrice").textContent="—";
     $("previewEnd").textContent="—";
     return;
   }
 
-  const minutes=durationToMinutes(service.duration);
-  $("previewDuration").textContent=service.duration;
-  $("previewPrice").textContent=money(service.price);
+  $("previewDuration").textContent=formatDuration(totalMinutes);
+  $("previewPrice").textContent=money(totalPrice);
 
   if(date&&time){
     const start=new Date(`${date}T${time}:00`);
-    const end=new Date(start.getTime()+minutes*60000);
+    const end=new Date(start.getTime()+totalMinutes*60000);
     $("previewEnd").textContent=end.toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"});
   } else {
     $("previewEnd").textContent="—";
@@ -629,6 +655,7 @@ function openAppointmentModal(){
   $("appointmentDate").value=agendaDate.value||localDateInput();
   $("appointmentSource").value="manual";
   if(professionalFilter.value) appointmentProfessional.value=professionalFilter.value;
+  appointmentServiceList.querySelectorAll('input[type="checkbox"]').forEach(input=>input.checked=false);
   updateAppointmentPreview();
   appointmentModal.classList.remove("hidden");
 }
@@ -639,31 +666,29 @@ function closeAppointmentModal(){
 
 newAppointmentBtn.addEventListener("click",openAppointmentModal);
 document.querySelectorAll("[data-close-modal]").forEach(el=>el.addEventListener("click",closeAppointmentModal));
-appointmentService.addEventListener("change",updateAppointmentPreview);
 $("appointmentDate").addEventListener("change",updateAppointmentPreview);
 $("appointmentTime").addEventListener("input",updateAppointmentPreview);
 
-appointmentForm.addEventListener("submit",async e=>{
-  e.preventDefault();
-
+async function saveAppointment({keepOpen=false}={}){
   if(!["admin","reception"].includes(currentRole)){
     appointmentMessage.textContent="Seu perfil não possui permissão para criar agendamentos.";
-    return;
+    return false;
   }
 
   const name=$("clientName").value.trim();
   const phone=$("clientPhone").value.trim();
   const professionalId=appointmentProfessional.value;
-  const service=selectedService();
+  const selected=selectedServices();
   const date=$("appointmentDate").value;
   const time=$("appointmentTime").value;
 
-  if(!name||!phone||!professionalId||!service||!date||!time){
-    appointmentMessage.textContent="Preencha os campos obrigatórios.";
-    return;
+  if(!name||!phone||!professionalId||!selected.length||!date||!time){
+    appointmentMessage.textContent="Preencha os campos obrigatórios e selecione ao menos um serviço.";
+    return false;
   }
 
-  const durationMinutes=durationToMinutes(service.duration);
+  const durationMinutes=selected.reduce((sum,s)=>sum+durationToMinutes(s.duration),0);
+  const totalAmount=selected.reduce((sum,s)=>sum+Number(s.price||0),0);
   const start=new Date(`${date}T${time}:00`);
   const end=new Date(start.getTime()+durationMinutes*60000);
 
@@ -679,7 +704,7 @@ appointmentForm.addEventListener("submit",async e=>{
 
   if(!hours){
     appointmentMessage.textContent="Esse profissional não possui expediente configurado para este dia.";
-    return;
+    return false;
   }
 
   const startMinutes=start.getHours()*60+start.getMinutes();
@@ -687,7 +712,7 @@ appointmentForm.addEventListener("submit",async e=>{
 
   if(startMinutes<minutesFromHHMM(hours.starts_at)||endMinutes>minutesFromHHMM(hours.ends_at)){
     appointmentMessage.textContent="O horário está fora do expediente desse profissional.";
-    return;
+    return false;
   }
 
   const [{data:conflicts},{data:blocks}] = await Promise.all([
@@ -708,7 +733,7 @@ appointmentForm.addEventListener("submit",async e=>{
 
   if((conflicts&&conflicts.length)||(blocks&&blocks.length)){
     appointmentMessage.textContent="Esse profissional já está ocupado nesse horário.";
-    return;
+    return false;
   }
 
   appointmentMessage.textContent="Salvando...";
@@ -735,7 +760,7 @@ appointmentForm.addEventListener("submit",async e=>{
 
     if(customerError){
       appointmentMessage.textContent="Não foi possível cadastrar o cliente.";
-      return;
+      return false;
     }
 
     customerId=newCustomer.id;
@@ -751,7 +776,7 @@ appointmentForm.addEventListener("submit",async e=>{
       status:"scheduled",
       source:$("appointmentSource").value,
       notes:$("appointmentNotes").value.trim()||null,
-      total_amount:Number(service.price),
+      total_amount:totalAmount,
       created_by:currentUser
     })
     .select("id")
@@ -759,27 +784,56 @@ appointmentForm.addEventListener("submit",async e=>{
 
   if(appointmentError){
     appointmentMessage.textContent="Não foi possível salvar o agendamento.";
-    return;
+    return false;
   }
 
-  const {error:serviceError}=await supabase.from("appointment_services").insert({
+  const serviceRows=selected.map((service,index)=>({
     appointment_id:appointment.id,
     service_id:service.id,
     service_name:service.name,
-    duration_minutes:durationMinutes,
+    duration_minutes:durationToMinutes(service.duration),
     price:Number(service.price),
-    sort_order:0
-  });
+    sort_order:index
+  }));
+
+  const {error:serviceError}=await supabase.from("appointment_services").insert(serviceRows);
 
   if(serviceError){
     await supabase.from("appointments").delete().eq("id",appointment.id);
-    appointmentMessage.textContent="Não foi possível vincular o serviço.";
-    return;
+    appointmentMessage.textContent="Não foi possível vincular os serviços.";
+    return false;
   }
 
   agendaDate.value=date;
-  closeAppointmentModal();
   await loadAgenda();
+
+  if(keepOpen){
+    const savedDate=date;
+    const savedProfessional=professionalId;
+    const savedSource=$("appointmentSource").value;
+
+    appointmentForm.reset();
+    $("appointmentDate").value=savedDate;
+    $("appointmentSource").value=savedSource||"manual";
+    appointmentProfessional.value=savedProfessional;
+    appointmentServiceList.querySelectorAll('input[type="checkbox"]').forEach(input=>input.checked=false);
+    appointmentMessage.textContent="Agendamento salvo. Cadastre o próximo.";
+    updateAppointmentPreview();
+    $("clientName").focus();
+  }else{
+    closeAppointmentModal();
+  }
+
+  return true;
+}
+
+appointmentForm.addEventListener("submit",async e=>{
+  e.preventDefault();
+  await saveAppointment({keepOpen:false});
+});
+
+saveAndNewAppointmentBtn?.addEventListener("click",async()=>{
+  await saveAppointment({keepOpen:true});
 });
 
 function openBlockModal(){
