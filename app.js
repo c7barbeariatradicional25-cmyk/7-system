@@ -61,6 +61,7 @@ const statusLabels={
 
 let currentRole=null;
 let currentUser=null;
+let currentProfessionalId=null;
 let professionals=[];
 let services=[];
 let currentAppointments=[];
@@ -132,15 +133,38 @@ async function loadProfile(userId){
   userName.textContent=data.full_name||"Usuário C7";
   userRole.textContent=roleLabels[data.role]||data.role;
 
+  if(data.role==="barber"){
+    const {data:professional}=await supabase
+      .from("professionals")
+      .select("id,full_name,avatar_url")
+      .eq("user_id",userId)
+      .eq("active",true)
+      .maybeSingle();
+
+    currentProfessionalId=professional?.id||null;
+
+    if(!currentProfessionalId){
+      userRole.textContent="Barbeiro • acesso não vinculado";
+    }
+  }
+
   document.querySelectorAll(".nav-item").forEach(item=>{
     const section=item.dataset.section;
-    const hide=(data.role==="barber"&&["caixa","relatorios","configuracoes"].includes(section))||(data.role==="reception"&&section==="configuracoes");
+    let hide=false;
+
+    if(data.role==="barber"){
+      hide=!["dashboard","agenda","operacoes"].includes(section);
+    }else if(data.role==="reception"){
+      hide=section==="configuracoes";
+    }
+
     item.classList.toggle("hidden",hide);
   });
 
-  const canManageAgenda=["admin","reception"].includes(data.role);
-  newAppointmentBtn.classList.toggle("hidden",!canManageAgenda);
-  blockTimeBtn.classList.toggle("hidden",!canManageAgenda);
+  const canCreateAppointment=["admin","reception"].includes(data.role);
+  const canBlockAgenda=["admin","reception","barber"].includes(data.role);
+  newAppointmentBtn.classList.toggle("hidden",!canCreateAppointment);
+  blockTimeBtn.classList.toggle("hidden",!canBlockAgenda);
 
   showApp();
   await initAgenda();
@@ -209,7 +233,7 @@ async function initAgenda(){
   agendaDate.value=agendaDate.value||localDateInput();
 
   const [{data:proData},{data:serviceData}] = await Promise.all([
-    supabase.from("professionals").select("id,full_name,specialty,active").eq("active",true).order("full_name"),
+    supabase.from("professionals").select("id,full_name,specialty,active,avatar_url,user_id").eq("active",true).order("full_name"),
     supabase.from("services").select("id,category,name,duration,price,sort_order").eq("active",true).order("category").order("sort_order")
   ]);
 
@@ -221,6 +245,20 @@ async function initAgenda(){
   professionalFilter.innerHTML='<option value="">Todos os profissionais</option>'+proOptions;
   appointmentProfessional.innerHTML='<option value="">Selecione</option>'+proOptions;
   blockProfessional.innerHTML='<option value="">Selecione</option>'+proOptions;
+
+  if(currentRole==="barber"&&currentProfessionalId){
+    professionalFilter.value=currentProfessionalId;
+    professionalFilter.disabled=true;
+    blockProfessional.innerHTML=professionals
+      .filter(p=>p.id===currentProfessionalId)
+      .map(p=>`<option value="${p.id}">${escapeHtml(p.full_name)}</option>`)
+      .join("");
+    blockProfessional.value=currentProfessionalId;
+    blockProfessional.disabled=true;
+  }else{
+    professionalFilter.disabled=false;
+    blockProfessional.disabled=false;
+  }
 
   const serviceGroups=services.reduce((acc,s)=>{
     const category=(s.category||"Outros").trim()||"Outros";
@@ -316,7 +354,9 @@ function renderAgendaList(){
     const phone=escapeHtml(a.customer?.phone||"");
     const professional=escapeHtml(a.professional?.full_name||"Sem profissional");
     const service=escapeHtml((a.appointment_services||[]).map(s=>s.service_name).join(" + ")||"Serviço não informado");
-    const disabled=currentRole==="barber"?"disabled":"";
+    const canEditStatus=["admin","reception"].includes(currentRole)||
+      (currentRole==="barber"&&a.professional_id===currentProfessionalId);
+    const disabled=canEditStatus?"":"disabled";
 
     return {
       start:new Date(a.starts_at),
@@ -342,7 +382,8 @@ function renderAgendaList(){
   });
 
   const blockRows=currentBlocks.map(b=>{
-    const canDelete=["admin","reception"].includes(currentRole);
+    const canDelete=["admin","reception"].includes(currentRole)||
+      (currentRole==="barber"&&b.professional_id===currentProfessionalId);
     return {
       start:new Date(b.starts_at),
       html:`
@@ -549,12 +590,18 @@ function renderTimeline(){
       </div>
       ${pros.map(p=>`
         <div class="live-pro-head">
-          <div class="live-pro-avatar">${escapeHtml((p.full_name||"?").slice(0,1).toUpperCase())}</div>
+          <div class="live-pro-avatar">
+            ${p.avatar_url
+              ? `<img src="${escapeHtml(p.avatar_url)}" alt="${escapeHtml(p.full_name)}">`
+              : escapeHtml((p.full_name||"?").slice(0,1).toUpperCase())}
+          </div>
           <div>
             <strong>${escapeHtml(p.full_name)}</strong>
             <small>${escapeHtml(p.specialty||"Barbeiro")}</small>
           </div>
-          ${["admin","reception"].includes(currentRole)?`<button type="button" class="quick-block-btn" data-quick-block="${p.id}">BLOQUEAR</button>`:""}
+          ${(["admin","reception"].includes(currentRole)||(currentRole==="barber"&&p.id===currentProfessionalId))
+  ? `<button type="button" class="quick-block-btn" data-quick-block="${p.id}">BLOQUEAR</button>`
+  : ""}
         </div>
       `).join("")}
     </div>
@@ -599,7 +646,8 @@ function renderTimeline(){
 
   agendaTimeline.querySelectorAll("[data-live-professional]").forEach(column=>{
     column.addEventListener("dblclick",e=>{
-      if(!["admin","reception"].includes(currentRole)) return;
+      if(!["admin","reception"].includes(currentRole)&&currentRole!=="barber") return;
+      if(currentRole==="barber"&&column.dataset.liveProfessional!==currentProfessionalId) return;
       if(e.target.closest(".live-booking,.live-block")) return;
 
       const rect=column.getBoundingClientRect();
@@ -1031,12 +1079,17 @@ document.querySelectorAll("[data-close-block]").forEach(el=>el.addEventListener(
 blockForm.addEventListener("submit",async e=>{
   e.preventDefault();
 
-  if(!["admin","reception"].includes(currentRole)){
+  if(!["admin","reception","barber"].includes(currentRole)){
     blockMessage.textContent="Seu perfil não possui permissão para bloquear horários.";
     return;
   }
 
   const professionalId=blockProfessional.value;
+
+  if(currentRole==="barber"&&professionalId!==currentProfessionalId){
+    blockMessage.textContent="Você só pode bloquear a sua própria agenda.";
+    return;
+  }
   const date=$("blockDate").value;
   const startTime=$("blockStart").value;
   const endTime=$("blockEnd").value;
