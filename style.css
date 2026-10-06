@@ -8,3 +8,38 @@
 .section{display:none;padding-top:24px}.section.active{display:block}.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}.stats article{min-height:150px;padding:17px;border:1px solid var(--line);background:linear-gradient(145deg,#101010,#080808)}.stats span{display:block;color:#888;font-size:10px}.stats strong{display:block;margin-top:22px;font:600 36px Oswald,sans-serif}.stats small{display:block;margin-top:10px;color:#555;font-size:8px}.dashboard-grid{display:grid;grid-template-columns:1.3fr 1fr;gap:12px;margin-top:12px}.panel{min-height:260px;padding:18px;border:1px solid var(--line);background:#090909}.panel>span{color:#666;font:500 8px Oswald,sans-serif;letter-spacing:2px}.panel h2{margin-top:4px;font:600 22px Oswald,sans-serif}.panel p{margin-top:70px;color:#5d5d5d;font-size:10px;line-height:1.6}.placeholder{min-height:360px;display:grid;place-items:center;align-content:center;text-align:center;border:1px solid var(--line);background:#090909}.placeholder span{font:500 12px Oswald,sans-serif;letter-spacing:3px;color:#555}.placeholder h2{margin-top:8px;font:600 34px Oswald,sans-serif}.placeholder p{max-width:430px;margin-top:10px;color:#666;font-size:10px;line-height:1.6}
 @media(max-width:900px){.app-shell{grid-template-columns:190px 1fr}.stats{grid-template-columns:repeat(2,1fr)}.dashboard-grid{grid-template-columns:1fr}}
 @media(max-width:640px){.app-shell{display:block}.sidebar{position:fixed;z-index:20;left:0;right:0;bottom:0;top:auto;height:68px;padding:7px 8px;border-right:0;border-top:1px solid var(--line);flex-direction:row}.brand,.logout{display:none}.sidebar nav{width:100%;margin:0;display:flex;gap:4px;overflow-x:auto}.nav-item{flex:0 0 auto;height:52px;padding:0 13px;font-size:9px}.main-panel{padding:18px 15px 90px}.topbar h1{font-size:28px}.stats{grid-template-columns:1fr 1fr;gap:9px}.stats article{min-height:132px;padding:14px}.stats strong{font-size:30px}}
+
+/* AGENDA */
+.agenda-toolbar{display:flex;justify-content:space-between;gap:14px;align-items:center;flex-wrap:wrap}
+.agenda-date-nav,.agenda-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.agenda-date-nav button,.agenda-date-nav input,.agenda-actions select,.ghost-btn,.primary-btn{height:42px;border:1px solid var(--line);background:#090909;color:#fff;padding:0 12px}
+.agenda-date-nav button,.ghost-btn,.primary-btn{cursor:pointer}
+.primary-btn{background:#fff;color:#050505;border-color:#fff;font:600 11px Oswald,sans-serif;letter-spacing:1.4px}
+.ghost-btn{font:600 10px Oswald,sans-serif;letter-spacing:1.2px}
+.agenda-actions select{min-width:190px}
+.agenda-summary{display:grid;grid-template-columns:2fr 1fr 1fr;gap:10px;margin-top:16px}
+.agenda-summary>div{padding:14px;border:1px solid var(--line);background:#090909}
+.agenda-summary span{display:block;color:#666;font:500 8px Oswald,sans-serif;letter-spacing:2px}
+.agenda-summary strong{display:block;margin-top:7px;font:600 18px Oswald,sans-serif}
+.agenda-list{display:grid;gap:10px;margin-top:16px}
+.agenda-empty{min-height:180px;display:grid;place-items:center;border:1px dashed rgba(255,255,255,.09);color:#5d5d5d;font-size:10px}
+.appointment-card{display:grid;grid-template-columns:84px 1fr auto;gap:16px;align-items:center;padding:16px;border:1px solid var(--line);background:#090909}
+.appointment-time strong{display:block;font:600 24px Oswald,sans-serif}.appointment-time small{display:block;margin-top:3px;color:#666;font-size:8px}
+.appointment-info strong{display:block;font-size:12px}.appointment-info span{display:block;margin-top:5px;color:#777;font-size:9px;line-height:1.4}
+.appointment-meta{display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:flex-end}
+.status-select{height:34px;border:1px solid var(--line);background:#050505;color:#fff;padding:0 8px;font-size:9px}
+.amount-badge{font:600 15px Oswald,sans-serif;white-space:nowrap}
+.source-badge{padding:6px 8px;border:1px solid var(--line);color:#777;font-size:8px;text-transform:uppercase}
+.modal{position:fixed;inset:0;z-index:100;display:grid;place-items:center;padding:18px}.modal-backdrop{position:absolute;inset:0;background:rgba(0,0,0,.78);backdrop-filter:blur(5px)}
+.modal-card{position:relative;z-index:2;width:min(100%,680px);max-height:92vh;overflow:auto;border:1px solid var(--line);background:#090909;padding:22px}
+.modal-head{display:flex;justify-content:space-between;align-items:flex-start;padding-bottom:16px;border-bottom:1px solid var(--line)}
+.modal-head span{display:block;color:#666;font:500 8px Oswald,sans-serif;letter-spacing:2px}.modal-head h2{margin-top:4px;font:600 28px Oswald,sans-serif}
+.modal-close{border:0;background:transparent;color:#888;font-size:28px;cursor:pointer}
+.appointment-form{display:grid;gap:14px;margin-top:18px}.form-grid{display:grid;gap:12px}.form-grid.two{grid-template-columns:1fr 1fr}.form-grid.three{grid-template-columns:1fr 1fr 1fr}
+.appointment-form label{display:grid;gap:7px}.appointment-form label>span{color:#8b8b8b;font-size:9px}
+.appointment-form input,.appointment-form select,.appointment-form textarea{width:100%;border:1px solid var(--line);outline:0;background:#050505;color:#fff;padding:0 12px}
+.appointment-form input,.appointment-form select{height:44px}.appointment-form textarea{padding:12px;resize:vertical}
+.appointment-preview{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.appointment-preview>div{padding:12px;border:1px solid var(--line);background:#060606}
+.appointment-preview span{display:block;color:#666;font:500 8px Oswald,sans-serif;letter-spacing:1.5px}.appointment-preview strong{display:block;margin-top:6px;font:600 16px Oswald,sans-serif}
+.form-message{min-height:18px;color:#c7c7c7;font-size:9px}.modal-actions{display:flex;justify-content:flex-end;gap:8px;padding-top:4px}
+@media(max-width:700px){.agenda-toolbar{align-items:stretch}.agenda-date-nav,.agenda-actions{width:100%}.agenda-actions select{flex:1;min-width:0}.primary-btn{flex:1}.agenda-summary{grid-template-columns:1fr 1fr}.agenda-summary>div:first-child{grid-column:1/-1}.appointment-card{grid-template-columns:68px 1fr}.appointment-meta{grid-column:1/-1;justify-content:flex-start}.form-grid.two,.form-grid.three{grid-template-columns:1fr}.appointment-preview{grid-template-columns:1fr 1fr 1fr}}
