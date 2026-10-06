@@ -89,3 +89,33 @@
 .crm-dormant{color:#b0b0b0!important}.crm-next{color:#fff!important}
 @media(max-width:800px){.crm-stats{grid-template-columns:1fr 1fr}.customer-card{grid-template-columns:1fr 1fr}.customer-open{grid-column:1/-1;width:max-content}.history-row{grid-template-columns:82px 1fr}.history-value{grid-column:2}}
 @media(max-width:520px){.crm-stats{grid-template-columns:1fr 1fr}.customer-card{grid-template-columns:1fr}.customer-open{grid-column:auto}.history-row{grid-template-columns:1fr}.history-value{grid-column:auto}}
+
+
+/* CAIXA */
+.cash-toolbar{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap}
+.eyebrow{display:block;color:#666;font:500 8px Oswald,sans-serif;letter-spacing:2px}
+.cash-toolbar h2{margin-top:5px;font:600 28px Oswald,sans-serif}
+.cash-toolbar p{margin-top:5px;color:#696969;font-size:9px}
+.cash-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+.cash-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:16px}
+.cash-stats article{padding:14px;border:1px solid var(--line);background:#090909}
+.cash-stats span{display:block;color:#666;font:500 8px Oswald,sans-serif;letter-spacing:1.5px}
+.cash-stats strong{display:block;margin-top:8px;font:600 21px Oswald,sans-serif}
+.cash-layout{display:grid;grid-template-columns:1.2fr .8fr;gap:12px;margin-top:12px}
+.cash-panel{min-height:300px;padding:16px;border:1px solid var(--line);background:#090909}
+.cash-panel-head{display:flex;justify-content:space-between;align-items:center;padding-bottom:13px;border-bottom:1px solid var(--line)}
+.cash-panel-head span{display:block;color:#666;font:500 8px Oswald,sans-serif;letter-spacing:1.5px}
+.cash-panel-head h3{margin-top:3px;font:600 21px Oswald,sans-serif}
+.cash-transaction-list,.cash-pending-list{display:grid;gap:8px;margin-top:12px}
+.cash-row,.pending-row{display:grid;grid-template-columns:92px 1fr auto;gap:12px;align-items:center;padding:12px;border:1px solid rgba(255,255,255,.07);background:#070707}
+.cash-row-time strong,.pending-row-time strong{display:block;font:600 15px Oswald,sans-serif}
+.cash-row-time small,.pending-row-time small{display:block;margin-top:3px;color:#666;font-size:8px}
+.cash-row-main strong,.pending-row-main strong{display:block;font-size:10px}
+.cash-row-main span,.pending-row-main span{display:block;margin-top:4px;color:#777;font-size:8px;line-height:1.35}
+.cash-row-value{font:600 14px Oswald,sans-serif;white-space:nowrap}
+.cash-row-value.out{color:#aaa}
+.pending-receive{height:32px;padding:0 10px;border:1px solid var(--line);background:#fff;color:#050505;font:600 9px Oswald,sans-serif;letter-spacing:.8px;cursor:pointer}
+.cash-method{display:inline-block;margin-top:5px;padding:4px 6px;border:1px solid var(--line);font-size:7px;color:#777;text-transform:uppercase}
+.cash-empty{padding:24px 10px;text-align:center;color:#606060;font-size:9px}
+@media(max-width:900px){.cash-stats{grid-template-columns:1fr 1fr}.cash-layout{grid-template-columns:1fr}}
+@media(max-width:620px){.cash-actions{width:100%;justify-content:flex-start}.cash-actions button{flex:1 1 46%}.cash-row,.pending-row{grid-template-columns:72px 1fr}.cash-row-value,.pending-receive{grid-column:2}}
