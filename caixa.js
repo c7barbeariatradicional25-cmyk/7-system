@@ -254,3 +254,88 @@ $("receiveAppointment")?.addEventListener("change",()=>{
 });
 $("receiveGross")?.addEventListener("input",updateReceivePreview);
 $("receiveDiscount")?.addEventListener("input",updateReceivePreview);
+
+
+$("receiveForm")?.addEventListener("submit",async e=>{
+  e.preventDefault();
+
+  const appointment=pendingAppointments.find(a=>a.id===$("receiveAppointment").value);
+  if(!appointment){
+    $("receiveMessage").textContent="Selecione um atendimento.";
+    return;
+  }
+
+  const gross=Number($("receiveGross").value||0);
+  const discount=Number($("receiveDiscount").value||0);
+  const net=gross-discount;
+
+  if(gross<0||discount<0||net<0){
+    $("receiveMessage").textContent="Confira os valores informados.";
+    return;
+  }
+
+  $("receiveMessage").textContent="Registrando recebimento...";
+
+  const {data:transaction,error}=await supabase.from("cash_transactions").insert({
+    session_id:openSession.id,
+    appointment_id:appointment.id,
+    customer_id:appointment.customer_id,
+    professional_id:appointment.professional_id,
+    transaction_type:"service",
+    direction:"in",
+    payment_method:$("receiveMethod").value,
+    description:`Atendimento - ${appointment.customer?.full_name||"Cliente"}`,
+    gross_amount:gross,
+    discount_amount:discount,
+    net_amount:net,
+    created_by:currentUser
+  }).select("id").single();
+
+  if(error){
+    $("receiveMessage").textContent="Não foi possível registrar o recebimento.";
+    return;
+  }
+
+  const items=(appointment.appointment_services||[]).map((service,index)=>({
+    transaction_id:transaction.id,
+    item_type:"service",
+    description:service.service_name||"Serviço",
+    quantity:1,
+    unit_price:Number(appointment.total_amount||0)/(appointment.appointment_services?.length||1),
+    total_amount:Number(appointment.total_amount||0)/(appointment.appointment_services?.length||1)
+  }));
+
+  if(items.length){
+    await supabase.from("cash_transaction_items").insert(items);
+  }
+
+  await supabase.from("appointments").update({
+    status:"completed",
+    updated_at:new Date().toISOString()
+  }).eq("id",appointment.id);
+
+  closeModal("receiveModal");
+  await loadCash();
+});
+
+function updateProductPreview(){
+  const product=products.find(p=>String(p.id)===$("cashProduct").value);
+  const qty=Math.max(1,Number($("cashProductQty").value||1));
+  $("cashProductUnit").textContent=money(product?.price||0);
+  $("cashProductQtyPreview").textContent=String(qty);
+  $("cashProductTotal").textContent=money(Number(product?.price||0)*qty);
+}
+
+$("sellProductBtn")?.addEventListener("click",()=>{
+  $("productSaleForm").reset();
+  $("cashProductQty").value="1";
+  $("productSaleMessage").textContent="";
+  $("cashProduct").innerHTML='<option value="">Selecione</option>'+
+    products.map(p=>`<option value="${p.id}">${p.name} — ${money(p.price)}</option>`).join("");
+  updateProductPreview();
+  openModal("productSaleModal");
+});
+
+document.querySelectorAll("[data-close-product-sale]").forEach(el=>el.addEventListener("click",()=>closeModal("productSaleModal")));
+$("cashProduct")?.addEventListener("change",updateProductPreview);
+$("cashProductQty")?.addEventListener("input",updateProductPreview);
