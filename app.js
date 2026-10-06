@@ -209,7 +209,7 @@ async function initAgenda(){
 
   const [{data:proData},{data:serviceData}] = await Promise.all([
     supabase.from("professionals").select("id,full_name,specialty,active").eq("active",true).order("full_name"),
-    supabase.from("services").select("id,name,duration,price,sort_order").eq("active",true).order("sort_order")
+    supabase.from("services").select("id,category,name,duration,price,sort_order").eq("active",true).order("category").order("sort_order")
   ]);
 
   professionals=proData||[];
@@ -221,14 +221,25 @@ async function initAgenda(){
   appointmentProfessional.innerHTML='<option value="">Selecione</option>'+proOptions;
   blockProfessional.innerHTML='<option value="">Selecione</option>'+proOptions;
 
-  appointmentServiceList.innerHTML=services.map(s=>`
-    <label class="service-option">
-      <input type="checkbox" value="${s.id}" data-service-id="${s.id}">
-      <span class="service-option-main">
-        <strong>${escapeHtml(s.name)}</strong>
-        <small>${escapeHtml(s.duration)} • ${money(s.price)}</small>
-      </span>
-    </label>
+  const serviceGroups=services.reduce((acc,s)=>{
+    const category=(s.category||"Outros").trim()||"Outros";
+    (acc[category] ||= []).push(s);
+    return acc;
+  },{});
+
+  appointmentServiceList.innerHTML=Object.entries(serviceGroups).map(([category,items])=>`
+    <div class="service-picker-category">
+      <div class="service-picker-category-title">${escapeHtml(category)}</div>
+      ${items.map(s=>`
+        <label class="service-option">
+          <input type="checkbox" value="${s.id}" data-service-id="${s.id}">
+          <span class="service-option-main">
+            <strong>${escapeHtml(s.name)}</strong>
+            <small>${escapeHtml(s.duration)} • ${money(s.price)}</small>
+          </span>
+        </label>
+      `).join("")}
+    </div>
   `).join("");
 
   appointmentServiceList.querySelectorAll('input[type="checkbox"]').forEach(input=>{
