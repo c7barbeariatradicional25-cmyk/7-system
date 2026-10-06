@@ -513,3 +513,9 @@ body{background:var(--bg);color:var(--text)}
 
 .coupon-apply-row{display:grid;grid-template-columns:1fr auto;gap:8px}
 .coupon-apply-row .ghost-btn{height:44px;align-self:end}
+
+
+.login-card{color:#fff}
+.login-card h1{color:#fff}
+.login-card .login-form label span{color:#a8a8a8}
+.login-card .message{color:#d0d0d0!important}
