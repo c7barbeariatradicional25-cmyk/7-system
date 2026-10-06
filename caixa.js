@@ -429,3 +429,61 @@ $("movementForm")?.addEventListener("submit",async e=>{
   closeModal("movementModal");
   await loadCash();
 });
+
+
+function updateClosePreview(){
+  const expected=Number($("closingAmount").dataset.expected||0);
+  const counted=Number($("closingAmount").value||0);
+  $("closeCountedPreview").textContent=money(counted);
+  $("closeDifference").textContent=money(counted-expected);
+}
+
+$("closeCashBtn")?.addEventListener("click",()=>{
+  const expected=Number($("closingAmount").dataset.expected||0);
+  $("closeCashForm").reset();
+  $("closingAmount").value=expected.toFixed(2);
+  $("closeCashMessage").textContent="";
+  updateClosePreview();
+  openModal("closeCashModal");
+});
+
+document.querySelectorAll("[data-close-close-cash]").forEach(el=>el.addEventListener("click",()=>closeModal("closeCashModal")));
+$("closingAmount")?.addEventListener("input",updateClosePreview);
+
+$("closeCashForm")?.addEventListener("submit",async e=>{
+  e.preventDefault();
+
+  if(!openSession) return;
+
+  const counted=Number($("closingAmount").value||0);
+  $("closeCashMessage").textContent="Fechando caixa...";
+
+  const {error}=await supabase.from("cash_sessions").update({
+    status:"closed",
+    closed_by:currentUser,
+    closed_at:new Date().toISOString(),
+    closing_amount:counted,
+    notes:$("closingNotes").value.trim()||openSession.notes||null
+  }).eq("id",openSession.id);
+
+  if(error){
+    $("closeCashMessage").textContent="Não foi possível fechar o caixa.";
+    return;
+  }
+
+  openSession=null;
+  closeModal("closeCashModal");
+  await loadCash();
+});
+
+async function initCash(){
+  if(!await loadContext()) return;
+
+  document.querySelectorAll('.nav-item[data-section="caixa"]').forEach(btn=>{
+    btn.addEventListener("click",loadCash);
+  });
+
+  await loadCash();
+}
+
+initCash();
