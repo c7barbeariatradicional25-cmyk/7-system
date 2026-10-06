@@ -422,11 +422,41 @@ function renderTimeline(){
   const starts=dayHours.map(h=>minutesFromHHMM(h.starts_at));
   const ends=dayHours.map(h=>minutesFromHHMM(h.ends_at));
 
-  let minMinute=starts.length?Math.min(...starts):8*60;
-  let maxMinute=ends.length?Math.max(...ends):20*60;
+  const appointmentStarts=currentAppointments
+    .filter(a=>a.status!=="cancelled")
+    .map(a=>{const d=new Date(a.starts_at);return d.getHours()*60+d.getMinutes();});
+  const appointmentEnds=currentAppointments
+    .filter(a=>a.status!=="cancelled")
+    .map(a=>{const d=new Date(a.ends_at);return d.getHours()*60+d.getMinutes();});
+  const blockStarts=currentBlocks.map(b=>{const d=new Date(b.starts_at);return d.getHours()*60+d.getMinutes();});
+  const blockEnds=currentBlocks.map(b=>{const d=new Date(b.ends_at);return d.getHours()*60+d.getMinutes();});
 
-  minMinute=Math.floor(minMinute/30)*30;
-  maxMinute=Math.ceil(maxMinute/30)*30;
+  const now=new Date();
+  const isToday=agendaDate.value===localDateInput(now);
+  const nowMinute=now.getHours()*60+now.getMinutes();
+
+  const startCandidates=[
+    ...(starts.length?starts:[8*60]),
+    ...appointmentStarts,
+    ...blockStarts,
+    ...(isToday?[nowMinute-90]:[])
+  ];
+  const endCandidates=[
+    ...(ends.length?ends:[20*60]),
+    ...appointmentEnds,
+    ...blockEnds,
+    ...(isToday?[nowMinute+180]:[])
+  ];
+
+  let minMinute=Math.min(...startCandidates);
+  let maxMinute=Math.max(...endCandidates);
+
+  minMinute=Math.max(0,Math.floor(minMinute/30)*30);
+  maxMinute=Math.min(24*60,Math.ceil(maxMinute/30)*30);
+
+  if(maxMinute-minMinute<8*60){
+    maxMinute=Math.min(24*60,minMinute+8*60);
+  }
 
   const pxPerMinute=2;
   const totalMinutes=maxMinute-minMinute;
@@ -618,6 +648,15 @@ function renderTimeline(){
   if(timelineClock) clearInterval(timelineClock);
   updateLiveLine();
   timelineClock=setInterval(updateLiveLine,1000);
+
+  requestAnimationFrame(()=>{
+    const scroller=agendaTimeline.querySelector(".live-timeline-scroll");
+    if(!scroller||selected!==localDateInput()) return;
+    const now=new Date();
+    const nowMinutes=now.getHours()*60+now.getMinutes();
+    const target=Math.max(0,(nowMinutes-minMinute)*pxPerMinute-180);
+    scroller.scrollTop=target;
+  });
 }
 async function updateDashboard(){
   const today=localDateInput();
