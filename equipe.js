@@ -8,6 +8,7 @@ const supabase=createClient(
 const $=id=>document.getElementById(id);
 let currentRole=null;
 let professionals=[];
+let systemAccess=[];
 
 async function loadContext(){
   const {data:{session}}=await supabase.auth.getSession();
@@ -29,6 +30,8 @@ async function loadProfessionals(){
   if(error) return;
   professionals=data||[];
   renderProfessionals();
+  const options='<option value="">Selecione</option>'+professionals.filter(p=>p.active).map(p=>`<option value="${p.id}">${p.full_name}</option>`).join("");
+  if($("workingHoursProfessional")) $("workingHoursProfessional").innerHTML=options;
 }
 
 function renderProfessionals(){
@@ -157,10 +160,210 @@ async function init(){
   if(!await loadContext()) return;
 
   $("newProfessionalBtn")?.classList.toggle("hidden",!canAdmin());
-  document.querySelectorAll('.nav-item[data-section="equipe"]').forEach(btn=>btn.addEventListener("click",loadProfessionals));
+  document.querySelectorAll('.nav-item[data-section="equipe"]').forEach(btn=>btn.addEventListener("click",async()=>{
+    await loadProfessionals();
+    if(canAdmin()) await loadSystemAccess();
+  }));
   $("newProfessionalBtn")?.addEventListener("click",()=>openProfessional());
   $("professionalAdminForm")?.addEventListener("submit",saveProfessional);
   document.querySelectorAll("[data-close-professional-admin]").forEach(el=>el.addEventListener("click",closeProfessional));
+  $("loadWorkingHoursBtn")?.addEventListener("click",loadWorkingHours);
+  $("workingHoursProfessional")?.addEventListener("change",loadWorkingHours);
+  $("newAccessBtn")?.classList.toggle("hidden",!canAdmin());
+  $("newAccessBtn")?.addEventListener("click",()=>openAccess());
+  $("accessForm")?.addEventListener("submit",saveAccess);
+  document.querySelectorAll("[data-close-access]").forEach(el=>el.addEventListener("click",closeAccess));
 }
 
 init();
+
+
+const weekdayNames=["Domingo","Segunda","Terça","Quarta","Quinta","Sexta","Sábado"];
+
+async function loadWorkingHours(){
+  const professionalId=$("workingHoursProfessional")?.value;
+  const target=$("workingHoursList");
+  if(!professionalId||!target) return;
+
+  const {data,error}=await supabase
+    .from("professional_working_hours")
+    .select("*")
+    .eq("professional_id",professionalId)
+    .order("weekday");
+
+  if(error){
+    target.innerHTML='<div class="agenda-empty">Não foi possível carregar os horários.</div>';
+    return;
+  }
+
+  const map=new Map((data||[]).map(x=>[x.weekday,x]));
+  target.replaceChildren();
+
+  for(let day=0;day<=6;day++){
+    const item=map.get(day);
+    const row=document.createElement("div");
+    row.className="working-hour-row";
+
+    const toggle=document.createElement("label");
+    toggle.className="day-toggle";
+    const checkbox=document.createElement("input");
+    checkbox.type="checkbox";
+    checkbox.checked=Boolean(item?.active);
+    const label=document.createElement("span");
+    label.textContent=weekdayNames[day];
+    toggle.append(checkbox,label);
+
+    const startLabel=document.createElement("label");
+    const startText=document.createElement("span");
+    startText.textContent="Início";
+    const start=document.createElement("input");
+    start.type="time";
+    start.value=(item?.starts_at||"08:00").slice(0,5);
+    startLabel.append(startText,start);
+
+    const endLabel=document.createElement("label");
+    const endText=document.createElement("span");
+    endText.textContent="Fim";
+    const end=document.createElement("input");
+    end.type="time";
+    end.value=(item?.ends_at||"20:00").slice(0,5);
+    endLabel.append(endText,end);
+
+    const save=document.createElement("button");
+    save.className="ghost-btn";
+    save.type="button";
+    save.textContent="SALVAR";
+    save.disabled=!canAdmin();
+
+    save.addEventListener("click",async()=>{
+      if(!canAdmin()) return;
+
+      const payload={
+        professional_id:professionalId,
+        weekday:day,
+        starts_at:start.value||"08:00",
+        ends_at:end.value||"20:00",
+        active:checkbox.checked,
+        updated_at:new Date().toISOString()
+      };
+
+      const existing=map.get(day);
+      const result=existing
+        ? await supabase.from("professional_working_hours").update(payload).eq("id",existing.id)
+        : await supabase.from("professional_working_hours").insert(payload);
+
+      if(result.error){
+        alert("Não foi possível salvar o horário.");
+        return;
+      }
+
+      await loadWorkingHours();
+    });
+
+    row.append(toggle,startLabel,endLabel,save);
+    target.appendChild(row);
+  }
+}
+
+async function loadSystemAccess(){
+  if(!canAdmin()) return;
+
+  const {data,error}=await supabase.rpc("list_system_access");
+  const target=$("systemAccessList");
+  if(!target) return;
+
+  if(error){
+    target.innerHTML='<div class="agenda-empty">Não foi possível carregar os acessos.</div>';
+    return;
+  }
+
+  systemAccess=data||[];
+  target.replaceChildren();
+
+  if(!systemAccess.length){
+    target.innerHTML='<div class="agenda-empty">Nenhum acesso autorizado.</div>';
+    return;
+  }
+
+  systemAccess.forEach(item=>{
+    const row=document.createElement("div");
+    row.className="access-row";
+
+    const main=document.createElement("div");
+    const name=document.createElement("strong");
+    name.textContent=item.full_name||item.email;
+    const email=document.createElement("span");
+    email.textContent=item.email;
+    main.append(name,email);
+
+    const role=document.createElement("div");
+    const roleStrong=document.createElement("strong");
+    roleStrong.textContent=item.role==="admin"?"ADMIN":item.role==="reception"?"RECEPÇÃO":"BARBEIRO";
+    const roleSmall=document.createElement("span");
+    roleSmall.textContent=item.active?"ATIVO":"INATIVO";
+    role.append(roleStrong,roleSmall);
+
+    const edit=document.createElement("button");
+    edit.type="button";
+    edit.textContent="EDITAR";
+    edit.addEventListener("click",()=>openAccess(item));
+
+    const toggle=document.createElement("button");
+    toggle.type="button";
+    toggle.textContent=item.active?"DESATIVAR":"ATIVAR";
+    toggle.addEventListener("click",async()=>{
+      await supabase.rpc("set_system_access_active",{p_email:item.email,p_active:!item.active});
+      await loadSystemAccess();
+    });
+
+    row.append(main,role,edit,toggle);
+    target.appendChild(row);
+  });
+}
+
+function openAccess(item=null){
+  $("accessForm").reset();
+  $("accessModalTitle").textContent=item?"Editar acesso":"Novo acesso";
+  $("accessFullName").value=item?.full_name||"";
+  $("accessEmail").value=item?.email||"";
+  $("accessRole").value=item?.role||"barber";
+  $("accessActive").checked=item?.active??true;
+  $("accessEmail").readOnly=Boolean(item);
+  $("accessMessage").textContent="";
+  $("accessModal").classList.remove("hidden");
+}
+
+function closeAccess(){
+  $("accessModal").classList.add("hidden");
+}
+
+async function saveAccess(e){
+  e.preventDefault();
+  if(!canAdmin()) return;
+
+  const email=$("accessEmail").value.trim().toLowerCase();
+  const fullName=$("accessFullName").value.trim();
+  const role=$("accessRole").value;
+
+  if(!email||!fullName){
+    $("accessMessage").textContent="Informe nome e e-mail.";
+    return;
+  }
+
+  $("accessMessage").textContent="Salvando acesso...";
+
+  const {error}=await supabase.rpc("upsert_system_access",{
+    p_email:email,
+    p_full_name:fullName,
+    p_role:role,
+    p_active:$("accessActive").checked
+  });
+
+  if(error){
+    $("accessMessage").textContent="Não foi possível salvar o acesso.";
+    return;
+  }
+
+  closeAccess();
+  await loadSystemAccess();
+}
