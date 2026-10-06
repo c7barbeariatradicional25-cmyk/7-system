@@ -46,6 +46,7 @@
         <button class="nav-item" data-section="servicos">Serviços</button>
         <button class="nav-item" data-section="produtos">Produtos</button>
         <button class="nav-item" data-section="equipe">Equipe</button>
+        <button class="nav-item" data-section="promocoes">Promoções</button>
         <button class="nav-item" data-section="relatorios">Relatórios</button>
         <button class="nav-item" data-section="configuracoes">Configurações</button>
       </nav>
@@ -322,6 +323,57 @@
           </article>
         </div>
       </section>
+      <section id="promocoes" class="section">
+        <div class="catalog-toolbar">
+          <div>
+            <span class="eyebrow">RELACIONAMENTO</span>
+            <h2>Promoções & Benefícios</h2>
+            <p>Campanhas, cupons, planos e aniversariantes em um só lugar.</p>
+          </div>
+        </div>
+
+        <div class="promo-overview">
+          <article><span>PROMOÇÕES ATIVAS</span><strong id="promoActiveCount">0</strong></article>
+          <article><span>CUPONS ATIVOS</span><strong id="couponActiveCount">0</strong></article>
+          <article><span>PLANOS ATIVOS</span><strong id="planActiveCount">0</strong></article>
+          <article><span>ANIVERSARIANTES DO MÊS</span><strong id="birthdayMonthCount">0</strong></article>
+        </div>
+
+        <div class="promo-grid">
+          <article class="promo-panel">
+            <div class="promo-panel-head">
+              <div><span>CAMPANHAS</span><h3>Promoções</h3></div>
+              <button id="newPromotionBtn" class="primary-btn" type="button">+ NOVA</button>
+            </div>
+            <div id="promotionList" class="promo-list"></div>
+          </article>
+
+          <article class="promo-panel">
+            <div class="promo-panel-head">
+              <div><span>DESCONTOS</span><h3>Cupons</h3></div>
+              <button id="newCouponBtn" class="primary-btn" type="button">+ NOVO</button>
+            </div>
+            <div id="couponList" class="promo-list"></div>
+          </article>
+
+          <article class="promo-panel">
+            <div class="promo-panel-head">
+              <div><span>FIDELIZAÇÃO</span><h3>Planos</h3></div>
+              <button id="newPlanBtn" class="primary-btn" type="button">+ NOVO</button>
+            </div>
+            <div id="planList" class="promo-list"></div>
+          </article>
+
+          <article class="promo-panel">
+            <div class="promo-panel-head">
+              <div><span>CRM</span><h3>Aniversariantes</h3></div>
+              <button id="newBirthdayCampaignBtn" class="primary-btn" type="button">CONFIGURAR</button>
+            </div>
+            <div id="birthdayList" class="promo-list"></div>
+          </article>
+        </div>
+      </section>
+
       <section id="relatorios" class="section">
         <div class="report-toolbar">
           <div>
@@ -808,7 +860,102 @@
   <script type="module" src="catalogo.js"></script>
   <script type="module" src="equipe.js"></script>
   <script type="module" src="configuracoes.js"></script>
+  <div id="promotionModal" class="modal hidden" role="dialog" aria-modal="true">
+    <div class="modal-backdrop" data-close-promotion></div>
+    <section class="modal-card modal-small">
+      <div class="modal-head"><div><span>PROMOÇÃO</span><h2 id="promotionModalTitle">Nova promoção</h2></div><button type="button" class="modal-close" data-close-promotion>×</button></div>
+      <form id="promotionForm" class="appointment-form">
+        <input id="promotionId" type="hidden">
+        <label><span>Nome</span><input id="promotionName" type="text" required></label>
+        <label><span>Descrição</span><textarea id="promotionDescription" rows="3"></textarea></label>
+        <div class="form-grid two">
+          <label><span>Tipo</span><select id="promotionDiscountType"><option value="percent">Percentual (%)</option><option value="fixed">Valor fixo (R$)</option></select></label>
+          <label><span>Desconto</span><input id="promotionDiscountValue" type="number" min="0" step="0.01" required></label>
+        </div>
+        <div class="form-grid two">
+          <label><span>Início</span><input id="promotionStart" type="datetime-local"></label>
+          <label><span>Fim</span><input id="promotionEnd" type="datetime-local"></label>
+        </div>
+        <label class="check-row"><input id="promotionActive" type="checkbox" checked><span>Promoção ativa</span></label>
+        <p id="promotionMessage" class="form-message"></p>
+        <div class="modal-actions"><button type="button" class="ghost-btn" data-close-promotion>CANCELAR</button><button type="submit" class="primary-btn">SALVAR</button></div>
+      </form>
+    </section>
+  </div>
+
+  <div id="couponModal" class="modal hidden" role="dialog" aria-modal="true">
+    <div class="modal-backdrop" data-close-coupon></div>
+    <section class="modal-card modal-small">
+      <div class="modal-head"><div><span>CUPOM</span><h2 id="couponModalTitle">Novo cupom</h2></div><button type="button" class="modal-close" data-close-coupon>×</button></div>
+      <form id="couponForm" class="appointment-form">
+        <input id="couponId" type="hidden">
+        <div class="form-grid two">
+          <label><span>Código</span><input id="couponCode" type="text" required></label>
+          <label><span>Uso máximo</span><input id="couponMaxUses" type="number" min="1"></label>
+        </div>
+        <label><span>Descrição</span><input id="couponDescription" type="text"></label>
+        <div class="form-grid three">
+          <label><span>Tipo</span><select id="couponDiscountType"><option value="percent">Percentual (%)</option><option value="fixed">Valor fixo (R$)</option></select></label>
+          <label><span>Desconto</span><input id="couponDiscountValue" type="number" min="0" step="0.01" required></label>
+          <label><span>Valor mínimo</span><input id="couponMinAmount" type="number" min="0" step="0.01" value="0"></label>
+        </div>
+        <div class="form-grid two">
+          <label><span>Início</span><input id="couponStart" type="datetime-local"></label>
+          <label><span>Fim</span><input id="couponEnd" type="datetime-local"></label>
+        </div>
+        <label class="check-row"><input id="couponActive" type="checkbox" checked><span>Cupom ativo</span></label>
+        <p id="couponMessage" class="form-message"></p>
+        <div class="modal-actions"><button type="button" class="ghost-btn" data-close-coupon>CANCELAR</button><button type="submit" class="primary-btn">SALVAR</button></div>
+      </form>
+    </section>
+  </div>
+
+  <div id="planModal" class="modal hidden" role="dialog" aria-modal="true">
+    <div class="modal-backdrop" data-close-plan></div>
+    <section class="modal-card modal-small">
+      <div class="modal-head"><div><span>PLANO</span><h2 id="planModalTitle">Novo plano</h2></div><button type="button" class="modal-close" data-close-plan>×</button></div>
+      <form id="planForm" class="appointment-form">
+        <input id="planId" type="hidden">
+        <label><span>Nome</span><input id="planName" type="text" required></label>
+        <label><span>Descrição</span><textarea id="planDescription" rows="3"></textarea></label>
+        <div class="form-grid three">
+          <label><span>Preço</span><input id="planPrice" type="number" min="0" step="0.01" required></label>
+          <label><span>Ciclo</span><select id="planPeriod"><option value="monthly">Mensal</option><option value="quarterly">Trimestral</option><option value="yearly">Anual</option><option value="custom">Personalizado</option></select></label>
+          <label><span>Visitas por ciclo</span><input id="planVisits" type="number" min="1"></label>
+        </div>
+        <label><span>Desconto adicional (%)</span><input id="planDiscount" type="number" min="0" max="100" step="0.01" value="0"></label>
+        <label class="check-row"><input id="planActive" type="checkbox" checked><span>Plano ativo</span></label>
+        <p id="planMessage" class="form-message"></p>
+        <div class="modal-actions"><button type="button" class="ghost-btn" data-close-plan>CANCELAR</button><button type="submit" class="primary-btn">SALVAR</button></div>
+      </form>
+    </section>
+  </div>
+
+  <div id="birthdayCampaignModal" class="modal hidden" role="dialog" aria-modal="true">
+    <div class="modal-backdrop" data-close-birthday></div>
+    <section class="modal-card modal-small">
+      <div class="modal-head"><div><span>ANIVERSÁRIO</span><h2>Benefício de aniversário</h2></div><button type="button" class="modal-close" data-close-birthday>×</button></div>
+      <form id="birthdayCampaignForm" class="appointment-form">
+        <input id="birthdayCampaignId" type="hidden">
+        <label><span>Nome da campanha</span><input id="birthdayCampaignName" type="text" value="Aniversário C7" required></label>
+        <label><span>Mensagem/benefício</span><textarea id="birthdayCampaignDescription" rows="3"></textarea></label>
+        <div class="form-grid two">
+          <label><span>Tipo</span><select id="birthdayDiscountType"><option value="percent">Percentual (%)</option><option value="fixed">Valor fixo (R$)</option></select></label>
+          <label><span>Desconto</span><input id="birthdayDiscountValue" type="number" min="0" step="0.01" value="0"></label>
+        </div>
+        <div class="form-grid two">
+          <label><span>Dias antes</span><input id="birthdayDaysBefore" type="number" min="0" value="0"></label>
+          <label><span>Dias depois</span><input id="birthdayDaysAfter" type="number" min="0" value="7"></label>
+        </div>
+        <label class="check-row"><input id="birthdayCampaignActive" type="checkbox" checked><span>Campanha ativa</span></label>
+        <p id="birthdayCampaignMessage" class="form-message"></p>
+        <div class="modal-actions"><button type="button" class="ghost-btn" data-close-birthday>CANCELAR</button><button type="submit" class="primary-btn">SALVAR</button></div>
+      </form>
+    </section>
+  </div>
+
   <script type="module" src="relatorios.js"></script>
   <script type="module" src="financeiro.js"></script>
+  <script type="module" src="promocoes.js"></script>
 </body>
 </html>
