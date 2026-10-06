@@ -439,6 +439,8 @@ $("receiveForm")?.addEventListener("submit",async e=>{
 
   $("receiveMessage").textContent="Registrando recebimento...";
 
+  const benefit=appliedCoupon||selectedBenefit();
+
   const {data:transaction,error}=await supabase.from("cash_transactions").insert({
     session_id:openSession.id,
     appointment_id:appointment.id,
@@ -451,6 +453,9 @@ $("receiveForm")?.addEventListener("submit",async e=>{
     gross_amount:gross,
     discount_amount:discount,
     net_amount:net,
+    benefit_source:benefit?.source||null,
+    benefit_label:benefit?.label||null,
+    coupon_id:appliedCoupon?.id||null,
     created_by:currentUser
   }).select("id").single();
 
@@ -459,17 +464,32 @@ $("receiveForm")?.addEventListener("submit",async e=>{
     return;
   }
 
-  const items=(appointment.appointment_services||[]).map((service,index)=>({
+  const items=(appointment.appointment_services||[]).map(service=>({
     transaction_id:transaction.id,
     item_type:"service",
+    service_id:service.service_id||null,
     description:service.service_name||"Serviço",
     quantity:1,
-    unit_price:Number(appointment.total_amount||0)/(appointment.appointment_services?.length||1),
-    total_amount:Number(appointment.total_amount||0)/(appointment.appointment_services?.length||1)
+    unit_price:Number(service.price||0),
+    total_amount:Number(service.price||0)
   }));
 
   if(items.length){
     await supabase.from("cash_transaction_items").insert(items);
+  }
+
+  if(appliedCoupon){
+    await supabase.from("coupon_redemptions").insert({
+      coupon_id:appliedCoupon.id,
+      transaction_id:transaction.id,
+      customer_id:appointment.customer_id,
+      discount_amount:discount
+    });
+
+    await supabase.from("coupons").update({
+      used_count:Number(appliedCoupon.used_count||0)+1,
+      updated_at:new Date().toISOString()
+    }).eq("id",appliedCoupon.id);
   }
 
   const {data:professionalData}=await supabase
