@@ -509,3 +509,7 @@ body{background:var(--bg);color:var(--text)}
 }
 .login-form input,.login-form .secondary-btn{border-radius:10px}
 .login-form button{border-radius:10px}
+
+
+.coupon-apply-row{display:grid;grid-template-columns:1fr auto;gap:8px}
+.coupon-apply-row .ghost-btn{height:44px;align-self:end}
