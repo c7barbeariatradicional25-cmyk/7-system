@@ -119,3 +119,29 @@
 .cash-empty{padding:24px 10px;text-align:center;color:#606060;font-size:9px}
 @media(max-width:900px){.cash-stats{grid-template-columns:1fr 1fr}.cash-layout{grid-template-columns:1fr}}
 @media(max-width:620px){.cash-actions{width:100%;justify-content:flex-start}.cash-actions button{flex:1 1 46%}.cash-row,.pending-row{grid-template-columns:72px 1fr}.cash-row-value,.pending-receive{grid-column:2}}
+
+
+/* OPERACOES */
+.ops-toolbar{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;flex-wrap:wrap}
+.ops-toolbar h2{margin-top:5px;font:600 28px Oswald,sans-serif}
+.ops-toolbar p{margin-top:5px;color:#6d6d6d;font-size:9px}
+.ops-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:16px}
+.ops-stats article{padding:14px;border:1px solid var(--line);background:#090909}
+.ops-stats span{display:block;color:#666;font:500 8px Oswald,sans-serif;letter-spacing:1.5px}
+.ops-stats strong{display:block;margin-top:8px;font:600 22px Oswald,sans-serif}
+.ops-board{display:grid;grid-template-columns:repeat(4,minmax(220px,1fr));gap:10px;margin-top:12px;overflow:auto;padding-bottom:4px}
+.ops-column{min-height:420px;border:1px solid var(--line);background:#080808}
+.ops-column-head{padding:13px;border-bottom:1px solid var(--line)}
+.ops-column-head span{display:block;color:#555;font:500 8px Oswald,sans-serif;letter-spacing:1.5px}
+.ops-column-head h3{margin-top:3px;font:600 15px Oswald,sans-serif}
+.ops-list{display:grid;gap:8px;padding:10px}
+.ops-card{padding:12px;border:1px solid rgba(255,255,255,.08);background:#0d0d0d}
+.ops-card-head{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
+.ops-card-head strong{font-size:10px}.ops-card-head span{font:600 13px Oswald,sans-serif}
+.ops-card-meta{margin-top:7px;color:#777;font-size:8px;line-height:1.45}
+.ops-card-actions{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap}
+.ops-card-actions button{height:30px;padding:0 8px;border:1px solid var(--line);background:transparent;color:#fff;font:600 8px Oswald,sans-serif;letter-spacing:.6px;cursor:pointer}
+.ops-card-actions button.primary{background:#fff;color:#050505}
+.ops-empty{padding:18px 8px;text-align:center;color:#555;font-size:8px}
+@media(max-width:1000px){.ops-board{grid-template-columns:repeat(4,230px)}}
+@media(max-width:640px){.ops-stats{grid-template-columns:1fr 1fr}}
