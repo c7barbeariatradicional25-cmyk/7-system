@@ -166,3 +166,73 @@ async function loadHistory(customerId){
     target.appendChild(row);
   });
 }
+
+async function openCustomer(id=null){
+  $("customerForm").reset();
+  $("customerMessage").textContent="";
+  $("customerId").value=id||"";
+  $("customerModalTitle").textContent=id?"Perfil do cliente":"Novo cliente";
+  $("customerHistory").classList.toggle("hidden",!id);
+
+  if(id){
+    const customer=customers.find(c=>c.id===id);
+    if(!customer) return;
+
+    $("crmCustomerName").value=customer.full_name||"";
+    $("crmCustomerPhone").value=customer.phone||"";
+    $("crmCustomerEmail").value=customer.email||"";
+    $("crmCustomerBirthDate").value=customer.birth_date||"";
+    $("crmPreferredProfessional").value=customer.preferred_professional_id||"";
+    $("crmCustomerTags").value=(customer.tags||[]).join(", ");
+    $("crmCustomerNotes").value=customer.notes||"";
+    $("crmMarketingOptIn").checked=Boolean(customer.marketing_opt_in);
+    await loadHistory(id);
+  }
+
+  $("customerModal").classList.remove("hidden");
+}
+
+function closeCustomer(){
+  $("customerModal").classList.add("hidden");
+}
+
+async function saveCustomer(event){
+  event.preventDefault();
+
+  if(!["admin","reception"].includes(currentRole)){
+    $("customerMessage").textContent="Seu perfil não possui permissão para alterar clientes.";
+    return;
+  }
+
+  const id=$("customerId").value||null;
+  const payload={
+    full_name:$("crmCustomerName").value.trim(),
+    phone:$("crmCustomerPhone").value.trim()||null,
+    email:$("crmCustomerEmail").value.trim()||null,
+    birth_date:$("crmCustomerBirthDate").value||null,
+    preferred_professional_id:$("crmPreferredProfessional").value||null,
+    tags:$("crmCustomerTags").value.split(",").map(v=>v.trim()).filter(Boolean),
+    notes:$("crmCustomerNotes").value.trim()||null,
+    marketing_opt_in:$("crmMarketingOptIn").checked,
+    updated_at:new Date().toISOString(),
+    updated_by:currentUser
+  };
+
+  if(!payload.full_name){
+    $("customerMessage").textContent="Informe o nome do cliente.";
+    return;
+  }
+
+  $("customerMessage").textContent="Salvando...";
+  const result=id
+    ? await supabase.from("customers").update(payload).eq("id",id)
+    : await supabase.from("customers").insert(payload);
+
+  if(result.error){
+    $("customerMessage").textContent="Não foi possível salvar o cliente.";
+    return;
+  }
+
+  closeCustomer();
+  await loadCustomers();
+}
