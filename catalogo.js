@@ -30,6 +30,14 @@ async function loadServices(){
   renderServices();
 }
 
+function groupByCategory(items){
+  return items.reduce((acc,item)=>{
+    const key=(item.category||"Sem categoria").trim()||"Sem categoria";
+    (acc[key] ||= []).push(item);
+    return acc;
+  },{});
+}
+
 function renderServices(){
   const list=$("adminServiceList");
   list.replaceChildren();
@@ -42,7 +50,20 @@ function renderServices(){
     return;
   }
 
-  services.forEach(s=>{
+  const groups=groupByCategory(services);
+
+  Object.entries(groups).forEach(([category,items])=>{
+    const section=document.createElement("section");
+    section.className="catalog-category";
+
+    const head=document.createElement("div");
+    head.className="catalog-category-head";
+    head.innerHTML=`<div><span>CATEGORIA</span><h3>${category}</h3></div><strong>${items.length}</strong>`;
+
+    const body=document.createElement("div");
+    body.className="catalog-category-body";
+
+    items.forEach(s=>{
     const row=document.createElement("div");
     row.className="catalog-row";
 
@@ -87,7 +108,11 @@ function renderServices(){
     }
 
     row.append(main,price,status,actions);
-    list.appendChild(row);
+    body.appendChild(row);
+    });
+
+    section.append(head,body);
+    list.appendChild(section);
   });
 }
 
@@ -161,9 +186,22 @@ function renderProducts(){
     return;
   }
 
-  products.forEach(p=>{
-    const row=document.createElement("div");
-    row.className="catalog-row";
+  const groups=groupByCategory(products);
+
+  Object.entries(groups).forEach(([category,items])=>{
+    const section=document.createElement("section");
+    section.className="catalog-category";
+
+    const head=document.createElement("div");
+    head.className="catalog-category-head";
+    head.innerHTML=`<div><span>CATEGORIA</span><h3>${category}</h3></div><strong>${items.length}</strong>`;
+
+    const body=document.createElement("div");
+    body.className="catalog-category-body";
+
+    items.forEach(p=>{
+      const row=document.createElement("div");
+      row.className="catalog-row";
 
     const main=document.createElement("div");
     main.className="catalog-main";
@@ -204,8 +242,12 @@ function renderProducts(){
       actions.append(edit,toggle);
     }
 
-    row.append(main,price,status,actions);
-    list.appendChild(row);
+      row.append(main,price,status,actions);
+      body.appendChild(row);
+    });
+
+    section.append(head,body);
+    list.appendChild(section);
   });
 }
 
@@ -220,6 +262,7 @@ function openProduct(id=null){
   $("productAdminId").value=p?.id||"";
   $("productAdminTitle").textContent=p?"Editar produto":"Novo produto";
   $("productAdminName").value=p?.name||"";
+  $("productAdminCategory").value=p?.category||"Geral";
   $("productAdminPrice").value=p?.price??"";
   $("productAdminCost").value=p?.cost_price??"";
   $("productAdminMinStock").value=p?.min_stock??0;
@@ -239,6 +282,7 @@ async function saveProduct(e){
   const id=$("productAdminId").value;
   const payload={
     name:$("productAdminName").value.trim(),
+    category:$("productAdminCategory").value.trim()||"Geral",
     price:Number($("productAdminPrice").value||0),
     cost_price:$("productAdminCost").value===""?null:Number($("productAdminCost").value),
     min_stock:Number($("productAdminMinStock").value||0),
