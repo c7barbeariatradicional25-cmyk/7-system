@@ -462,7 +462,11 @@
 
         <div class="form-grid two">
           <label><span>Profissional</span><select id="appointmentProfessional" required></select></label>
-          <label><span>Serviço</span><select id="appointmentService" required></select></label>
+          <div class="service-picker-field">
+            <span>Serviços</span>
+            <div id="appointmentServiceList" class="appointment-service-list"></div>
+            <small id="appointmentServiceCount">Nenhum serviço selecionado</small>
+          </div>
         </div>
 
         <div class="form-grid three">
@@ -489,8 +493,9 @@
 
         <p id="appointmentMessage" class="form-message"></p>
 
-        <div class="modal-actions">
+        <div class="modal-actions appointment-save-actions">
           <button type="button" class="ghost-btn" data-close-modal>CANCELAR</button>
+          <button id="saveAndNewAppointmentBtn" type="button" class="ghost-btn">SALVAR E ADICIONAR OUTRO</button>
           <button type="submit" class="primary-btn">SALVAR AGENDAMENTO</button>
         </div>
       </form>
