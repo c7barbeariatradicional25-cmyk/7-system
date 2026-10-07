@@ -1915,3 +1915,42 @@ body{
     height:64px;
   }
 }
+
+
+/* CORREÇÃO DO MARCADOR AGORA */
+.live-now-line::before,
+.live-now-line span{
+  display:none!important;
+}
+.live-now-rail{
+  position:absolute;
+  left:0;
+  right:0;
+  z-index:18;
+  height:2px;
+  transform:translateY(-1px);
+  pointer-events:none;
+}
+.live-now-rail::after{
+  content:"";
+  position:absolute;
+  right:-5px;
+  top:-4px;
+  width:10px;
+  height:10px;
+  border-radius:50%;
+  background:#d34f43;
+  box-shadow:0 0 0 3px rgba(211,79,67,.10);
+}
+.live-now-rail span{
+  position:absolute;
+  right:8px;
+  top:-12px;
+  padding:2px 6px;
+  border-radius:999px;
+  background:#d34f43;
+  color:#fff;
+  font:800 8px Manrope,sans-serif;
+  letter-spacing:.35px;
+  white-space:nowrap;
+}
