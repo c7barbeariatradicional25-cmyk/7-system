@@ -409,6 +409,12 @@
           <article><span>ESTOQUE BAIXO</span><strong id="adminProductLowStockCount">0</strong></article>
           <article><span>ITENS EM ESTOQUE</span><strong id="adminProductStockTotal">0</strong></article>
         </div>
+
+        <div class="product-department-tabs">
+          <button type="button" class="product-department-tab active" data-product-department="barbershop">PRODUTOS DE BARBEARIA</button>
+          <button type="button" class="product-department-tab" data-product-department="convenience">BEBIDAS & CONSUMÍVEIS</button>
+        </div>
+
         <div id="adminProductList" class="catalog-list">
           <div class="agenda-empty">Carregando produtos...</div>
         </div>
@@ -1075,13 +1081,21 @@
           <label><span>Custo</span><input id="productAdminCost" type="number" min="0" step="0.01"></label>
           <label><span>Estoque Mínimo</span><input id="productAdminMinStock" type="number" min="0" step="1" value="0"></label>
         </div>
-        <label><span>Tipo de Produto</span>
-          <select id="productAdminKind">
-            <option value="retail">Venda ao Cliente</option>
-            <option value="consumable">Consumível Interno</option>
-            <option value="both">Venda + Consumível</option>
-          </select>
-        </label>
+        <div class="form-grid two">
+          <label><span>Departamento</span>
+            <select id="productAdminDepartment">
+              <option value="barbershop">Produtos de Barbearia</option>
+              <option value="convenience">Bebidas & Consumíveis</option>
+            </select>
+          </label>
+          <label><span>Tipo de Produto</span>
+            <select id="productAdminKind">
+              <option value="retail">Venda ao Cliente</option>
+              <option value="consumable">Consumível Interno</option>
+              <option value="both">Venda + Consumível</option>
+            </select>
+          </label>
+        </div>
         <div class="form-grid two">
           <label><span>Ordem</span><input id="productAdminSort" type="number" min="0" step="1" value="0"></label>
           <label><span>Estoque atual</span><input id="productAdminStock" type="number" readonly></label>
