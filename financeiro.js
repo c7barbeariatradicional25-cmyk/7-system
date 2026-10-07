@@ -158,8 +158,157 @@ async function loadCashHistory(){
   }
 }
 
+
+function currentWeekRange(){
+  const now=new Date();
+  const start=new Date(now);
+  start.setHours(0,0,0,0);
+  start.setDate(now.getDate()-now.getDay());
+
+  const end=new Date(start);
+  end.setDate(start.getDate()+6);
+  end.setHours(23,59,59,999);
+
+  const input=d=>{
+    const y=d.getFullYear();
+    const m=String(d.getMonth()+1).padStart(2,"0");
+    const day=String(d.getDate()).padStart(2,"0");
+    return `${y}-${m}-${day}`;
+  };
+
+  return {start,end,startValue:input(start),endValue:input(end)};
+}
+
+async function loadEmployeeConsumptions(){
+  if(!["admin","reception"].includes(currentRole)) return;
+
+  const {data,error}=await supabase
+    .from("employee_consumptions")
+    .select("id,quantity,unit_price,total_amount,status,created_at,professional:professionals(full_name),product:products(name)")
+    .eq("status","pending")
+    .order("created_at",{ascending:false})
+    .limit(100);
+
+  const target=$("employeeConsumptionList");
+  if(!target) return;
+
+  if(error){
+    target.innerHTML='<div class="cash-empty">Não foi possível carregar os consumos.</div>';
+    return;
+  }
+
+  const rows=data||[];
+
+  target.innerHTML=rows.length
+    ? rows.map(item=>`
+        <div class="finance-row">
+          <div>
+            <strong>${item.professional?.full_name||"Colaborador"}</strong>
+            <span>${item.product?.name||"Produto"} • ${Number(item.quantity||0)} un. • ${new Date(item.created_at).toLocaleDateString("pt-BR")}</span>
+          </div>
+          <div class="finance-value">${money(item.total_amount)}</div>
+        </div>
+      `).join("")
+    : '<div class="cash-empty">Nenhum consumo pendente.</div>';
+}
+
+async function loadWeeklySettlements(){
+  if(!["admin","reception"].includes(currentRole)) return;
+
+  const range=currentWeekRange();
+
+  const [proResult,commissionResult,consumptionResult]=await Promise.all([
+    supabase.from("professionals").select("id,full_name").eq("active",true).order("full_name"),
+    supabase.from("commission_entries")
+      .select("id,professional_id,commission_amount,status,created_at")
+      .eq("status","pending")
+      .gte("created_at",range.start.toISOString())
+      .lte("created_at",range.end.toISOString()),
+    supabase.from("employee_consumptions")
+      .select("id,professional_id,total_amount,status,created_at")
+      .eq("status","pending")
+      .gte("created_at",range.start.toISOString())
+      .lte("created_at",range.end.toISOString())
+  ]);
+
+  const professionals=proResult.data||[];
+  const commissions=commissionResult.data||[];
+  const consumptions=consumptionResult.data||[];
+  const target=$("weeklySettlementList");
+  if(!target) return;
+
+  if(!professionals.length){
+    target.innerHTML='<div class="cash-empty">Nenhum colaborador ativo.</div>';
+    return;
+  }
+
+  target.replaceChildren();
+
+  professionals.forEach(pro=>{
+    const commission=commissions
+      .filter(x=>x.professional_id===pro.id)
+      .reduce((sum,x)=>sum+Number(x.commission_amount||0),0);
+
+    const consumption=consumptions
+      .filter(x=>x.professional_id===pro.id)
+      .reduce((sum,x)=>sum+Number(x.total_amount||0),0);
+
+    const net=Math.max(commission-consumption,0);
+
+    const row=document.createElement("div");
+    row.className="finance-row";
+
+    const main=document.createElement("div");
+    const title=document.createElement("strong");
+    title.textContent=pro.full_name;
+    const sub=document.createElement("span");
+    sub.textContent=`Comissão: ${money(commission)} • Consumo: ${money(consumption)} • ${range.start.toLocaleDateString("pt-BR")} a ${range.end.toLocaleDateString("pt-BR")}`;
+    main.append(title,sub);
+
+    const actions=document.createElement("div");
+    actions.className="finance-actions";
+
+    const value=document.createElement("div");
+    value.className="finance-value";
+    value.textContent=money(net);
+    actions.appendChild(value);
+
+    if(currentRole==="admin"&&(commission>0||consumption>0)){
+      const btn=document.createElement("button");
+      btn.type="button";
+      btn.textContent="REALIZAR ACERTO";
+      btn.addEventListener("click",async()=>{
+        if(!confirm(`Confirmar o acerto de ${pro.full_name}?\nComissão: ${money(commission)}\nConsumo: ${money(consumption)}\nLíquido: ${money(net)}`)) return;
+
+        const {error}=await supabase.rpc("settle_employee_week",{
+          p_professional_id:pro.id,
+          p_period_start:range.startValue,
+          p_period_end:range.endValue,
+          p_notes:"Acerto semanal"
+        });
+
+        if(error){
+          alert("Não foi possível realizar o acerto.");
+          return;
+        }
+
+        await Promise.all([loadCommissions(),loadEmployeeConsumptions(),loadWeeklySettlements()]);
+      });
+      actions.appendChild(btn);
+    }
+
+    row.append(main,actions);
+    target.appendChild(row);
+  });
+}
+
 async function loadFinance(){
-  await Promise.all([loadCommissions(),loadCashHistory()]);
+  await Promise.all([
+    loadCommissions(),
+    loadCashHistory(),
+    loadEmployeeConsumptions(),
+    loadWeeklySettlements()
+  ]);
 }
 
 async function init(){
@@ -167,6 +316,11 @@ async function init(){
   document.querySelectorAll('.nav-item[data-section="caixa"]').forEach(btn=>btn.addEventListener("click",loadFinance));
   $("refreshCommissionsBtn")?.addEventListener("click",loadCommissions);
   $("refreshCashHistoryBtn")?.addEventListener("click",loadCashHistory);
+  $("refreshEmployeeConsumptionBtn")?.addEventListener("click",loadEmployeeConsumptions);
+  $("refreshSettlementsBtn")?.addEventListener("click",loadWeeklySettlements);
+  window.addEventListener("c7-employee-consumption-updated",async()=>{
+    await Promise.all([loadEmployeeConsumptions(),loadWeeklySettlements()]);
+  });
 }
 
 init();
