@@ -617,12 +617,15 @@ function renderTimeline(){
       ${head}
       <div class="live-timeline-scroll">
         <div class="live-timeline-body" style="--pro-count:${pros.length};--timeline-height:${timelineHeight}px">
-          <div class="live-time-rail" style="height:${timelineHeight}px">${timeLabels.join("")}</div>
-          <div class="live-columns" style="--pro-count:${pros.length};height:${timelineHeight}px">
-            ${columns}
-            <div id="liveNowLine" class="live-now-line hidden">
+          <div class="live-time-rail" style="height:${timelineHeight}px">
+            ${timeLabels.join("")}
+            <div id="liveNowRail" class="live-now-rail hidden">
               <span id="liveNowLabel">AGORA</span>
             </div>
+          </div>
+          <div class="live-columns" style="--pro-count:${pros.length};height:${timelineHeight}px">
+            ${columns}
+            <div id="liveNowLine" class="live-now-line hidden"></div>
           </div>
         </div>
       </div>
@@ -676,6 +679,7 @@ function renderTimeline(){
     const today=localDateInput(now);
     const line=$("liveNowLine");
     const label=$("liveNowLabel");
+    const rail=$("liveNowRail");
     const clock=$("liveClockText");
 
     if(clock){
@@ -684,17 +688,22 @@ function renderTimeline(){
 
     if(!line||selected!==today){
       line?.classList.add("hidden");
+      rail?.classList.add("hidden");
       return;
     }
 
     const nowMinutes=now.getHours()*60+now.getMinutes()+now.getSeconds()/60;
     if(nowMinutes<minMinute||nowMinutes>maxMinute){
       line.classList.add("hidden");
+      rail?.classList.add("hidden");
       return;
     }
 
+    const top=timelineTopPadding+(nowMinutes-minMinute)*pxPerMinute;
     line.classList.remove("hidden");
-    line.style.top=`${timelineTopPadding+(nowMinutes-minMinute)*pxPerMinute}px`;
+    rail?.classList.remove("hidden");
+    line.style.top=`${top}px`;
+    if(rail) rail.style.top=`${top}px`;
     if(label) label.textContent=now.toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"});
   }
 
