@@ -1203,7 +1203,10 @@
           </label>
           <label class="check-row"><input id="professionalAccessActive" type="checkbox" checked><span>Acesso ativo</span></label>
           <small id="professionalAccessHint">Ao salvar, este e-mail será autorizado e vinculado automaticamente a este barbeiro.</small>
-          <button id="unlinkProfessionalAccessBtn" type="button" class="danger-btn hidden">DESVINCULAR ACESSO</button>
+          <div class="professional-access-actions">
+            <button id="resendProfessionalConfirmationBtn" type="button" class="ghost-btn hidden">REENVIAR CONFIRMAÇÃO</button>
+            <button id="unlinkProfessionalAccessBtn" type="button" class="danger-btn hidden">DESVINCULAR ACESSO</button>
+          </div>
         </div>
 
         <p id="professionalAdminMessage" class="form-message"></p>
