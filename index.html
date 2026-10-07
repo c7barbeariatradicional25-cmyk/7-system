@@ -210,6 +210,7 @@
             <button id="openCashBtn" class="primary-btn" type="button">ABRIR CAIXA</button>
             <button id="receiveAppointmentBtn" class="ghost-btn hidden" type="button">RECEBER ATENDIMENTO</button>
             <button id="sellProductBtn" class="ghost-btn hidden" type="button">VENDER PRODUTO</button>
+            <button id="employeeConsumptionBtn" class="ghost-btn hidden" type="button">CONSUMO COLABORADOR</button>
             <button id="cashMovementBtn" class="ghost-btn hidden" type="button">ENTRADA / SAÍDA</button>
             <button id="closeCashBtn" class="primary-btn hidden" type="button">FECHAR CAIXA</button>
           </div>
@@ -245,7 +246,7 @@
         <div class="finance-grid">
           <article class="cash-panel">
             <div class="cash-panel-head">
-              <div><span>COMISSÕES</span><h3>Pendentes por barbeiro</h3></div>
+              <div><span>COMISSÕES</span><h3>Pendentes por Barbeiro</h3></div>
               <button id="refreshCommissionsBtn" class="ghost-btn" type="button">ATUALIZAR</button>
             </div>
             <div id="commissionList" class="finance-list">
@@ -255,7 +256,27 @@
 
           <article class="cash-panel">
             <div class="cash-panel-head">
-              <div><span>HISTÓRICO</span><h3>Caixas anteriores</h3></div>
+              <div><span>ACERTO SEMANAL</span><h3>Comissão − Consumo</h3></div>
+              <button id="refreshSettlementsBtn" class="ghost-btn" type="button">ATUALIZAR</button>
+            </div>
+            <div id="weeklySettlementList" class="finance-list">
+              <div class="agenda-empty">Carregando acertos...</div>
+            </div>
+          </article>
+
+          <article class="cash-panel">
+            <div class="cash-panel-head">
+              <div><span>CONSUMO INTERNO</span><h3>Débitos dos Colaboradores</h3></div>
+              <button id="refreshEmployeeConsumptionBtn" class="ghost-btn" type="button">ATUALIZAR</button>
+            </div>
+            <div id="employeeConsumptionList" class="finance-list">
+              <div class="agenda-empty">Nenhum consumo pendente.</div>
+            </div>
+          </article>
+
+          <article class="cash-panel">
+            <div class="cash-panel-head">
+              <div><span>HISTÓRICO</span><h3>Caixas Anteriores</h3></div>
               <button id="refreshCashHistoryBtn" class="ghost-btn" type="button">ATUALIZAR</button>
             </div>
             <div id="cashHistoryList" class="finance-list">
@@ -452,7 +473,27 @@
           <article><span>COMISSÕES</span><strong id="reportCommissions">R$ 0</strong></article>
         </div>
 
+        <div class="report-chart-grid">
+          <article class="report-panel report-chart-panel">
+            <div class="cash-panel-head"><div><span>12 MESES</span><h3>Faturamento Mensal</h3></div></div>
+            <canvas id="monthlyRevenueChart" height="210"></canvas>
+          </article>
+          <article class="report-panel report-chart-panel">
+            <div class="cash-panel-head"><div><span>12 MESES</span><h3>Entradas x Saídas</h3></div></div>
+            <canvas id="monthlyCashFlowChart" height="210"></canvas>
+          </article>
+        </div>
+
         <div class="report-grid">
+          <article class="report-panel">
+            <div class="cash-panel-head"><div><span>RANKING</span><h3>Serviços Mais Vendidos</h3></div></div>
+            <div id="serviceSalesRanking" class="report-list"></div>
+          </article>
+
+          <article class="report-panel">
+            <div class="cash-panel-head"><div><span>RANKING</span><h3>Produtos Mais Vendidos</h3></div></div>
+            <div id="productSalesRanking" class="report-list"></div>
+          </article>
           <article class="report-panel">
             <div class="cash-panel-head"><div><span>EQUIPE</span><h3>Desempenho por barbeiro</h3></div></div>
             <div id="professionalReportList" class="report-list"></div>
@@ -747,6 +788,30 @@
     </section>
   </div>
 
+  <div id="employeeConsumptionModal" class="modal hidden" role="dialog" aria-modal="true">
+    <div class="modal-backdrop" data-close-employee-consumption></div>
+    <section class="modal-card modal-small">
+      <div class="modal-head">
+        <div><span>EQUIPE</span><h2>Consumo do Colaborador</h2></div>
+        <button type="button" class="modal-close" data-close-employee-consumption>×</button>
+      </div>
+      <form id="employeeConsumptionForm" class="appointment-form">
+        <label><span>Colaborador</span><select id="employeeConsumptionProfessional" required></select></label>
+        <label><span>Produto</span><select id="employeeConsumptionProduct" required></select></label>
+        <div class="form-grid two">
+          <label><span>Quantidade</span><input id="employeeConsumptionQty" type="number" min="1" step="1" value="1" required></label>
+          <label><span>Total para Desconto</span><input id="employeeConsumptionTotal" type="text" readonly></label>
+        </div>
+        <label><span>Observação</span><textarea id="employeeConsumptionNotes" rows="3" placeholder="Opcional"></textarea></label>
+        <p id="employeeConsumptionMessage" class="form-message"></p>
+        <div class="modal-actions">
+          <button type="button" class="ghost-btn" data-close-employee-consumption>CANCELAR</button>
+          <button type="submit" class="primary-btn">REGISTRAR CONSUMO</button>
+        </div>
+      </form>
+    </section>
+  </div>
+
   <div id="movementModal" class="modal hidden" role="dialog" aria-modal="true">
     <div class="modal-backdrop" data-close-movement></div>
     <section class="modal-card modal-small">
@@ -854,10 +919,17 @@
           <label><span>Categoria</span><input id="productAdminCategory" type="text" placeholder="Ex.: Pomadas, Barba, Cabelo" required></label>
         </div>
         <div class="form-grid three">
-          <label><span>Preço de venda</span><input id="productAdminPrice" type="number" min="0" step="0.01" required></label>
+          <label><span>Preço de Venda</span><input id="productAdminPrice" type="number" min="0" step="0.01" required></label>
           <label><span>Custo</span><input id="productAdminCost" type="number" min="0" step="0.01"></label>
-          <label><span>Estoque mínimo</span><input id="productAdminMinStock" type="number" min="0" step="1" value="0"></label>
+          <label><span>Estoque Mínimo</span><input id="productAdminMinStock" type="number" min="0" step="1" value="0"></label>
         </div>
+        <label><span>Tipo de Produto</span>
+          <select id="productAdminKind">
+            <option value="retail">Venda ao Cliente</option>
+            <option value="consumable">Consumível Interno</option>
+            <option value="both">Venda + Consumível</option>
+          </select>
+        </label>
         <div class="form-grid two">
           <label><span>Ordem</span><input id="productAdminSort" type="number" min="0" step="1" value="0"></label>
           <label><span>Estoque atual</span><input id="productAdminStock" type="number" readonly></label>
