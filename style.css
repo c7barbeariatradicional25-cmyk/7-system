@@ -1954,3 +1954,53 @@ body{
   letter-spacing:.35px;
   white-space:nowrap;
 }
+
+
+/* ALINHAMENTO VERTICAL DA TIMELINE */
+.live-timeline-head{
+  position:relative;
+}
+.live-timeline-head::after{
+  content:"";
+  position:absolute;
+  top:0;
+  bottom:0;
+  left:110px;
+  width:1px;
+  background:#d8c9b9;
+  pointer-events:none;
+  z-index:25;
+}
+.live-time-corner{
+  border-right:0!important;
+}
+.live-time-rail{
+  border-right:0!important;
+}
+.live-timeline-body{
+  position:relative;
+}
+.live-timeline-body::after{
+  content:"";
+  position:absolute;
+  top:0;
+  bottom:0;
+  left:110px;
+  width:1px;
+  background:#d8c9b9;
+  pointer-events:none;
+  z-index:14;
+}
+.live-columns{
+  border-left:0!important;
+}
+.live-pro-column:first-child{
+  border-left:0!important;
+}
+
+@media(max-width:900px){
+  .live-timeline-head::after,
+  .live-timeline-body::after{
+    left:96px;
+  }
+}
