@@ -141,19 +141,24 @@ async function openProfessional(id=null){
     linkedAccess=data||null;
   }
 
+  const accessLinked=Boolean(p?.user_id);
+  const accessPrepared=Boolean(linkedAccess&&!accessLinked);
+
   $("professionalAccessEmail").value=linkedAccess?.email||"";
-  $("professionalAccessEmail").readOnly=Boolean(linkedAccess);
+  $("professionalAccessEmail").readOnly=accessLinked;
   $("professionalAccessPassword").value="";
-  $("professionalAccessPasswordWrap").classList.toggle("hidden",Boolean(linkedAccess));
-  $("professionalAccessPassword").required=!linkedAccess;
+  $("professionalAccessPasswordWrap").classList.toggle("hidden",accessLinked);
+  $("professionalAccessPassword").required=!accessLinked;
   $("professionalAccessActive").checked=linkedAccess?.active??true;
-  $("professionalAccessStatus").textContent=linkedAccess
-    ? (linkedAccess.active?"ACESSO ATIVO":"ACESSO INATIVO")
-    : "SEM ACESSO";
-  $("professionalAccessStatus").classList.toggle("active",Boolean(linkedAccess?.active));
-  $("professionalAccessHint").textContent=linkedAccess
-    ? "O e-mail já está vinculado a este barbeiro. Você pode ativar ou desativar o acesso por aqui."
-    : "Ao salvar, este e-mail será autorizado e vinculado automaticamente a este barbeiro.";
+  $("professionalAccessStatus").textContent=accessLinked
+    ? (linkedAccess?.active?"ACESSO ATIVO":"ACESSO INATIVO")
+    : (accessPrepared?"ACESSO PENDENTE":"SEM ACESSO");
+  $("professionalAccessStatus").classList.toggle("active",Boolean(accessLinked&&linkedAccess?.active));
+  $("professionalAccessHint").textContent=accessLinked
+    ? "O login já está criado e vinculado a este barbeiro. Você pode ativar ou desativar o acesso por aqui."
+    : accessPrepared
+      ? "A autorização foi salva, mas o login ainda não foi criado. Informe a senha inicial e salve novamente."
+      : "Ao salvar, este e-mail será autorizado e vinculado automaticamente a este barbeiro.";
 
   $("professionalAdminModal").classList.remove("hidden");
 }
@@ -234,7 +239,10 @@ async function saveProfessional(e){
       .eq("role","barber")
       .maybeSingle();
 
-    if(!existingAccess && accessPassword.length<8){
+    const professionalRecord=professionals.find(p=>p.id===professionalId);
+    const authLinked=Boolean(professionalRecord?.user_id);
+
+    if(!authLinked && accessPassword.length<8){
       $("professionalAdminMessage").textContent="Informe uma senha inicial com pelo menos 8 caracteres.";
       return;
     }
@@ -255,20 +263,36 @@ async function saveProfessional(e){
       return;
     }
 
-    if(!existingAccess){
+    if(!authLinked){
       const authClient=createClient(
         "https://cjtgjqxkyvgjlhylrvas.supabase.co",
         "sb_publishable_q7Qoya_KF0yyjvVdC-ckBQ_Wv6VXaEE",
         {auth:{persistSession:false,autoRefreshToken:false,detectSessionInUrl:false}}
       );
 
-      const {error:signUpError}=await authClient.auth.signUp({
+      const {data:signUpData,error:signUpError}=await authClient.auth.signUp({
         email:accessEmail,
         password:accessPassword
       });
 
       if(signUpError){
-        $("professionalAdminMessage").textContent="Barbeiro salvo, mas não foi possível criar o login. Verifique se o e-mail já possui conta.";
+        const message=String(signUpError.message||"");
+        $("professionalAdminMessage").textContent=
+          message.toLowerCase().includes("rate limit")||
+          message.toLowerCase().includes("email rate limit")
+            ?"Limite de envio de e-mail atingido. Aguarde alguns minutos e tente novamente."
+            :message.toLowerCase().includes("invalid")
+              ?"O e-mail informado foi recusado pelo Supabase. Use um e-mail real e válido."
+              :message.toLowerCase().includes("already")||
+                message.toLowerCase().includes("registered")
+                ?"Este e-mail já possui uma conta no sistema."
+                :"Não foi possível criar o login: "+message;
+        await loadProfessionals();
+        return;
+      }
+
+      if(!signUpData?.user){
+        $("professionalAdminMessage").textContent="O Auth não retornou o usuário criado. Tente novamente.";
         await loadProfessionals();
         return;
       }
