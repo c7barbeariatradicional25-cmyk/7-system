@@ -21,6 +21,7 @@ const loginMessage=$("loginMessage");
 const logoutBtn=$("logoutBtn");
 const userName=$("userName");
 const userRole=$("userRole");
+const userAvatar=$("userAvatar");
 const pageTitle=$("pageTitle");
 
 const agendaDate=$("agendaDate");
@@ -137,15 +138,21 @@ async function loadProfile(userId){
   if(data.role==="barber"){
     const {data:professional}=await supabase
       .from("professionals")
-      .select("id,full_name,avatar_url")
+      .select("id,full_name,avatar_url,specialty")
       .eq("user_id",userId)
       .eq("active",true)
       .maybeSingle();
 
     currentProfessionalId=professional?.id||null;
 
+    if(professional?.avatar_url && userAvatar){
+      userAvatar.innerHTML=`<img src="${escapeHtml(professional.avatar_url)}" alt="${escapeHtml(professional.full_name||"Barbeiro")}">`;
+    }else if(userAvatar){
+      userAvatar.textContent=(professional?.full_name||data.full_name||"C7").slice(0,2).toUpperCase();
+    }
+
     if(!currentProfessionalId){
-      userRole.textContent="Barbeiro • acesso não vinculado";
+      userRole.textContent="Barbeiro • Acesso não vinculado";
     }
   }
 
@@ -154,12 +161,16 @@ async function loadProfile(userId){
     let hide=false;
 
     if(data.role==="barber"){
-      hide=!["dashboard","agenda","operacoes"].includes(section);
+      hide=!["dashboard","agenda","desempenho","operacoes"].includes(section);
     }else if(data.role==="reception"){
       hide=section==="configuracoes";
     }
 
     item.classList.toggle("hidden",hide);
+  });
+
+  document.querySelectorAll(".barber-only").forEach(el=>{
+    el.classList.toggle("hidden",data.role!=="barber");
   });
 
   const canCreateAppointment=["admin","reception"].includes(data.role);
