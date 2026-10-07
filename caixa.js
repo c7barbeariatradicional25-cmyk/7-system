@@ -158,7 +158,7 @@ async function loadPendingAppointments(){
     .select("id,customer_id,professional_id,starts_at,total_amount,status,customer:customers(id,full_name,birth_date),professional:professionals(full_name),appointment_services(service_id,service_name,price),appointment_products(id,product_id,product_name,quantity,unit_price,total_amount,department)")
     .gte("starts_at",start.toISOString())
     .lte("starts_at",end.toISOString())
-    .in("status",["confirmed","waiting","in_service","completed"])
+    .in("status",["scheduled","confirmed","waiting","in_service","completed"])
     .order("starts_at",{ascending:true});
 
   if(error){
