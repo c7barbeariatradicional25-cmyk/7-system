@@ -276,23 +276,19 @@ async function loadWeeklySettlements(){
     if(currentRole==="admin"&&(commission>0||consumption>0)){
       const btn=document.createElement("button");
       btn.type="button";
-      btn.textContent="REALIZAR ACERTO";
-      btn.addEventListener("click",async()=>{
-        if(!confirm(`Confirmar o acerto de ${pro.full_name}?\nComissão: ${money(commission)}\nConsumo: ${money(consumption)}\nLíquido: ${money(net)}`)) return;
-
-        const {error}=await supabase.rpc("settle_employee_week",{
-          p_professional_id:pro.id,
-          p_period_start:range.startValue,
-          p_period_end:range.endValue,
-          p_notes:"Acerto semanal"
-        });
-
-        if(error){
-          alert("Não foi possível realizar o acerto.");
-          return;
-        }
-
-        await Promise.all([loadCommissions(),loadEmployeeConsumptions(),loadWeeklySettlements()]);
+      btn.textContent="REGISTRAR PAGAMENTO";
+      btn.addEventListener("click",()=>{
+        $("settlementProfessionalId").value=pro.id;
+        $("settlementPeriodStart").value=range.startValue;
+        $("settlementPeriodEnd").value=range.endValue;
+        $("settlementProfessionalName").value=pro.full_name;
+        $("settlementGrossCommission").textContent=money(commission);
+        $("settlementConsumption").textContent=money(consumption);
+        $("settlementNetPayable").textContent=money(net);
+        $("settlementPaymentMethod").value="pix";
+        $("settlementPaymentNotes").value="";
+        $("settlementPaymentMessage").textContent="";
+        $("settlementPaymentModal").classList.remove("hidden");
       });
       actions.appendChild(btn);
     }
@@ -318,6 +314,41 @@ async function init(){
   $("refreshCashHistoryBtn")?.addEventListener("click",loadCashHistory);
   $("refreshEmployeeConsumptionBtn")?.addEventListener("click",loadEmployeeConsumptions);
   $("refreshSettlementsBtn")?.addEventListener("click",loadWeeklySettlements);
+
+  document.querySelectorAll("[data-close-settlement-payment]").forEach(el=>{
+    el.addEventListener("click",()=>$("settlementPaymentModal")?.classList.add("hidden"));
+  });
+
+  $("settlementPaymentForm")?.addEventListener("submit",async e=>{
+    e.preventDefault();
+
+    $("settlementPaymentMessage").textContent="Registrando pagamento...";
+
+    const {error}=await supabase.rpc("pay_employee_settlement",{
+      p_professional_id:$("settlementProfessionalId").value,
+      p_period_start:$("settlementPeriodStart").value,
+      p_period_end:$("settlementPeriodEnd").value,
+      p_payment_method:$("settlementPaymentMethod").value,
+      p_notes:$("settlementPaymentNotes").value.trim()||null
+    });
+
+    if(error){
+      const message=String(error.message||"");
+      $("settlementPaymentMessage").textContent=message.includes("Caixa fechado")
+        ?"Abra o Caixa antes de registrar o pagamento."
+        :"Não foi possível registrar o pagamento.";
+      return;
+    }
+
+    $("settlementPaymentModal").classList.add("hidden");
+    await Promise.all([
+      loadCommissions(),
+      loadEmployeeConsumptions(),
+      loadWeeklySettlements(),
+      loadCashHistory()
+    ]);
+    window.dispatchEvent(new Event("c7-settlement-paid"));
+  });
   const range=currentWeekRange();
   if($("settlementPeriodLabel")){
     $("settlementPeriodLabel").textContent=`${range.start.toLocaleDateString("pt-BR")} a ${range.end.toLocaleDateString("pt-BR")}`;
