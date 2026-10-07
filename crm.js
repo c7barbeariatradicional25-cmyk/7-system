@@ -167,12 +167,91 @@ async function loadHistory(customerId){
   });
 }
 
+async function loadConsumptionProfile(customerId){
+  const target=$("customerInsights");
+  if(!target) return;
+
+  const {data,error}=await supabase
+    .from("cash_transactions")
+    .select("id,created_at,net_amount,transaction_type,cash_transaction_items(item_type,description,quantity,total_amount,product:products(name,department,category))")
+    .eq("customer_id",customerId)
+    .eq("status","posted")
+    .order("created_at",{ascending:false});
+
+  if(error){
+    target.classList.remove("hidden");
+    $("customerTopServices").innerHTML='<div class="agenda-empty">Não foi possível carregar o perfil de consumo.</div>';
+    $("customerTopProducts").innerHTML="";
+    $("customerTopConvenience").innerHTML="";
+    return;
+  }
+
+  const transactions=data||[];
+  const totalSpent=transactions.reduce((sum,t)=>sum+Number(t.net_amount||0),0);
+  const ticket=transactions.length?totalSpent/transactions.length:0;
+
+  $("customerInsightPurchases").textContent=String(transactions.length);
+  $("customerInsightSpent").textContent=money(totalSpent);
+  $("customerInsightTicket").textContent=money(ticket);
+
+  const serviceMap=new Map();
+  const productMap=new Map();
+  const convenienceMap=new Map();
+
+  transactions.forEach(transaction=>{
+    (transaction.cash_transaction_items||[]).forEach(item=>{
+      const qty=Number(item.quantity||0);
+      const total=Number(item.total_amount||0);
+
+      if(item.item_type==="service"){
+        const key=item.description||"Serviço";
+        const current=serviceMap.get(key)||{qty:0,total:0};
+        current.qty+=qty;
+        current.total+=total;
+        serviceMap.set(key,current);
+        return;
+      }
+
+      if(item.item_type==="product"){
+        const key=item.product?.name||item.description||"Produto";
+        const targetMap=item.product?.department==="convenience"?convenienceMap:productMap;
+        const current=targetMap.get(key)||{qty:0,total:0};
+        current.qty+=qty;
+        current.total+=total;
+        targetMap.set(key,current);
+      }
+    });
+  });
+
+  const renderRanking=(element,map,emptyText)=>{
+    if(!element) return;
+    if(!map.size){
+      element.innerHTML='<div class="customer-insight-empty">'+emptyText+'</div>';
+      return;
+    }
+
+    element.innerHTML=[...map.entries()]
+      .sort((a,b)=>b[1].qty-a[1].qty || b[1].total-a[1].total)
+      .slice(0,5)
+      .map(([name,value],index)=>
+        '<div class="customer-insight-row"><span>'+(index+1)+'. '+esc(name)+'</span><strong>'+Number(value.qty).toLocaleString("pt-BR")+'×</strong></div>'
+      ).join("");
+  };
+
+  renderRanking($("customerTopServices"),serviceMap,"Nenhum serviço registrado.");
+  renderRanking($("customerTopProducts"),productMap,"Nenhum produto de barbearia comprado.");
+  renderRanking($("customerTopConvenience"),convenienceMap,"Nenhuma bebida ou consumível registrado.");
+
+  target.classList.remove("hidden");
+}
+
 async function openCustomer(id=null){
   $("customerForm").reset();
   $("customerMessage").textContent="";
   $("customerId").value=id||"";
   $("customerModalTitle").textContent=id?"Perfil do cliente":"Novo cliente";
   $("customerHistory").classList.toggle("hidden",!id);
+  $("customerInsights")?.classList.toggle("hidden",!id);
 
   if(id){
     const customer=customers.find(c=>c.id===id);
@@ -186,7 +265,7 @@ async function openCustomer(id=null){
     $("crmCustomerTags").value=(customer.tags||[]).join(", ");
     $("crmCustomerNotes").value=customer.notes||"";
     $("crmMarketingOptIn").checked=Boolean(customer.marketing_opt_in);
-    await loadHistory(id);
+    await Promise.all([loadHistory(id),loadConsumptionProfile(id)]);
   }
 
   $("customerModal").classList.remove("hidden");
@@ -256,3 +335,9 @@ async function initCRM(){
 }
 
 initCRM();
+
+window.addEventListener("c7-customer-consumption-updated",async()=>{
+  const id=$("customerId")?.value;
+  if(id) await loadConsumptionProfile(id);
+  await loadCustomers();
+});
