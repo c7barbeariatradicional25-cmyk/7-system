@@ -3582,3 +3582,15 @@ body{
     padding-inline:8px;
   }
 }
+
+.professional-access-actions{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+  margin-top:10px;
+}
+.professional-access-actions .ghost-btn,
+.professional-access-actions .danger-btn{
+  flex:1 1 180px;
+  min-height:38px;
+}
