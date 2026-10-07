@@ -2004,3 +2004,32 @@ body{
     left:96px;
   }
 }
+
+
+/* REMOVE LINHA VERTICAL FANTASMA DA PRIMEIRA COLUNA */
+.live-timeline-body::after,
+.live-timeline-head::after{
+  display:none!important;
+}
+.live-time-corner{
+  border-right:1px solid #d8c9b9!important;
+}
+.live-time-rail{
+  border-right:1px solid #d8c9b9!important;
+}
+.live-pro-head{
+  border-left:0!important;
+}
+.live-pro-column{
+  border-left:0!important;
+}
+.live-pro-head + .live-pro-head,
+.live-pro-column + .live-pro-column{
+  border-left:1px solid #dfd1c3!important;
+}
+.live-pro-head{
+  border-right:0!important;
+}
+.live-pro-column{
+  border-right:0!important;
+}
