@@ -155,7 +155,7 @@ async function loadPendingAppointments(){
 
   const {data,error}=await supabase
     .from("appointments")
-    .select("id,customer_id,professional_id,starts_at,total_amount,status,customer:customers(id,full_name,birth_date),professional:professionals(full_name),appointment_services(service_id,service_name,price)")
+    .select("id,customer_id,professional_id,starts_at,total_amount,status,customer:customers(id,full_name,birth_date),professional:professionals(full_name),appointment_services(service_id,service_name,price),appointment_products(id,product_id,product_name,quantity,unit_price,total_amount,department)")
     .gte("starts_at",start.toISOString())
     .lte("starts_at",end.toISOString())
     .in("status",["confirmed","waiting","in_service","completed"])
@@ -246,6 +246,14 @@ $("openCashForm")?.addEventListener("submit",async e=>{
   closeModal("openCashModal");
   await loadCash();
 });
+
+
+function appointmentCheckoutGross(item){
+  if(!item) return 0;
+  const services=(item.appointment_services||[]).reduce((sum,row)=>sum+Number(row.price||0),0);
+  const products=(item.appointment_products||[]).reduce((sum,row)=>sum+Number(row.total_amount||0),0);
+  return services+products;
+}
 
 function fillReceiveOptions(){
   $("receiveAppointment").innerHTML='<option value="">Selecione um atendimento</option>'+
@@ -358,7 +366,7 @@ async function openReceiveModal(id=null){
   if(id) $("receiveAppointment").value=id;
 
   const item=pendingAppointments.find(a=>a.id===$("receiveAppointment").value);
-  $("receiveGross").value=item?Number(item.total_amount||0).toFixed(2):"";
+  $("receiveGross").value=item?appointmentCheckoutGross(item).toFixed(2):"";
   await loadReceiveBenefits(item);
   updateReceivePreview();
   openModal("receiveModal");
@@ -369,7 +377,7 @@ document.querySelectorAll("[data-close-receive]").forEach(el=>el.addEventListene
 
 $("receiveAppointment")?.addEventListener("change",async()=>{
   const item=pendingAppointments.find(a=>a.id===$("receiveAppointment").value);
-  $("receiveGross").value=item?Number(item.total_amount||0).toFixed(2):"";
+  $("receiveGross").value=item?appointmentCheckoutGross(item).toFixed(2):"";
   $("receiveDiscount").value="0";
   await loadReceiveBenefits(item);
   updateReceivePreview();
@@ -465,7 +473,7 @@ $("receiveForm")?.addEventListener("submit",async e=>{
     return;
   }
 
-  const gross=Number(appointment.total_amount||0);
+  const gross=appointmentCheckoutGross(appointment);
   const discount=Number($("receiveDiscount").value||0);
   const net=gross-discount;
 
@@ -627,7 +635,7 @@ async function checkoutAppointment(appointmentId){
   }else{
     const {data:appointment,error}=await supabase
       .from("appointments")
-      .select("id,customer_id,professional_id,starts_at,total_amount,status,customer:customers(id,full_name,birth_date),professional:professionals(full_name),appointment_services(service_id,service_name,price)")
+      .select("id,customer_id,professional_id,starts_at,total_amount,status,customer:customers(id,full_name,birth_date),professional:professionals(full_name),appointment_services(service_id,service_name,price),appointment_products(id,product_id,product_name,quantity,unit_price,total_amount,department)")
       .eq("id",appointmentId)
       .maybeSingle();
 
