@@ -2880,3 +2880,32 @@ body{
 #settlementConsumption{
   color:#9a533c;
 }
+
+
+/* DEPARTAMENTOS DE PRODUTOS */
+.product-department-tabs{
+  display:flex;
+  gap:8px;
+  margin:14px 0;
+  flex-wrap:wrap;
+}
+.product-department-tab{
+  min-height:38px;
+  padding:0 14px;
+  border:1px solid #d9c7b5;
+  border-radius:10px;
+  background:#fffaf4;
+  color:#67472f;
+  font-size:9px;
+  font-weight:800;
+  letter-spacing:.4px;
+  cursor:pointer;
+}
+.product-department-tab.active{
+  background:linear-gradient(135deg,#17130f,#6c442b);
+  border-color:#6c442b;
+  color:#fff;
+}
+.product-department-tab:hover:not(.active){
+  background:#f3e7da;
+}
