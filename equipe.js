@@ -115,7 +115,7 @@ async function toggleProfessional(professional){
   await loadProfessionals();
 }
 
-function openProfessional(id=null){
+async function openProfessional(id=null){
   const p=professionals.find(x=>x.id===id);
   $("professionalAdminForm").reset();
   $("professionalAdminId").value=p?.id||"";
@@ -129,6 +129,29 @@ function openProfessional(id=null){
   $("professionalAdminPhoto").value="";
   renderProfessionalPhotoPreview(p?.avatar_url,p?.full_name||"C7");
   $("professionalAdminMessage").textContent="";
+
+  let linkedAccess=null;
+  if(p){
+    const {data}=await supabase
+      .from("admin_allowlist")
+      .select("email,full_name,role,active,professional_id")
+      .eq("professional_id",p.id)
+      .eq("role","barber")
+      .maybeSingle();
+    linkedAccess=data||null;
+  }
+
+  $("professionalAccessEmail").value=linkedAccess?.email||"";
+  $("professionalAccessEmail").readOnly=Boolean(linkedAccess);
+  $("professionalAccessActive").checked=linkedAccess?.active??true;
+  $("professionalAccessStatus").textContent=linkedAccess
+    ? (linkedAccess.active?"ACESSO ATIVO":"ACESSO INATIVO")
+    : "SEM ACESSO";
+  $("professionalAccessStatus").classList.toggle("active",Boolean(linkedAccess?.active));
+  $("professionalAccessHint").textContent=linkedAccess
+    ? "O e-mail já está vinculado a este barbeiro. Você pode ativar ou desativar o acesso por aqui."
+    : "Ao salvar, este e-mail será autorizado e vinculado automaticamente a este barbeiro.";
+
   $("professionalAdminModal").classList.remove("hidden");
 }
 
@@ -196,6 +219,40 @@ async function saveProfessional(e){
   }
 
   const professionalId=result.data?.id||id;
+
+  const accessEmail=$("professionalAccessEmail").value.trim().toLowerCase();
+  if(accessEmail){
+    const {error:accessError}=await supabase
+      .from("admin_allowlist")
+      .upsert({
+        email:accessEmail,
+        full_name:payload.full_name,
+        role:"barber",
+        professional_id:professionalId,
+        active:$("professionalAccessActive").checked
+      },{onConflict:"email"});
+
+    if(accessError){
+      $("professionalAdminMessage").textContent="Barbeiro salvo, mas não foi possível salvar o acesso.";
+      await loadProfessionals();
+      return;
+    }
+  }else{
+    const {data:existingAccess}=await supabase
+      .from("admin_allowlist")
+      .select("email")
+      .eq("professional_id",professionalId)
+      .eq("role","barber")
+      .maybeSingle();
+
+    if(existingAccess?.email){
+      await supabase
+        .from("admin_allowlist")
+        .update({active:false})
+        .eq("email",existingAccess.email);
+    }
+  }
+
   const photoFile=$("professionalAdminPhoto").files?.[0];
 
   if(photoFile){
