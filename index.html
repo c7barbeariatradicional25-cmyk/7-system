@@ -47,6 +47,7 @@
         <button class="nav-item barber-only hidden" data-section="desempenho">Meu Desempenho</button>
         <button class="nav-item" data-section="clientes">Clientes</button>
         <button class="nav-item" data-section="caixa">Caixa</button>
+        <button class="nav-item" data-section="acertos">Acertos</button>
         <button class="nav-item" data-section="operacoes">Operações</button>
         <button class="nav-item" data-section="servicos">Serviços</button>
         <button class="nav-item" data-section="produtos">Produtos</button>
@@ -256,6 +257,36 @@
 
           <article class="cash-panel">
             <div class="cash-panel-head">
+              <div><span>HISTÓRICO</span><h3>Caixas Anteriores</h3></div>
+              <button id="refreshCashHistoryBtn" class="ghost-btn" type="button">ATUALIZAR</button>
+            </div>
+            <div id="cashHistoryList" class="finance-list">
+              <div class="agenda-empty">Carregando histórico...</div>
+            </div>
+          </article>
+        </div>
+      </section>
+      <section id="acertos" class="section">
+        <div class="catalog-toolbar">
+          <div>
+            <span class="eyebrow">EQUIPE + FINANCEIRO</span>
+            <h2>Acerto Semanal</h2>
+            <p>Comissões, consumos internos e valor líquido de cada colaborador.</p>
+          </div>
+          <button id="employeeConsumptionBtnAcertos" class="primary-btn" type="button">+ CONSUMO COLABORADOR</button>
+        </div>
+
+        <div class="settlement-highlight">
+          <div>
+            <span>PERÍODO ATUAL</span>
+            <strong id="settlementPeriodLabel">Domingo a Sábado</strong>
+          </div>
+          <p>O valor líquido considera comissão pendente menos consumos internos do período.</p>
+        </div>
+
+        <div class="finance-grid">
+          <article class="cash-panel">
+            <div class="cash-panel-head">
               <div><span>ACERTO SEMANAL</span><h3>Comissão − Consumo</h3></div>
               <button id="refreshSettlementsBtn" class="ghost-btn" type="button">ATUALIZAR</button>
             </div>
@@ -273,18 +304,9 @@
               <div class="agenda-empty">Nenhum consumo pendente.</div>
             </div>
           </article>
-
-          <article class="cash-panel">
-            <div class="cash-panel-head">
-              <div><span>HISTÓRICO</span><h3>Caixas Anteriores</h3></div>
-              <button id="refreshCashHistoryBtn" class="ghost-btn" type="button">ATUALIZAR</button>
-            </div>
-            <div id="cashHistoryList" class="finance-list">
-              <div class="agenda-empty">Carregando histórico...</div>
-            </div>
-          </article>
         </div>
       </section>
+
       <section id="operacoes" class="section">
         <div class="ops-toolbar">
           <div>
@@ -989,6 +1011,21 @@
           <label><span>Ordem</span><input id="professionalAdminSort" type="number" min="0" step="1" value="0"></label>
         </div>
         <label class="check-row"><input id="professionalAdminActive" type="checkbox" checked><span>Profissional ativo na agenda</span></label>
+
+        <div class="professional-access-box">
+          <div class="professional-access-head">
+            <div>
+              <span>ACESSO AO SISTEMA</span>
+              <strong>Login deste barbeiro</strong>
+            </div>
+            <span id="professionalAccessStatus" class="access-status-pill">SEM ACESSO</span>
+          </div>
+
+          <label><span>E-mail de Acesso</span><input id="professionalAccessEmail" type="email" placeholder="exemplo@c7barbearia.com"></label>
+          <label class="check-row"><input id="professionalAccessActive" type="checkbox" checked><span>Acesso ativo</span></label>
+          <small id="professionalAccessHint">Ao salvar, este e-mail será autorizado e vinculado automaticamente a este barbeiro.</small>
+        </div>
+
         <p id="professionalAdminMessage" class="form-message"></p>
         <div class="modal-actions">
           <button type="button" class="ghost-btn" data-close-professional-admin>CANCELAR</button>
