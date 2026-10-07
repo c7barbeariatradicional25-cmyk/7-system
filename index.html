@@ -47,6 +47,7 @@
         <button class="nav-item barber-only hidden" data-section="desempenho">Meu Desempenho</button>
         <button class="nav-item" data-section="clientes">Clientes</button>
         <button class="nav-item" data-section="caixa">Caixa</button>
+        <button class="nav-item" data-section="financeiro">Financeiro</button>
         <button class="nav-item" data-section="acertos">Acertos</button>
         <button class="nav-item" data-section="operacoes">Operações</button>
         <button class="nav-item" data-section="servicos">Serviços</button>
@@ -266,6 +267,34 @@
           </article>
         </div>
       </section>
+      <section id="financeiro" class="section">
+        <div class="catalog-toolbar">
+          <div>
+            <span class="eyebrow">GESTÃO FINANCEIRA</span>
+            <h2>Financeiro</h2>
+            <p>Compras, despesas, pagamentos, fornecedores e outras saídas.</p>
+          </div>
+          <button id="newFinancialExpenseBtn" class="primary-btn" type="button">+ NOVA SAÍDA</button>
+        </div>
+
+        <div class="report-stats">
+          <article><span>SAÍDAS DO MÊS</span><strong id="financeMonthOut">R$ 0</strong></article>
+          <article><span>COMPRAS</span><strong id="financeMonthPurchases">R$ 0</strong></article>
+          <article><span>PAGAMENTOS</span><strong id="financeMonthPayments">R$ 0</strong></article>
+          <article><span>OUTRAS DESPESAS</span><strong id="financeMonthOther">R$ 0</strong></article>
+        </div>
+
+        <article class="report-panel finance-main-panel">
+          <div class="cash-panel-head">
+            <div><span>HISTÓRICO</span><h3>Saídas Registradas</h3></div>
+            <button id="refreshFinancialExpensesBtn" class="ghost-btn" type="button">ATUALIZAR</button>
+          </div>
+          <div id="financialExpenseList" class="finance-list">
+            <div class="agenda-empty">Carregando saídas...</div>
+          </div>
+        </article>
+      </section>
+
       <section id="acertos" class="section">
         <div class="catalog-toolbar">
           <div>
@@ -810,6 +839,95 @@
     </section>
   </div>
 
+  <div id="settlementPaymentModal" class="modal hidden" role="dialog" aria-modal="true">
+    <div class="modal-backdrop" data-close-settlement-payment></div>
+    <section class="modal-card modal-small">
+      <div class="modal-head">
+        <div><span>ACERTO SEMANAL</span><h2>Registrar Pagamento</h2></div>
+        <button type="button" class="modal-close" data-close-settlement-payment>×</button>
+      </div>
+      <form id="settlementPaymentForm" class="appointment-form">
+        <input id="settlementProfessionalId" type="hidden">
+        <input id="settlementPeriodStart" type="hidden">
+        <input id="settlementPeriodEnd" type="hidden">
+
+        <div class="appointment-preview">
+          <div><span>COMISSÃO</span><strong id="settlementGrossCommission">R$ 0</strong></div>
+          <div><span>CONSUMO</span><strong id="settlementConsumption">R$ 0</strong></div>
+          <div><span>LÍQUIDO</span><strong id="settlementNetPayable">R$ 0</strong></div>
+        </div>
+
+        <label><span>Colaborador</span><input id="settlementProfessionalName" type="text" readonly></label>
+
+        <label><span>Forma de Pagamento</span>
+          <select id="settlementPaymentMethod" required>
+            <option value="pix">Pix</option>
+            <option value="cash">Dinheiro</option>
+            <option value="debit">Débito</option>
+            <option value="credit">Crédito</option>
+            <option value="other">Outro</option>
+          </select>
+        </label>
+
+        <label><span>Observação</span><textarea id="settlementPaymentNotes" rows="3" placeholder="Opcional"></textarea></label>
+        <p class="form-message" id="settlementPaymentMessage"></p>
+
+        <div class="modal-actions">
+          <button type="button" class="ghost-btn" data-close-settlement-payment>CANCELAR</button>
+          <button type="submit" class="primary-btn">CONFIRMAR PAGAMENTO</button>
+        </div>
+      </form>
+    </section>
+  </div>
+
+  <div id="financialExpenseModal" class="modal hidden" role="dialog" aria-modal="true">
+    <div class="modal-backdrop" data-close-financial-expense></div>
+    <section class="modal-card modal-small">
+      <div class="modal-head">
+        <div><span>FINANCEIRO</span><h2>Nova Saída</h2></div>
+        <button type="button" class="modal-close" data-close-financial-expense>×</button>
+      </div>
+      <form id="financialExpenseForm" class="appointment-form">
+        <div class="form-grid two">
+          <label><span>Tipo</span>
+            <select id="financialExpenseType" required>
+              <option value="purchase">Compra</option>
+              <option value="expense">Despesa</option>
+              <option value="payment">Pagamento</option>
+              <option value="supplier">Fornecedor</option>
+              <option value="other">Outro</option>
+            </select>
+          </label>
+          <label><span>Categoria</span><input id="financialExpenseCategory" type="text" placeholder="Ex.: Estoque, Aluguel, Energia"></label>
+        </div>
+
+        <label><span>Descrição</span><input id="financialExpenseDescription" type="text" required placeholder="Ex.: Compra de refrigerantes"></label>
+        <label><span>Fornecedor / Beneficiário</span><input id="financialExpenseSupplier" type="text" placeholder="Opcional"></label>
+
+        <div class="form-grid two">
+          <label><span>Valor</span><input id="financialExpenseAmount" type="number" min="0.01" step="0.01" required></label>
+          <label><span>Forma de Pagamento</span>
+            <select id="financialExpenseMethod" required>
+              <option value="pix">Pix</option>
+              <option value="cash">Dinheiro</option>
+              <option value="debit">Débito</option>
+              <option value="credit">Crédito</option>
+              <option value="other">Outro</option>
+            </select>
+          </label>
+        </div>
+
+        <label><span>Observação</span><textarea id="financialExpenseNotes" rows="3"></textarea></label>
+        <p class="form-message" id="financialExpenseMessage"></p>
+
+        <div class="modal-actions">
+          <button type="button" class="ghost-btn" data-close-financial-expense>CANCELAR</button>
+          <button type="submit" class="primary-btn">REGISTRAR SAÍDA</button>
+        </div>
+      </form>
+    </section>
+  </div>
+
   <div id="employeeConsumptionModal" class="modal hidden" role="dialog" aria-modal="true">
     <div class="modal-backdrop" data-close-employee-consumption></div>
     <section class="modal-card modal-small">
@@ -900,6 +1018,7 @@
   <script type="module" src="crm.js"></script>
   <script type="module" src="caixa.js"></script>
   <script type="module" src="consumo.js"></script>
+  <script type="module" src="despesas.js"></script>
   <div id="serviceAdminModal" class="modal hidden" role="dialog" aria-modal="true">
     <div class="modal-backdrop" data-close-service-admin></div>
     <section class="modal-card modal-small">
