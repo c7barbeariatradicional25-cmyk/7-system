@@ -100,7 +100,7 @@ async function loadCashHistory(){
 
   const {data,error}=await supabase
     .from("cash_sessions")
-    .select("id,opened_at,opening_amount,closed_at,closing_amount,status,notes")
+    .select("id,opened_at,opening_amount,closed_at,closing_amount,expected_closing_amount,closing_difference,status,notes")
     .order("opened_at",{ascending:false})
     .limit(30);
 
@@ -121,15 +121,21 @@ async function loadCashHistory(){
   for(const session of sessions){
     const {data:transactions}=await supabase
       .from("cash_transactions")
-      .select("direction,net_amount,status")
+      .select("direction,net_amount,status,payment_method,transaction_type")
       .eq("session_id",session.id)
       .eq("status","posted");
 
     const tx=transactions||[];
     const totalIn=tx.filter(t=>t.direction==="in").reduce((s,t)=>s+Number(t.net_amount||0),0);
     const totalOut=tx.filter(t=>t.direction==="out").reduce((s,t)=>s+Number(t.net_amount||0),0);
-    const expected=Number(session.opening_amount||0)+totalIn-totalOut;
-    const difference=session.closing_amount==null?null:Number(session.closing_amount)-expected;
+    const cashIn=tx.filter(t=>t.direction==="in"&&t.payment_method==="cash").reduce((s,t)=>s+Number(t.net_amount||0),0);
+    const cashOut=tx.filter(t=>t.direction==="out"&&(t.payment_method==="cash"||t.transaction_type==="withdrawal")).reduce((s,t)=>s+Number(t.net_amount||0),0);
+    const expected=session.expected_closing_amount==null
+      ? Number(session.opening_amount||0)+cashIn-cashOut
+      : Number(session.expected_closing_amount);
+    const difference=session.closing_difference==null
+      ? (session.closing_amount==null?null:Number(session.closing_amount)-expected)
+      : Number(session.closing_difference);
 
     const row=document.createElement("div");
     row.className="finance-row";
