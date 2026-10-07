@@ -739,3 +739,12 @@ async function initCash(){
 }
 
 initCash();
+
+
+window.addEventListener("c7-financial-expense-updated",async()=>{
+  if(["admin","reception"].includes(currentRole)) await loadCash();
+});
+
+window.addEventListener("c7-settlement-paid",async()=>{
+  if(["admin","reception"].includes(currentRole)) await loadCash();
+});
