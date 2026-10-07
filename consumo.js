@@ -63,14 +63,18 @@ async function init(){
   role=profile?.role||null;
   if(!["admin","reception"].includes(role)) return;
 
-  $("employeeConsumptionBtn")?.addEventListener("click",async()=>{
+  const openConsumption=async()=>{
+
     $("employeeConsumptionForm").reset();
     $("employeeConsumptionQty").value="1";
     $("employeeConsumptionMessage").textContent="";
     await loadOptions();
     updatePreview();
     openModal();
-  });
+  };
+
+  $("employeeConsumptionBtn")?.addEventListener("click",openConsumption);
+  $("employeeConsumptionBtnAcertos")?.addEventListener("click",openConsumption);
 
   document.querySelectorAll("[data-close-employee-consumption]").forEach(el=>{
     el.addEventListener("click",closeModal);
