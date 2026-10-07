@@ -2909,3 +2909,94 @@ body{
 .product-department-tab:hover:not(.active){
   background:#f3e7da;
 }
+
+
+/* CRM — PERFIL DE CONSUMO */
+.form-hint{
+  display:block;
+  margin:-4px 0 6px;
+  color:#8b7766;
+  font-size:9px;
+}
+.customer-insight-stats{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:10px;
+  margin:12px 0;
+}
+.customer-insight-stats article{
+  padding:12px;
+  border:1px solid #dfd2c5;
+  border-radius:12px;
+  background:#fbf7f2;
+}
+.customer-insight-stats span{
+  display:block;
+  color:#8f735c;
+  font-size:8px;
+  font-weight:800;
+  letter-spacing:.6px;
+}
+.customer-insight-stats strong{
+  display:block;
+  margin-top:6px;
+  font:700 20px Oswald,sans-serif;
+  color:#2a211a;
+}
+.customer-insight-grid{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:10px;
+}
+.customer-insight-grid>article{
+  min-width:0;
+  padding:12px;
+  border:1px solid #e2d7cc;
+  border-radius:12px;
+  background:#fff;
+}
+.customer-insight-grid>article>span{
+  display:block;
+  margin-bottom:8px;
+  color:#8c6f58;
+  font-size:8px;
+  font-weight:800;
+  letter-spacing:.5px;
+}
+.customer-insight-list{
+  display:grid;
+  gap:6px;
+}
+.customer-insight-row{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:8px;
+  padding:7px 8px;
+  border-radius:8px;
+  background:#f8f2eb;
+}
+.customer-insight-row span{
+  min-width:0;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  color:#4d4036;
+  font-size:9px;
+}
+.customer-insight-row strong{
+  color:#6e452a;
+  font-size:10px;
+}
+.customer-insight-empty{
+  padding:10px 0;
+  color:#8e8278;
+  font-size:9px;
+  line-height:1.4;
+}
+@media(max-width:760px){
+  .customer-insight-stats,
+  .customer-insight-grid{
+    grid-template-columns:1fr;
+  }
+}
