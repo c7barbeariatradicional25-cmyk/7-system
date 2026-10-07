@@ -705,12 +705,21 @@
         <button type="button" class="modal-close" data-close-movement>×</button>
       </div>
       <form id="movementForm" class="appointment-form">
-        <div class="form-grid two">
+        <div class="form-grid three">
           <label><span>Tipo</span>
             <select id="movementType" required>
               <option value="income">Entrada</option>
-              <option value="expense">Saída / despesa</option>
+              <option value="expense">Saída / Despesa</option>
               <option value="withdrawal">Sangria</option>
+            </select>
+          </label>
+          <label><span>Forma de Pagamento</span>
+            <select id="movementMethod" required>
+              <option value="cash">Dinheiro</option>
+              <option value="pix">Pix</option>
+              <option value="debit">Débito</option>
+              <option value="credit">Crédito</option>
+              <option value="other">Outro</option>
             </select>
           </label>
           <label><span>Valor</span><input id="movementAmount" type="number" min="0.01" step="0.01" required></label>
