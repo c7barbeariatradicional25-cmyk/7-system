@@ -159,6 +159,7 @@ async function openProfessional(id=null){
     : accessPrepared
       ? "A autorização foi salva, mas o login ainda não foi criado. Informe a senha inicial e salve novamente."
       : "Ao salvar, este e-mail será autorizado e vinculado automaticamente a este barbeiro.";
+  $("unlinkProfessionalAccessBtn").classList.toggle("hidden",!linkedAccess);
 
   $("professionalAdminModal").classList.remove("hidden");
 }
@@ -343,6 +344,39 @@ async function init(){
   }));
   $("newProfessionalBtn")?.addEventListener("click",()=>openProfessional());
   $("professionalAdminForm")?.addEventListener("submit",saveProfessional);
+
+  $("unlinkProfessionalAccessBtn")?.addEventListener("click",async()=>{
+    const professionalId=$("professionalAdminId").value;
+    if(!professionalId||!canAdmin()) return;
+
+    const ok=confirm("Desvincular o acesso deste barbeiro? O login deixará de ter acesso ao sistema e você poderá refazer o vínculo corretamente.");
+    if(!ok) return;
+
+    $("professionalAdminMessage").textContent="Desvinculando acesso...";
+
+    const {error}=await supabase.rpc("unlink_barber_access",{
+      p_professional_id:professionalId
+    });
+
+    if(error){
+      $("professionalAdminMessage").textContent="Não foi possível desvincular o acesso.";
+      return;
+    }
+
+    $("professionalAccessEmail").value="";
+    $("professionalAccessEmail").readOnly=false;
+    $("professionalAccessPassword").value="";
+    $("professionalAccessPasswordWrap").classList.remove("hidden");
+    $("professionalAccessPassword").required=true;
+    $("professionalAccessActive").checked=true;
+    $("professionalAccessStatus").textContent="SEM ACESSO";
+    $("professionalAccessStatus").classList.remove("active");
+    $("professionalAccessHint").textContent="Acesso removido. Agora você pode salvar este barbeiro sem login ou criar um novo acesso corretamente.";
+    $("unlinkProfessionalAccessBtn").classList.add("hidden");
+
+    await loadProfessionals();
+  });
+
   document.querySelectorAll("[data-close-professional-admin]").forEach(el=>el.addEventListener("click",closeProfessional));
   $("loadWorkingHoursBtn")?.addEventListener("click",loadWorkingHours);
   $("workingHoursProfessional")?.addEventListener("change",loadWorkingHours);
