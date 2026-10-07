@@ -10,6 +10,7 @@ const money = (value) => new Intl.NumberFormat("pt-BR",{style:"currency",currenc
 
 let currentUser = null;
 let currentRole = null;
+let currentProfessionalId = null;
 let openSession = null;
 let pendingAppointments = [];
 let products = [];
@@ -22,6 +23,17 @@ async function loadContext(){
   currentUser=session.user.id;
   const {data}=await supabase.from("profiles").select("role").eq("user_id",currentUser).single();
   currentRole=data?.role||null;
+
+  if(currentRole==="barber"){
+    const {data:professional}=await supabase
+      .from("professionals")
+      .select("id")
+      .eq("user_id",currentUser)
+      .eq("active",true)
+      .maybeSingle();
+    currentProfessionalId=professional?.id||null;
+  }
+
   return true;
 }
 
@@ -428,11 +440,16 @@ $("receiveForm")?.addEventListener("submit",async e=>{
     return;
   }
 
-  const gross=Number($("receiveGross").value||0);
+  if(currentRole==="barber"&&appointment.professional_id!==currentProfessionalId){
+    $("receiveMessage").textContent="Você só pode finalizar os seus próprios atendimentos.";
+    return;
+  }
+
+  const gross=Number(appointment.total_amount||0);
   const discount=Number($("receiveDiscount").value||0);
   const net=gross-discount;
 
-  if(gross<0||discount<0||net<0){
+  if(discount<0||net<0){
     $("receiveMessage").textContent="Confira os valores informados.";
     return;
   }
@@ -441,84 +458,35 @@ $("receiveForm")?.addEventListener("submit",async e=>{
 
   const benefit=appliedCoupon||selectedBenefit();
 
-  const {data:transaction,error}=await supabase.from("cash_transactions").insert({
-    session_id:openSession.id,
-    appointment_id:appointment.id,
-    customer_id:appointment.customer_id,
-    professional_id:appointment.professional_id,
-    transaction_type:"service",
-    direction:"in",
-    payment_method:$("receiveMethod").value,
-    description:`Atendimento - ${appointment.customer?.full_name||"Cliente"}`,
-    gross_amount:gross,
-    discount_amount:discount,
-    net_amount:net,
-    benefit_source:benefit?.source||null,
-    benefit_label:benefit?.label||null,
-    coupon_id:appliedCoupon?.id||null,
-    created_by:currentUser
-  }).select("id").single();
+  const {data,error}=await supabase.rpc("checkout_appointment",{
+    p_appointment_id:appointment.id,
+    p_payment_method:$("receiveMethod").value,
+    p_discount_amount:discount,
+    p_benefit_source:benefit?.source||null,
+    p_benefit_label:benefit?.label||null,
+    p_coupon_id:appliedCoupon?.id||null
+  });
 
   if(error){
-    $("receiveMessage").textContent="Não foi possível registrar o recebimento.";
+    const message=String(error.message||"");
+    $("receiveMessage").textContent=
+      message.includes("Caixa fechado")?"O Caixa está fechado. Peça à recepção para abrir o Caixa antes do checkout.":
+      message.includes("já recebido")?"Este atendimento já foi recebido.":
+      message.includes("Cupom")?message:
+      "Não foi possível concluir o checkout.";
     return;
   }
 
-  const items=(appointment.appointment_services||[]).map(service=>({
-    transaction_id:transaction.id,
-    item_type:"service",
-    service_id:service.service_id||null,
-    description:service.service_name||"Serviço",
-    quantity:1,
-    unit_price:Number(service.price||0),
-    total_amount:Number(service.price||0)
-  }));
-
-  if(items.length){
-    await supabase.from("cash_transaction_items").insert(items);
-  }
-
-  if(appliedCoupon){
-    await supabase.from("coupon_redemptions").insert({
-      coupon_id:appliedCoupon.id,
-      transaction_id:transaction.id,
-      customer_id:appointment.customer_id,
-      discount_amount:discount
-    });
-
-    await supabase.from("coupons").update({
-      used_count:Number(appliedCoupon.used_count||0)+1,
-      updated_at:new Date().toISOString()
-    }).eq("id",appliedCoupon.id);
-  }
-
-  const {data:professionalData}=await supabase
-    .from("professionals")
-    .select("commission_percent")
-    .eq("id",appointment.professional_id)
-    .maybeSingle();
-
-  const commissionPercent=Number(professionalData?.commission_percent||0);
-  if(commissionPercent>0){
-    await supabase.from("commission_entries").insert({
-      transaction_id:transaction.id,
-      professional_id:appointment.professional_id,
-      base_amount:net,
-      commission_percent:commissionPercent,
-      commission_amount:Number((net*commissionPercent/100).toFixed(2)),
-      status:"pending"
-    });
-  }
-
-  await supabase.from("appointments").update({
-    status:"completed",
-    completed_at:new Date().toISOString(),
-    updated_at:new Date().toISOString()
-  }).eq("id",appointment.id);
-
   closeModal("receiveModal");
-  await loadCash();
+  window.dispatchEvent(new CustomEvent("c7-checkout-complete",{detail:{appointmentId:appointment.id,transactionId:data}}));
+
+  if(["admin","reception"].includes(currentRole)){
+    await loadCash();
+  }else{
+    pendingAppointments=pendingAppointments.filter(a=>a.id!==appointment.id);
+  }
 });
+
 
 function updateProductPreview(){
   const product=products.find(p=>String(p.id)===$("cashProduct").value);
@@ -705,19 +673,39 @@ $("closeCashForm")?.addEventListener("submit",async e=>{
 });
 
 async function checkoutAppointment(appointmentId){
-  if(!["admin","reception"].includes(currentRole)){
-    alert("Seu perfil ainda não possui permissão para registrar pagamentos.");
+  if(!["admin","reception","barber"].includes(currentRole)){
+    alert("Seu perfil não possui permissão para registrar pagamentos.");
     return false;
   }
 
-  await loadCash();
+  if(["admin","reception"].includes(currentRole)){
+    await loadCash();
 
-  if(!openSession){
-    alert("O caixa está fechado. Abra o caixa antes de finalizar o atendimento.");
-    return false;
+    if(!openSession){
+      alert("O Caixa está fechado. Abra o Caixa antes de finalizar o atendimento.");
+      return false;
+    }
+
+    await loadPendingAppointments();
+  }else{
+    const {data:appointment,error}=await supabase
+      .from("appointments")
+      .select("id,customer_id,professional_id,starts_at,total_amount,status,customer:customers(id,full_name,birth_date),professional:professionals(full_name),appointment_services(service_id,service_name,price)")
+      .eq("id",appointmentId)
+      .maybeSingle();
+
+    if(error||!appointment){
+      alert("Atendimento não encontrado.");
+      return false;
+    }
+
+    if(appointment.professional_id!==currentProfessionalId){
+      alert("Você só pode realizar checkout dos seus próprios atendimentos.");
+      return false;
+    }
+
+    pendingAppointments=[appointment];
   }
-
-  await loadPendingAppointments();
 
   const appointment=pendingAppointments.find(a=>String(a.id)===String(appointmentId));
   if(!appointment){
@@ -728,7 +716,6 @@ async function checkoutAppointment(appointmentId){
   await openReceiveModal(appointmentId);
   return true;
 }
-
 window.C7Cash={
   checkoutAppointment,
   refresh:loadCash
