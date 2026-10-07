@@ -43,15 +43,29 @@ async function loadContext(){
 async function loadCash(){
   if(!["admin","reception"].includes(currentRole)) return;
 
-  const [{data:sessionData},{data:productData},{data:professionalData}] = await Promise.all([
+  const start=new Date();
+  start.setHours(0,0,0,0);
+  const end=new Date();
+  end.setHours(23,59,59,999);
+
+  const [{data:sessionData},{data:productData},{data:professionalData},{data:customerData},{data:serviceData}] = await Promise.all([
     supabase.from("cash_sessions").select("*").eq("status","open").maybeSingle(),
-    supabase.from("products").select("id,name,price,stock_quantity,product_kind").eq("active",true).order("sort_order"),
-    supabase.from("professionals").select("id,full_name").eq("active",true).order("full_name")
+    supabase.from("products").select("id,name,price,stock_quantity,product_kind,department").eq("active",true).order("sort_order"),
+    supabase.from("professionals").select("id,full_name").eq("active",true).order("full_name"),
+    supabase.from("customers").select("id,full_name,phone").eq("active",true).order("full_name").limit(500),
+    supabase.from("appointments")
+      .select("id,customer_id,status,starts_at,customer:customers(id,full_name),professional:professionals(full_name)")
+      .gte("starts_at",start.toISOString())
+      .lte("starts_at",end.toISOString())
+      .in("status",["waiting","in_service"])
+      .order("starts_at",{ascending:true})
   ]);
 
   openSession=sessionData||null;
   products=productData||[];
   cashProfessionals=professionalData||[];
+  cashCustomers=customerData||[];
+  activeServiceLinks=serviceData||[];
 
   renderCashState();
 
