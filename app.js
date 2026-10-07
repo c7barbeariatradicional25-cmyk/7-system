@@ -555,8 +555,10 @@ function renderAppointmentDetail(appointment){
 
   $("detailAddProduct").innerHTML='<option value="">Adicionar produto/consumível...</option>'+
     detailProductsCatalog
-      .filter(p=>Number(p.stock_quantity||0)>0)
-      .map(p=>`<option value="${p.id}">${escapeHtml(p.name)} — ${money(p.price)} • estoque ${Number(p.stock_quantity||0)}</option>`)
+      .map(p=>{
+        const stock=Number(p.stock_quantity||0);
+        return `<option value="${p.id}" ${stock<=0?"disabled":""}>${escapeHtml(p.name)} — ${money(p.price)} • ${stock>0?`estoque ${stock}`:"SEM ESTOQUE"}</option>`;
+      })
       .join("");
 
   $("detailAddService").disabled=!canManage||finished;
