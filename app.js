@@ -501,14 +501,16 @@ function renderTimeline(){
   }
 
   const pxPerMinute=2;
+  const timelineTopPadding=22;
+  const timelineBottomPadding=22;
   const totalMinutes=maxMinute-minMinute;
-  const timelineHeight=totalMinutes*pxPerMinute;
+  const timelineHeight=totalMinutes*pxPerMinute+timelineTopPadding+timelineBottomPadding;
   const selected=agendaDate.value;
 
   const timeLabels=[];
   for(let min=minMinute;min<=maxMinute;min+=30){
     timeLabels.push(`
-      <div class="live-time-label" style="top:${(min-minMinute)*pxPerMinute}px">
+      <div class="live-time-label" style="top:${timelineTopPadding+(min-minMinute)*pxPerMinute}px">
         <span>${hhmmFromMinutes(min)}</span>
       </div>
     `);
@@ -530,7 +532,7 @@ function renderTimeline(){
       const endDate=new Date(a.ends_at);
       const startMin=startDate.getHours()*60+startDate.getMinutes();
       const endMin=endDate.getHours()*60+endDate.getMinutes();
-      const top=Math.max(0,(startMin-minMinute)*pxPerMinute);
+      const top=timelineTopPadding+Math.max(0,(startMin-minMinute)*pxPerMinute);
       const height=Math.max(32,(endMin-startMin)*pxPerMinute-4);
       const customer=escapeHtml(a.customer?.full_name||"Cliente");
       const service=escapeHtml((a.appointment_services||[]).map(s=>s.service_name).join(" + ")||"Serviço");
@@ -556,7 +558,7 @@ function renderTimeline(){
       const endDate=new Date(b.ends_at);
       const startMin=startDate.getHours()*60+startDate.getMinutes();
       const endMin=endDate.getHours()*60+endDate.getMinutes();
-      const top=Math.max(0,(startMin-minMinute)*pxPerMinute);
+      const top=timelineTopPadding+Math.max(0,(startMin-minMinute)*pxPerMinute);
       const height=Math.max(32,(endMin-startMin)*pxPerMinute-4);
 
       return `
@@ -569,10 +571,10 @@ function renderTimeline(){
     }).join("");
 
     const outsideBefore=workStart!==null && workStart>minMinute
-      ? `<div class="live-outside-hours" style="top:0;height:${(workStart-minMinute)*pxPerMinute}px"></div>`
+      ? `<div class="live-outside-hours" style="top:${timelineTopPadding}px;height:${(workStart-minMinute)*pxPerMinute}px"></div>`
       : "";
     const outsideAfter=workEnd!==null && workEnd<maxMinute
-      ? `<div class="live-outside-hours" style="top:${(workEnd-minMinute)*pxPerMinute}px;height:${(maxMinute-workEnd)*pxPerMinute}px"></div>`
+      ? `<div class="live-outside-hours" style="top:${timelineTopPadding+(workEnd-minMinute)*pxPerMinute}px;height:${(maxMinute-workEnd)*pxPerMinute}px"></div>`
       : "";
 
     return `
@@ -655,7 +657,7 @@ function renderTimeline(){
 
       const rect=column.getBoundingClientRect();
       const y=e.clientY-rect.top;
-      const rawMinute=minMinute+(y/pxPerMinute);
+      const rawMinute=minMinute+((y-timelineTopPadding)/pxPerMinute);
       const snapped=Math.round(rawMinute/15)*15;
       const start=Math.max(minMinute,Math.min(snapped,maxMinute-15));
       const end=Math.min(start+60,maxMinute);
@@ -692,7 +694,7 @@ function renderTimeline(){
     }
 
     line.classList.remove("hidden");
-    line.style.top=`${(nowMinutes-minMinute)*pxPerMinute}px`;
+    line.style.top=`${timelineTopPadding+(nowMinutes-minMinute)*pxPerMinute}px`;
     if(label) label.textContent=now.toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"});
   }
 
@@ -705,7 +707,7 @@ function renderTimeline(){
     if(!scroller||selected!==localDateInput()) return;
     const now=new Date();
     const nowMinutes=now.getHours()*60+now.getMinutes();
-    const target=Math.max(0,(nowMinutes-minMinute)*pxPerMinute-180);
+    const target=Math.max(0,timelineTopPadding+(nowMinutes-minMinute)*pxPerMinute-180);
     scroller.scrollTop=target;
   });
 }
