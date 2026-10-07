@@ -174,7 +174,7 @@ async function loadEmployeeConsumptions(){
 
   const {data,error}=await supabase
     .from("employee_consumptions")
-    .select("id,quantity,unit_price,total_amount,status,created_at,professional:professionals(full_name),product:products(name)")
+    .select("id,quantity,unit_price,total_amount,amount_settled,status,created_at,professional:professionals(full_name),product:products(name)")
     .eq("status","pending")
     .order("created_at",{ascending:false})
     .limit(100);
@@ -196,7 +196,7 @@ async function loadEmployeeConsumptions(){
             <strong>${item.professional?.full_name||"Colaborador"}</strong>
             <span>${item.product?.name||"Produto"} • ${Number(item.quantity||0)} un. • ${new Date(item.created_at).toLocaleDateString("pt-BR")}</span>
           </div>
-          <div class="finance-value">${money(item.total_amount)}</div>
+          <div class="finance-value">${money(Math.max(Number(item.total_amount||0)-Number(item.amount_settled||0),0))}</div>
         </div>
       `).join("")
     : '<div class="cash-empty">Nenhum consumo pendente.</div>';
@@ -215,9 +215,8 @@ async function loadWeeklySettlements(){
       .gte("created_at",range.start.toISOString())
       .lte("created_at",range.end.toISOString()),
     supabase.from("employee_consumptions")
-      .select("id,professional_id,total_amount,status,created_at")
+      .select("id,professional_id,total_amount,amount_settled,status,created_at")
       .eq("status","pending")
-      .gte("created_at",range.start.toISOString())
       .lte("created_at",range.end.toISOString())
   ]);
 
@@ -241,9 +240,11 @@ async function loadWeeklySettlements(){
 
     const consumption=consumptions
       .filter(x=>x.professional_id===pro.id)
-      .reduce((sum,x)=>sum+Number(x.total_amount||0),0);
+      .reduce((sum,x)=>sum+Math.max(Number(x.total_amount||0)-Number(x.amount_settled||0),0),0);
 
-    const net=Math.max(commission-consumption,0);
+    const consumptionApplied=Math.min(commission,consumption);
+    const residualDebt=Math.max(consumption-commission,0);
+    const net=Math.max(commission-consumptionApplied,0);
 
     const row=document.createElement("div");
     row.className="finance-row";
@@ -252,7 +253,7 @@ async function loadWeeklySettlements(){
     const title=document.createElement("strong");
     title.textContent=pro.full_name;
     const sub=document.createElement("span");
-    sub.textContent=`Comissão: ${money(commission)} • Consumo: ${money(consumption)} • ${range.start.toLocaleDateString("pt-BR")} a ${range.end.toLocaleDateString("pt-BR")}`;
+    sub.textContent=`Comissão: ${money(commission)} • Consumo pendente: ${money(consumption)} • ${range.start.toLocaleDateString("pt-BR")} a ${range.end.toLocaleDateString("pt-BR")}${residualDebt>0?` • Saldo que continuará pendente: ${money(residualDebt)}`:""}`;
     main.append(title,sub);
 
     const actions=document.createElement("div");
@@ -273,7 +274,7 @@ async function loadWeeklySettlements(){
         $("settlementPeriodEnd").value=range.endValue;
         $("settlementProfessionalName").value=pro.full_name;
         $("settlementGrossCommission").textContent=money(commission);
-        $("settlementConsumption").textContent=money(consumption);
+        $("settlementConsumption").textContent=money(consumptionApplied);
         $("settlementNetPayable").textContent=money(net);
         $("settlementPaymentMethod").value="pix";
         $("settlementPaymentNotes").value="";
