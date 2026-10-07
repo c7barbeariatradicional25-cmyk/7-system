@@ -1367,6 +1367,66 @@
     </section>
   </div>
 
+
+  <div id="appointmentDetailModal" class="modal hidden" role="dialog" aria-modal="true">
+    <div class="modal-backdrop" data-close-appointment-detail></div>
+    <section class="modal-card appointment-detail-modal">
+      <div class="modal-head">
+        <div>
+          <span>ATENDIMENTO</span>
+          <h2 id="appointmentDetailTitle">Detalhes do atendimento</h2>
+        </div>
+        <button type="button" class="modal-close" data-close-appointment-detail>×</button>
+      </div>
+
+      <div class="appointment-detail-summary">
+        <div><span>CLIENTE</span><strong id="detailCustomer">—</strong></div>
+        <div><span>PROFISSIONAL</span><strong id="detailProfessional">—</strong></div>
+        <div><span>HORÁRIO</span><strong id="detailTime">—</strong></div>
+        <div><span>STATUS</span><strong id="detailStatus">—</strong></div>
+      </div>
+
+      <div class="appointment-detail-columns">
+        <section class="detail-panel">
+          <div class="detail-panel-head">
+            <div><span>SERVIÇOS</span><strong id="detailServiceTotal">R$ 0,00</strong></div>
+          </div>
+          <div id="detailServicesList" class="detail-item-list"></div>
+
+          <div class="detail-add-row">
+            <select id="detailAddService"><option value="">Adicionar serviço...</option></select>
+            <button id="detailAddServiceBtn" type="button" class="ghost-btn">+ ADICIONAR</button>
+          </div>
+        </section>
+
+        <section class="detail-panel">
+          <div class="detail-panel-head">
+            <div><span>PRODUTOS & CONSUMO</span><strong id="detailProductTotal">R$ 0,00</strong></div>
+          </div>
+          <div id="detailProductsList" class="detail-item-list"></div>
+
+          <div class="detail-add-row detail-product-add">
+            <select id="detailAddProduct"><option value="">Adicionar produto/consumível...</option></select>
+            <input id="detailProductQty" type="number" min="1" step="1" value="1">
+            <button id="detailAddProductBtn" type="button" class="ghost-btn">+ ADICIONAR</button>
+          </div>
+        </section>
+      </div>
+
+      <div class="appointment-detail-total">
+        <div><span>TOTAL DO ATENDIMENTO</span><strong id="detailGrandTotal">R$ 0,00</strong></div>
+        <small>Serviços + produtos/consumíveis vinculados ao cliente.</small>
+      </div>
+
+      <p id="appointmentDetailMessage" class="form-message"></p>
+
+      <div class="appointment-detail-actions">
+        <button id="detailStartBtn" type="button" class="ghost-btn">INICIAR ATENDIMENTO</button>
+        <button id="detailCheckoutBtn" type="button" class="primary-btn">FINALIZAR / RECEBER</button>
+      </div>
+    </section>
+  </div>
+
   <script type="module" src="relatorios.js"></script>
   <script type="module" src="financeiro.js"></script>
   <script type="module" src="promocoes.js"></script>
