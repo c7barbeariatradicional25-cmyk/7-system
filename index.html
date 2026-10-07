@@ -734,6 +734,33 @@
           <span>Cliente autorizou receber comunicações</span>
         </label>
 
+        <div id="customerInsights" class="customer-history hidden">
+          <div class="customer-history-head">
+            <div><span>PERFIL DE CONSUMO</span><h3>Preferências & Consumo</h3></div>
+          </div>
+
+          <div class="customer-insight-stats">
+            <article><span>TICKET MÉDIO</span><strong id="customerInsightTicket">R$ 0</strong></article>
+            <article><span>COMPRAS REGISTRADAS</span><strong id="customerInsightPurchases">0</strong></article>
+            <article><span>VALOR REGISTRADO</span><strong id="customerInsightSpent">R$ 0</strong></article>
+          </div>
+
+          <div class="customer-insight-grid">
+            <article>
+              <span>SERVIÇOS MAIS CONSUMIDOS</span>
+              <div id="customerTopServices" class="customer-insight-list"></div>
+            </article>
+            <article>
+              <span>PRODUTOS MAIS COMPRADOS</span>
+              <div id="customerTopProducts" class="customer-insight-list"></div>
+            </article>
+            <article>
+              <span>BEBIDAS & CONSUMÍVEIS</span>
+              <div id="customerTopConvenience" class="customer-insight-list"></div>
+            </article>
+          </div>
+        </div>
+
         <div id="customerHistory" class="customer-history hidden">
           <div class="customer-history-head">
             <div><span>HISTÓRICO</span><h3>Atendimentos</h3></div>
@@ -828,6 +855,12 @@
         <button type="button" class="modal-close" data-close-product-sale>×</button>
       </div>
       <form id="productSaleForm" class="appointment-form">
+        <label><span>Cliente / Atendimento</span>
+          <select id="cashProductCustomerLink">
+            <option value="">Venda Avulsa</option>
+          </select>
+        </label>
+        <small id="cashProductCustomerHint" class="form-hint">Se houver cliente em atendimento, ele aparecerá primeiro.</small>
         <label><span>Produto</span><select id="cashProduct" required></select></label>
         <div class="form-grid two">
           <label><span>Quantidade</span><input id="cashProductQty" type="number" min="1" step="1" value="1" required></label>
