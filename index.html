@@ -44,6 +44,7 @@
       <nav>
         <button class="nav-item active" data-section="dashboard">Dashboard</button>
         <button class="nav-item" data-section="agenda">Agenda</button>
+        <button class="nav-item barber-only hidden" data-section="desempenho">Meu Desempenho</button>
         <button class="nav-item" data-section="clientes">Clientes</button>
         <button class="nav-item" data-section="caixa">Caixa</button>
         <button class="nav-item" data-section="operacoes">Operações</button>
@@ -66,7 +67,10 @@
             <span class="notification-icon">🔔</span>
             <span id="notificationBadge" class="notification-badge hidden">0</span>
           </button>
-          <div class="user-chip"><strong id="userName">Usuário</strong><small id="userRole">perfil</small></div>
+          <div class="user-chip">
+            <div id="userAvatar" class="user-avatar">C7</div>
+            <div><strong id="userName">Usuário</strong><small id="userRole">Perfil</small></div>
+          </div>
         </div>
       </header>
 
@@ -98,6 +102,48 @@
             <span>EQUIPE</span>
             <h2 id="dashboardActivePros">0 barbeiros ativos</h2>
             <p id="dashboardTeamText">Equipe operacional.</p>
+          </article>
+        </div>
+      </section>
+
+      <section id="desempenho" class="section">
+        <div class="performance-hero">
+          <div class="performance-profile">
+            <div id="performanceAvatar" class="performance-avatar">C7</div>
+            <div>
+              <span class="eyebrow">MINHA ÁREA</span>
+              <h2 id="performanceName">Barbeiro</h2>
+              <p id="performanceSpecialty">C7 Barbearia Tradicional</p>
+            </div>
+          </div>
+          <div class="performance-month">
+            <span>MÊS ATUAL</span>
+            <strong id="performanceMonthLabel">—</strong>
+          </div>
+        </div>
+
+        <div class="performance-stats">
+          <article><span>ATENDIMENTOS HOJE</span><strong id="performanceToday">0</strong></article>
+          <article><span>ATENDIMENTOS NO MÊS</span><strong id="performanceMonthAppointments">0</strong></article>
+          <article><span>VALOR GERADO</span><strong id="performanceGenerated">R$ 0</strong></article>
+          <article><span>COMISSÃO PENDENTE</span><strong id="performancePendingCommission">R$ 0</strong></article>
+          <article><span>COMISSÃO PAGA</span><strong id="performancePaidCommission">R$ 0</strong></article>
+        </div>
+
+        <div class="performance-grid">
+          <article class="performance-panel">
+            <div class="performance-panel-head">
+              <div><span>PRÓXIMOS</span><h3>Minha Agenda</h3></div>
+              <button id="performanceOpenAgendaBtn" class="ghost-btn" type="button">ABRIR AGENDA</button>
+            </div>
+            <div id="performanceUpcomingList" class="performance-list"></div>
+          </article>
+
+          <article class="performance-panel">
+            <div class="performance-panel-head">
+              <div><span>HISTÓRICO</span><h3>Últimos Atendimentos</h3></div>
+            </div>
+            <div id="performanceHistoryList" class="performance-list"></div>
           </article>
         </div>
       </section>
@@ -1036,5 +1082,6 @@
   <script type="module" src="financeiro.js"></script>
   <script type="module" src="promocoes.js"></script>
   <script type="module" src="notificacoes.js"></script>
+  <script type="module" src="barbeiro.js"></script>
 </body>
 </html>
