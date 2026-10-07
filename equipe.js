@@ -162,7 +162,12 @@ async function openProfessional(id=null){
       ? "A autorização foi salva, mas o login ainda não foi criado. Informe a senha inicial e salve novamente."
       : "Ao salvar, este e-mail será autorizado e vinculado automaticamente a este barbeiro.";
   $("unlinkProfessionalAccessBtn").classList.toggle("hidden",!linkedAccess);
-  $("resendProfessionalConfirmationBtn")?.classList.toggle("hidden",!(linkedAccess&&!accessLinked));
+  const emailActionBtn=$("resendProfessionalConfirmationBtn");
+  if(emailActionBtn){
+    emailActionBtn.classList.toggle("hidden",!linkedAccess);
+    emailActionBtn.textContent=accessLinked?"ENVIAR RECUPERAÇÃO DE SENHA":"REENVIAR CONFIRMAÇÃO";
+    emailActionBtn.dataset.mode=accessLinked?"recovery":"confirmation";
+  }
 
   $("professionalAdminModal").classList.remove("hidden");
 }
@@ -356,13 +361,15 @@ async function init(){
 
     const email=$("professionalAccessEmail").value.trim().toLowerCase();
     if(!email){
-      $("professionalAdminMessage").textContent="Informe o e-mail de acesso antes de reenviar.";
+      $("professionalAdminMessage").textContent="Informe o e-mail de acesso antes de enviar.";
       return;
     }
 
     const btn=$("resendProfessionalConfirmationBtn");
+    const mode=btn.dataset.mode||"confirmation";
     btn.disabled=true;
-    $("professionalAdminMessage").textContent="Reenviando confirmação...";
+    $("professionalAdminMessage").textContent=
+      mode==="recovery"?"Enviando recuperação de senha...":"Reenviando confirmação...";
 
     const authClient=createClient(
       "https://cjtgjqxkyvgjlhylrvas.supabase.co",
@@ -370,26 +377,35 @@ async function init(){
       {auth:{persistSession:false,autoRefreshToken:false,detectSessionInUrl:false}}
     );
 
-    const {error}=await authClient.auth.resend({
-      type:"signup",
-      email,
-      options:{
-        emailRedirectTo:"https://sistema.c7barbeariatradicional.com.br/"
-      }
-    });
+    const result=mode==="recovery"
+      ? await authClient.auth.resetPasswordForEmail(email,{
+          redirectTo:"https://sistema.c7barbeariatradicional.com.br/"
+        })
+      : await authClient.auth.resend({
+          type:"signup",
+          email,
+          options:{
+            emailRedirectTo:"https://sistema.c7barbeariatradicional.com.br/"
+          }
+        });
 
     btn.disabled=false;
 
-    if(error){
-      const message=String(error.message||"").toLowerCase();
+    if(result.error){
+      const message=String(result.error.message||"").toLowerCase();
       $("professionalAdminMessage").textContent=
         message.includes("rate limit")||message.includes("security purposes")
-          ?"Aguarde um minuto antes de reenviar novamente."
-          :"Não foi possível reenviar a confirmação.";
+          ?"Aguarde um minuto antes de enviar novamente."
+          :mode==="recovery"
+            ?"Não foi possível enviar a recuperação de senha."
+            :"Não foi possível reenviar a confirmação.";
       return;
     }
 
-    $("professionalAdminMessage").textContent="Confirmação reenviada. Verifique a caixa de entrada e o spam.";
+    $("professionalAdminMessage").textContent=
+      mode==="recovery"
+        ?"Recuperação enviada. Verifique a caixa de entrada e o spam."
+        :"Confirmação reenviada. Verifique a caixa de entrada e o spam.";
   });
 
   $("unlinkProfessionalAccessBtn")?.addEventListener("click",async()=>{
