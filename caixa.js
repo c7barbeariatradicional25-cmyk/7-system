@@ -14,6 +14,7 @@ let currentProfessionalId = null;
 let openSession = null;
 let pendingAppointments = [];
 let products = [];
+let cashProfessionals = [];
 let receiveBenefits = [];
 let appliedCoupon = null;
 
@@ -40,13 +41,15 @@ async function loadContext(){
 async function loadCash(){
   if(!["admin","reception"].includes(currentRole)) return;
 
-  const [{data:sessionData},{data:productData}] = await Promise.all([
+  const [{data:sessionData},{data:productData},{data:professionalData}] = await Promise.all([
     supabase.from("cash_sessions").select("*").eq("status","open").maybeSingle(),
-    supabase.from("products").select("id,name,price").eq("active",true).order("sort_order")
+    supabase.from("products").select("id,name,price,stock_quantity,product_kind").eq("active",true).order("sort_order"),
+    supabase.from("professionals").select("id,full_name").eq("active",true).order("full_name")
   ]);
 
   openSession=sessionData||null;
   products=productData||[];
+  cashProfessionals=professionalData||[];
 
   renderCashState();
 
@@ -66,6 +69,7 @@ function renderCashState(){
   $("openCashBtn").classList.toggle("hidden",isOpen);
   $("receiveAppointmentBtn").classList.toggle("hidden",!isOpen);
   $("sellProductBtn").classList.toggle("hidden",!isOpen);
+  $("employeeConsumptionBtn").classList.toggle("hidden",false);
   $("cashMovementBtn").classList.toggle("hidden",!isOpen);
   $("closeCashBtn").classList.toggle("hidden",!isOpen);
 
