@@ -11,6 +11,7 @@ let currentRole=null;
 let currentUser=null;
 let services=[];
 let products=[];
+let productDepartment="barbershop";
 
 async function loadContext(){
   const {data:{session}}=await supabase.auth.getSession();
@@ -186,7 +187,8 @@ function renderProducts(){
     return;
   }
 
-  const groups=groupByCategory(products);
+  const visibleProducts=products.filter(p=>(p.department||"barbershop")===productDepartment);
+  const groups=groupByCategory(visibleProducts);
 
   Object.entries(groups).forEach(([category,items])=>{
     const section=document.createElement("section");
@@ -266,6 +268,7 @@ function openProduct(id=null){
   $("productAdminPrice").value=p?.price??"";
   $("productAdminCost").value=p?.cost_price??"";
   $("productAdminMinStock").value=p?.min_stock??0;
+  $("productAdminDepartment").value=p?.department||productDepartment||"barbershop";
   $("productAdminKind").value=p?.product_kind||"retail";
   $("productAdminSort").value=p?.sort_order??0;
   $("productAdminStock").value=p?.stock_quantity??0;
@@ -287,6 +290,8 @@ async function saveProduct(e){
     price:Number($("productAdminPrice").value||0),
     cost_price:$("productAdminCost").value===""?null:Number($("productAdminCost").value),
     min_stock:Number($("productAdminMinStock").value||0),
+    department:$("productAdminDepartment").value,
+    product_kind:$("productAdminKind").value,
     sort_order:Number($("productAdminSort").value||0),
     active:$("productAdminActive").checked
   };
@@ -347,6 +352,15 @@ async function init(){
   document.querySelectorAll("[data-close-service-admin]").forEach(el=>el.addEventListener("click",closeService));
 
   $("newProductBtn")?.addEventListener("click",()=>openProduct());
+  document.querySelectorAll("[data-product-department]").forEach(btn=>{
+    btn.addEventListener("click",()=>{
+      productDepartment=btn.dataset.productDepartment||"barbershop";
+      document.querySelectorAll("[data-product-department]").forEach(el=>{
+        el.classList.toggle("active",el===btn);
+      });
+      renderProducts();
+    });
+  });
   $("productAdminForm")?.addEventListener("submit",saveProduct);
   $("applyStockAdjustmentBtn")?.addEventListener("click",adjustStock);
   $("refreshInventoryHistoryBtn")?.addEventListener("click",loadInventoryHistory);
