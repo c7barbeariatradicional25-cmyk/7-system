@@ -313,11 +313,16 @@ async function loadFinance(){
 
 async function init(){
   if(!await loadContext()) return;
-  document.querySelectorAll('.nav-item[data-section="caixa"]').forEach(btn=>btn.addEventListener("click",loadFinance));
+  document.querySelectorAll('.nav-item[data-section="caixa"], .nav-item[data-section="acertos"]').forEach(btn=>btn.addEventListener("click",loadFinance));
   $("refreshCommissionsBtn")?.addEventListener("click",loadCommissions);
   $("refreshCashHistoryBtn")?.addEventListener("click",loadCashHistory);
   $("refreshEmployeeConsumptionBtn")?.addEventListener("click",loadEmployeeConsumptions);
   $("refreshSettlementsBtn")?.addEventListener("click",loadWeeklySettlements);
+  const range=currentWeekRange();
+  if($("settlementPeriodLabel")){
+    $("settlementPeriodLabel").textContent=`${range.start.toLocaleDateString("pt-BR")} a ${range.end.toLocaleDateString("pt-BR")}`;
+  }
+
   window.addEventListener("c7-employee-consumption-updated",async()=>{
     await Promise.all([loadEmployeeConsumptions(),loadWeeklySettlements()]);
   });
