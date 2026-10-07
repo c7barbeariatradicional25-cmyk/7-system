@@ -275,7 +275,10 @@ async function saveProfessional(e){
 
       const {data:signUpData,error:signUpError}=await authClient.auth.signUp({
         email:accessEmail,
-        password:accessPassword
+        password:accessPassword,
+        options:{
+          emailRedirectTo:"https://sistema.c7barbeariatradicional.com.br/"
+        }
       });
 
       if(signUpError){
