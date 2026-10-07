@@ -9,6 +9,8 @@ const $=id=>document.getElementById(id);
 let currentRole=null;
 let professionals=[];
 let systemAccess=[];
+let editingAccessOriginalEmail=null;
+let editingAccessAuthLinked=false;
 
 async function loadContext(){
   const {data:{session}}=await supabase.auth.getSession();
@@ -547,12 +549,22 @@ async function loadSystemAccess(){
 
 function openAccess(item=null){
   $("accessForm").reset();
+  editingAccessOriginalEmail=item?.email||null;
+
+  const linkedProfessional=item?.professional_id
+    ? professionals.find(p=>p.id===item.professional_id)
+    : null;
+
+  editingAccessAuthLinked=Boolean(linkedProfessional?.user_id);
+
   $("accessModalTitle").textContent=item?"Editar acesso":"Novo acesso";
   $("accessFullName").value=item?.full_name||"";
   $("accessEmail").value=item?.email||"";
   $("accessRole").value=item?.role||"barber";
   $("accessActive").checked=item?.active??true;
-  $("accessEmail").readOnly=Boolean(item);
+
+  // Só trava o e-mail quando já existe usuário Auth realmente vinculado.
+  $("accessEmail").readOnly=editingAccessAuthLinked;
 
   const options='<option value="">Selecione</option>'+
     professionals.filter(p=>p.active).map(p=>`<option value="${p.id}">${p.full_name}</option>`).join("");
@@ -560,7 +572,9 @@ function openAccess(item=null){
   $("accessProfessional").value=item?.professional_id||"";
   toggleAccessProfessionalField();
 
-  $("accessMessage").textContent="";
+  $("accessMessage").textContent=editingAccessAuthLinked
+    ?"Este login já está criado. Para trocar o e-mail, primeiro desvincule o acesso no cadastro do barbeiro."
+    :"";
   $("accessModal").classList.remove("hidden");
 }
 
@@ -572,6 +586,8 @@ function toggleAccessProfessionalField(){
 
 function closeAccess(){
   $("accessModal").classList.add("hidden");
+  editingAccessOriginalEmail=null;
+  editingAccessAuthLinked=false;
 }
 
 async function saveAccess(e){
@@ -595,18 +611,39 @@ async function saveAccess(e){
 
   $("accessMessage").textContent="Salvando acesso...";
 
-  const {error}=await supabase
-    .from("admin_allowlist")
-    .upsert({
-      email,
-      full_name:fullName,
-      role,
-      professional_id:professionalId||null,
-      active:$("accessActive").checked
-    },{onConflict:"email"});
+  const payload={
+    email,
+    full_name:fullName,
+    role,
+    professional_id:professionalId||null,
+    active:$("accessActive").checked
+  };
+
+  let error=null;
+
+  if(editingAccessOriginalEmail){
+    if(editingAccessAuthLinked && email!==editingAccessOriginalEmail){
+      $("accessMessage").textContent="Este login já está vinculado. Desvincule o acesso no cadastro do barbeiro antes de trocar o e-mail.";
+      return;
+    }
+
+    const result=await supabase
+      .from("admin_allowlist")
+      .update(payload)
+      .eq("email",editingAccessOriginalEmail);
+    error=result.error;
+  }else{
+    const result=await supabase
+      .from("admin_allowlist")
+      .insert(payload);
+    error=result.error;
+  }
 
   if(error){
-    $("accessMessage").textContent="Não foi possível salvar o acesso.";
+    const message=String(error.message||"");
+    $("accessMessage").textContent=message.toLowerCase().includes("duplicate")
+      ?"Esse e-mail já está cadastrado em outro acesso."
+      :"Não foi possível salvar o acesso.";
     return;
   }
 
