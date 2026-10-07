@@ -2058,3 +2058,43 @@ body{
 .live-pro-column{
   box-sizing:border-box;
 }
+
+
+/* SIDEBAR COM ROLAGEM INDEPENDENTE */
+.sidebar{
+  height:100vh;
+  max-height:100vh;
+  display:flex;
+  flex-direction:column;
+  overflow:hidden;
+}
+.sidebar .brand{
+  flex:0 0 auto;
+}
+.sidebar nav{
+  flex:1 1 auto;
+  min-height:0;
+  overflow-y:auto;
+  overflow-x:hidden;
+  padding-right:4px;
+  overscroll-behavior:contain;
+  scrollbar-width:thin;
+  scrollbar-color:rgba(193,138,87,.45) transparent;
+}
+.sidebar nav::-webkit-scrollbar{
+  width:5px;
+}
+.sidebar nav::-webkit-scrollbar-track{
+  background:transparent;
+}
+.sidebar nav::-webkit-scrollbar-thumb{
+  background:rgba(193,138,87,.42);
+  border-radius:999px;
+}
+.sidebar nav::-webkit-scrollbar-thumb:hover{
+  background:rgba(193,138,87,.68);
+}
+.sidebar .logout{
+  flex:0 0 auto;
+  margin-top:12px;
+}
