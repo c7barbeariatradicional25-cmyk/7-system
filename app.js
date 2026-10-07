@@ -95,7 +95,8 @@ function formatTime(value){
 function formatDateLabel(value){
   if(!value) return "—";
   const [y,m,d]=value.split("-").map(Number);
-  return new Date(y,m-1,d).toLocaleDateString("pt-BR",{weekday:"long",day:"2-digit",month:"long"});
+  const text=new Date(y,m-1,d).toLocaleDateString("pt-BR",{weekday:"long",day:"2-digit",month:"long"});
+  return text.charAt(0).toUpperCase()+text.slice(1);
 }
 
 function minutesFromHHMM(value){
@@ -242,7 +243,7 @@ async function initAgenda(){
 
   const proOptions=professionals.map(p=>`<option value="${p.id}">${escapeHtml(p.full_name)}</option>`).join("");
 
-  professionalFilter.innerHTML='<option value="">Todos os profissionais</option>'+proOptions;
+  professionalFilter.innerHTML='<option value="">Todos os Profissionais</option>'+proOptions;
   appointmentProfessional.innerHTML='<option value="">Selecione</option>'+proOptions;
   blockProfessional.innerHTML='<option value="">Selecione</option>'+proOptions;
 
@@ -1148,4 +1149,11 @@ if(session) await loadProfile(session.user.id); else showLogin();
 
 supabase.auth.onAuthStateChange((_event,session)=>{
   if(!session) showLogin();
+});
+
+window.addEventListener("c7-checkout-complete",async()=>{
+  await loadAgenda();
+  if(document.getElementById("dashboard")?.classList.contains("active")){
+    await updateDashboard();
+  }
 });
