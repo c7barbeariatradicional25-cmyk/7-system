@@ -2098,3 +2098,352 @@ body{
   flex:0 0 auto;
   margin-top:12px;
 }
+
+
+/* =========================================================
+   MOBILE FINAL — C7 SYSTEM
+   ========================================================= */
+@media(max-width:640px){
+  html,body{
+    width:100%;
+    max-width:100%;
+    overflow-x:hidden;
+  }
+
+  .app-shell{
+    display:block!important;
+    min-height:100%;
+  }
+
+  /* barra inferior mobile — corrige regra desktop que sobrescrevia */
+  .sidebar{
+    position:fixed!important;
+    z-index:120!important;
+    left:0!important;
+    right:0!important;
+    top:auto!important;
+    bottom:0!important;
+    width:100%!important;
+    height:72px!important;
+    max-height:72px!important;
+    padding:7px 8px!important;
+    display:flex!important;
+    flex-direction:row!important;
+    align-items:center!important;
+    overflow:hidden!important;
+    border-right:0!important;
+    border-top:1px solid rgba(193,138,87,.32)!important;
+    background:linear-gradient(180deg,#11100e 0%,#090908 100%)!important;
+    box-shadow:0 -8px 28px rgba(0,0,0,.18);
+  }
+
+  .sidebar .brand,
+  .sidebar .logout{
+    display:none!important;
+  }
+
+  .sidebar nav{
+    width:100%!important;
+    height:58px!important;
+    min-height:58px!important;
+    margin:0!important;
+    padding:0 2px!important;
+    display:flex!important;
+    flex:1 1 auto!important;
+    gap:6px!important;
+    align-items:center!important;
+    overflow-x:auto!important;
+    overflow-y:hidden!important;
+    overscroll-behavior-x:contain;
+    scrollbar-width:none!important;
+    -webkit-overflow-scrolling:touch;
+  }
+
+  .sidebar nav::-webkit-scrollbar{
+    display:none!important;
+  }
+
+  .nav-item{
+    flex:0 0 auto!important;
+    min-width:76px;
+    height:50px!important;
+    padding:0 12px!important;
+    display:grid;
+    place-items:center;
+    border-radius:11px!important;
+    font-size:10px!important;
+    text-align:center!important;
+    white-space:nowrap;
+  }
+
+  .nav-item.active::before{
+    left:10px!important;
+    right:10px!important;
+    top:auto!important;
+    bottom:3px!important;
+    width:auto!important;
+    height:3px!important;
+    border-radius:99px!important;
+  }
+
+  .main-panel{
+    width:100%;
+    padding:15px 14px 92px!important;
+  }
+
+  .topbar{
+    min-height:auto!important;
+    padding:4px 0 16px!important;
+    gap:10px!important;
+    align-items:flex-start!important;
+  }
+
+  .topbar>div:first-child{
+    min-width:0;
+  }
+
+  .topbar>div:first-child>span{
+    font-size:8px!important;
+    letter-spacing:1.2px!important;
+    margin-bottom:3px!important;
+  }
+
+  .topbar h1{
+    font-size:28px!important;
+    line-height:1.05;
+  }
+
+  .topbar-actions{
+    flex:0 0 auto;
+  }
+
+  .user-chip{
+    display:none!important;
+  }
+
+  /* dashboard compacto */
+  .section{
+    padding-top:18px!important;
+  }
+
+  .stats{
+    grid-template-columns:repeat(2,minmax(0,1fr))!important;
+    gap:9px!important;
+  }
+
+  .stats article,
+  .cash-stats article,
+  .ops-stats article,
+  .crm-stats article,
+  .product-admin-stats article,
+  .report-stats article,
+  .promo-overview article{
+    min-height:105px!important;
+    height:auto!important;
+    padding:13px!important;
+    border-radius:14px!important;
+  }
+
+  .stats article::before,
+  .cash-stats article::before,
+  .ops-stats article::before,
+  .crm-stats article::before,
+  .product-admin-stats article::before,
+  .report-stats article::before,
+  .promo-overview article::before{
+    width:32px!important;
+    margin-bottom:10px!important;
+  }
+
+  .stats span,
+  .cash-stats span,
+  .ops-stats span,
+  .crm-stats span,
+  .product-admin-stats span,
+  .report-stats span,
+  .promo-overview span{
+    font-size:9px!important;
+  }
+
+  .stats strong,
+  .cash-stats strong,
+  .ops-stats strong,
+  .crm-stats strong,
+  .product-admin-stats strong,
+  .report-stats strong,
+  .promo-overview strong{
+    margin-top:7px!important;
+    font-size:27px!important;
+  }
+
+  .stats small{
+    margin-top:5px!important;
+    font-size:8px!important;
+  }
+
+  .dashboard-grid{
+    grid-template-columns:1fr!important;
+    gap:10px!important;
+    margin-top:10px!important;
+  }
+
+  .dashboard-grid .panel{
+    min-height:0!important;
+    height:auto!important;
+    padding:17px!important;
+    border-radius:15px!important;
+  }
+
+  .dashboard-grid .panel h2{
+    margin-top:5px!important;
+    font-size:23px!important;
+  }
+
+  .dashboard-grid .panel p{
+    margin-top:20px!important;
+    font-size:12px!important;
+    line-height:1.5!important;
+  }
+
+  .dashboard-alerts{
+    margin-top:15px!important;
+  }
+
+  .dashboard-alert{
+    padding:12px!important;
+    font-size:10px!important;
+  }
+
+  /* layouts administrativos */
+  .cash-stats,
+  .ops-stats,
+  .crm-stats,
+  .product-admin-stats,
+  .report-stats,
+  .promo-overview{
+    grid-template-columns:repeat(2,minmax(0,1fr))!important;
+    gap:9px!important;
+  }
+
+  .promo-grid,
+  .dashboard-grid{
+    grid-template-columns:1fr!important;
+  }
+
+  .panel,
+  .cash-panel,
+  .team-admin-panel,
+  .report-panel,
+  .settings-card,
+  .promo-panel{
+    min-height:0!important;
+  }
+
+  /* agenda: rola só a grade, não a página inteira */
+  .agenda-toolbar{
+    gap:10px!important;
+  }
+
+  .agenda-date-nav,
+  .agenda-actions{
+    width:100%;
+  }
+
+  .agenda-actions select{
+    min-width:0!important;
+    flex:1 1 180px;
+  }
+
+  .agenda-summary{
+    grid-template-columns:1fr 1fr!important;
+  }
+
+  .agenda-summary>div:first-child{
+    grid-column:1 / -1;
+  }
+
+  .agenda-timeline{
+    width:100%;
+    max-width:100%;
+    overflow-x:auto!important;
+    border-radius:14px;
+  }
+
+  .live-timeline-scroll{
+    max-height:62vh!important;
+    overflow:auto!important;
+    scrollbar-gutter:auto!important;
+  }
+
+  .live-timeline-shell{
+    min-width:max-content!important;
+  }
+
+  .live-timeline-head{
+    grid-template-columns:90px repeat(var(--pro-count),190px)!important;
+  }
+
+  .live-timeline-body{
+    grid-template-columns:90px auto!important;
+  }
+
+  .live-columns{
+    grid-template-columns:repeat(var(--pro-count),190px)!important;
+  }
+
+  .live-time-corner,
+  .live-time-rail{
+    position:sticky;
+    left:0;
+    z-index:26;
+  }
+
+  .live-time-corner{
+    z-index:34;
+  }
+
+  .live-pro-head{
+    min-height:70px!important;
+    padding:9px!important;
+    grid-template-columns:34px 1fr!important;
+  }
+
+  .live-pro-avatar{
+    width:34px!important;
+    height:34px!important;
+  }
+
+  .quick-block-btn{
+    grid-column:1 / -1;
+    width:100%;
+    height:28px!important;
+  }
+
+  /* modais */
+  .modal{
+    padding:10px!important;
+  }
+
+  .modal-card{
+    width:100%!important;
+    max-width:100%!important;
+    max-height:calc(100vh - 20px)!important;
+    padding:18px!important;
+    border-radius:16px!important;
+  }
+
+  .form-grid.two,
+  .form-grid.three{
+    grid-template-columns:1fr!important;
+  }
+
+  .appointment-form input,
+  .appointment-form select,
+  .appointment-form textarea{
+    font-size:16px!important;
+  }
+
+  .notification-drawer{
+    width:100%!important;
+  }
+}
