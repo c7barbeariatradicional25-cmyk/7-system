@@ -534,7 +534,9 @@ function renderTimeline(){
       const height=Math.max(32,(endMin-startMin)*pxPerMinute-4);
       const customer=escapeHtml(a.customer?.full_name||"Cliente");
       const service=escapeHtml((a.appointment_services||[]).map(s=>s.service_name).join(" + ")||"Serviço");
-      const checkout=a.status==="in_service" && ["admin","reception"].includes(currentRole)
+      const canCheckout=["admin","reception"].includes(currentRole)||
+        (currentRole==="barber"&&a.professional_id===currentProfessionalId);
+      const checkout=a.status==="in_service" && canCheckout
         ? `<button class="live-checkout" type="button" data-timeline-checkout="${a.id}">CHECKOUT</button>`
         : "";
 
@@ -738,11 +740,15 @@ async function updateDashboard(){
     supabase.from("professionals").select("id,full_name,active").eq("active",true)
   ]);
 
-  const appointments=appointmentsResult.data||[];
+  let appointments=appointmentsResult.data||[];
   const transactions=transactionsResult.data||[];
   const products=productsResult.data||[];
   const openCash=cashResult.data||null;
   const activePros=professionalsResult.data||[];
+
+  if(currentRole==="barber"&&currentProfessionalId){
+    appointments=appointments.filter(a=>a.professional?.full_name && professionals.find(p=>p.id===currentProfessionalId)?.full_name===a.professional.full_name);
+  }
 
   const relevantAppointments=appointments.filter(a=>["waiting","in_service","completed"].includes(a.status));
   const waiting=appointments.filter(a=>a.status==="waiting");
@@ -750,17 +756,39 @@ async function updateDashboard(){
     .reduce((sum,t)=>sum+Number(t.net_amount||0),0);
   const lowStock=products.filter(p=>Number(p.stock_quantity||0)<=Number(p.min_stock||0));
 
-  $("statAppointments").textContent=relevantAppointments.length;
-  $("statRevenue").textContent=money(revenue);
-  $("statWaiting").textContent=waiting.length;
-  $("statLowStock").textContent=lowStock.length;
+  if(currentRole==="barber"){
+    $("statAppointmentsLabel").textContent="Meus Atendimentos Hoje";
+    $("statAppointmentsHint").textContent="Concluídos + em andamento";
+    $("statRevenueLabel").textContent="Em Atendimento";
+    $("statRevenueHint").textContent="Atendimento em andamento agora";
+    $("statWaitingLabel").textContent="Aguardando";
+    $("statWaitingHint").textContent="Clientes da sua agenda";
+    $("statLowStockLabel").textContent="Próximo Horário";
+    $("statLowStockHint").textContent="Seu próximo atendimento";
 
-  if(openCash){
+    const inService=appointments.filter(a=>a.status==="in_service").length;
+    const nextMine=appointments.find(a=>new Date(a.starts_at)>=now&&["scheduled","confirmed"].includes(a.status));
+
+    $("statAppointments").textContent=relevantAppointments.length;
+    $("statRevenue").textContent=inService;
+    $("statWaiting").textContent=waiting.length;
+    $("statLowStock").textContent=nextMine?formatTime(nextMine.starts_at):"—";
+  }else{
+    $("statAppointments").textContent=relevantAppointments.length;
+    $("statRevenue").textContent=money(revenue);
+    $("statWaiting").textContent=waiting.length;
+    $("statLowStock").textContent=lowStock.length;
+  }
+
+  if(currentRole==="barber"){
+    $("dashboardCashStatus").textContent="Minha Agenda";
+    $("dashboardCashText").textContent="Acompanhe seus atendimentos, bloqueios e checkouts do dia.";
+  }else if(openCash){
     $("dashboardCashStatus").textContent="Aberto";
     $("dashboardCashText").textContent=`Saldo esperado: ${money(openCash.expected_balance)} • Entradas: ${money(openCash.total_in)} • Saídas: ${money(openCash.total_out)}`;
   }else{
     $("dashboardCashStatus").textContent="Fechado";
-    $("dashboardCashText").textContent="Nenhum caixa aberto no momento.";
+    $("dashboardCashText").textContent="Nenhum Caixa aberto no momento.";
   }
 
   const next=appointments.find(a=>new Date(a.starts_at)>=now && ["scheduled","confirmed"].includes(a.status));
