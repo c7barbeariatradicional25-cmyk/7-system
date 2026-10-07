@@ -266,6 +266,7 @@ function openProduct(id=null){
   $("productAdminPrice").value=p?.price??"";
   $("productAdminCost").value=p?.cost_price??"";
   $("productAdminMinStock").value=p?.min_stock??0;
+  $("productAdminKind").value=p?.product_kind||"retail";
   $("productAdminSort").value=p?.sort_order??0;
   $("productAdminStock").value=p?.stock_quantity??0;
   $("productAdminActive").checked=p?.active??true;
