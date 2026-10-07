@@ -2033,3 +2033,28 @@ body{
 .live-pro-column{
   border-right:0!important;
 }
+
+
+/* CABEÇALHO E CORPO DA AGENDA NO MESMO EIXO */
+.live-timeline-scroll{
+  position:relative;
+  overflow:auto;
+  scrollbar-gutter:stable;
+}
+.live-timeline-head{
+  position:sticky!important;
+  top:0;
+  z-index:30;
+  width:100%;
+}
+.live-timeline-body{
+  width:100%;
+}
+.live-time-corner,
+.live-time-rail{
+  box-sizing:border-box;
+}
+.live-pro-head,
+.live-pro-column{
+  box-sizing:border-box;
+}
