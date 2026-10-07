@@ -3361,3 +3361,224 @@ body{
     width:100%;
   }
 }
+
+
+/* ATENDIMENTO — COMPACTO SEM ROLAGEM LATERAL */
+#appointmentDetailModal{
+  padding:14px;
+}
+#appointmentDetailModal .appointment-detail-modal{
+  width:min(860px,calc(100vw - 28px));
+  max-width:860px;
+  max-height:calc(100vh - 28px);
+  padding:16px 18px 14px;
+  overflow-y:auto;
+  overflow-x:hidden;
+  border-radius:18px;
+}
+#appointmentDetailModal .modal-head{
+  padding-bottom:11px;
+}
+#appointmentDetailModal .modal-head h2{
+  margin-top:2px;
+  font-size:24px;
+  line-height:1;
+}
+#appointmentDetailModal .modal-close{
+  font-size:23px;
+  line-height:1;
+}
+
+#appointmentDetailModal .appointment-detail-summary{
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:8px;
+  margin:10px 0 10px;
+}
+#appointmentDetailModal .appointment-detail-summary>div{
+  min-width:0;
+  padding:9px 10px;
+  border-radius:10px;
+}
+#appointmentDetailModal .appointment-detail-summary span,
+#appointmentDetailModal .detail-panel-head span,
+#appointmentDetailModal .appointment-detail-total span{
+  font-size:7px;
+  letter-spacing:.6px;
+}
+#appointmentDetailModal .appointment-detail-summary strong{
+  margin-top:3px;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  font-size:9px;
+}
+
+#appointmentDetailModal .appointment-detail-columns{
+  grid-template-columns:minmax(0,1fr) minmax(0,1fr);
+  gap:10px;
+}
+#appointmentDetailModal .detail-panel{
+  min-width:0;
+  padding:10px 11px;
+  border-radius:11px;
+}
+#appointmentDetailModal .detail-panel-head{
+  margin-bottom:7px;
+}
+#appointmentDetailModal .detail-panel-head strong{
+  font-size:16px;
+}
+#appointmentDetailModal .detail-item-list{
+  min-height:62px;
+  gap:5px;
+}
+#appointmentDetailModal .detail-item{
+  min-width:0;
+  gap:7px;
+  padding:7px 8px;
+  border-radius:8px;
+}
+#appointmentDetailModal .detail-item>div strong{
+  font-size:9px;
+}
+#appointmentDetailModal .detail-item>div span{
+  font-size:7px;
+}
+#appointmentDetailModal .detail-item>strong{
+  font-size:9px;
+}
+#appointmentDetailModal .detail-remove{
+  width:22px;
+  height:22px;
+  font-size:11px;
+}
+#appointmentDetailModal .detail-empty{
+  min-height:62px;
+  padding:8px;
+  font-size:7px;
+  text-align:center;
+}
+
+#appointmentDetailModal .detail-add-row{
+  width:100%;
+  min-width:0;
+  grid-template-columns:minmax(0,1fr) 92px;
+  gap:6px;
+  margin-top:7px;
+}
+#appointmentDetailModal .detail-product-add{
+  grid-template-columns:minmax(0,1fr) 50px 86px;
+}
+#appointmentDetailModal .detail-add-row select,
+#appointmentDetailModal .detail-add-row input{
+  width:100%;
+  min-width:0;
+  min-height:34px;
+  height:34px;
+  padding:0 8px;
+  border-radius:7px;
+  font-size:9px;
+}
+#appointmentDetailModal .detail-add-row .ghost-btn{
+  width:100%;
+  min-width:0;
+  height:34px;
+  padding:0 7px;
+  font-size:8px;
+  letter-spacing:.8px;
+  white-space:nowrap;
+}
+
+#appointmentDetailModal .appointment-detail-total{
+  margin-top:10px;
+  padding:10px 12px;
+  gap:10px;
+  border-radius:10px;
+}
+#appointmentDetailModal .appointment-detail-total strong{
+  margin-top:2px;
+  font-size:22px;
+}
+#appointmentDetailModal .appointment-detail-total small{
+  max-width:310px;
+  font-size:7px;
+}
+#appointmentDetailModal .form-message{
+  min-height:8px;
+  margin:2px 0 0;
+}
+#appointmentDetailModal .appointment-detail-actions{
+  margin-top:8px;
+  gap:7px;
+}
+#appointmentDetailModal .appointment-detail-actions .ghost-btn,
+#appointmentDetailModal .appointment-detail-actions .primary-btn{
+  height:38px;
+  padding:0 13px;
+  font-size:9px;
+  letter-spacing:1px;
+  flex:0 0 auto;
+}
+
+@media(max-width:760px){
+  #appointmentDetailModal{
+    padding:8px;
+  }
+  #appointmentDetailModal .appointment-detail-modal{
+    width:calc(100vw - 16px);
+    max-height:calc(100vh - 16px);
+    padding:13px;
+    border-radius:14px;
+  }
+  #appointmentDetailModal .appointment-detail-summary{
+    grid-template-columns:1fr 1fr;
+  }
+  #appointmentDetailModal .appointment-detail-columns{
+    grid-template-columns:1fr;
+  }
+  #appointmentDetailModal .detail-product-add{
+    grid-template-columns:minmax(0,1fr) 48px 82px;
+  }
+  #appointmentDetailModal .appointment-detail-total{
+    flex-direction:row;
+    align-items:end;
+  }
+  #appointmentDetailModal .appointment-detail-total small{
+    text-align:right;
+  }
+}
+
+@media(max-width:480px){
+  #appointmentDetailModal .modal-head h2{
+    font-size:21px;
+  }
+  #appointmentDetailModal .appointment-detail-summary{
+    gap:6px;
+  }
+  #appointmentDetailModal .appointment-detail-summary>div{
+    padding:8px;
+  }
+  #appointmentDetailModal .detail-add-row,
+  #appointmentDetailModal .detail-product-add{
+    grid-template-columns:minmax(0,1fr) 70px;
+  }
+  #appointmentDetailModal .detail-product-add button{
+    grid-column:1/-1;
+  }
+  #appointmentDetailModal .appointment-detail-total{
+    flex-direction:column;
+    align-items:flex-start;
+  }
+  #appointmentDetailModal .appointment-detail-total small{
+    text-align:left;
+  }
+  #appointmentDetailModal .appointment-detail-actions{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+  }
+  #appointmentDetailModal .appointment-detail-actions .ghost-btn,
+  #appointmentDetailModal .appointment-detail-actions .primary-btn{
+    width:100%;
+    padding-inline:8px;
+  }
+}
