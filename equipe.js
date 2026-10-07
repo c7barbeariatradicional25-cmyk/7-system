@@ -143,6 +143,9 @@ async function openProfessional(id=null){
 
   $("professionalAccessEmail").value=linkedAccess?.email||"";
   $("professionalAccessEmail").readOnly=Boolean(linkedAccess);
+  $("professionalAccessPassword").value="";
+  $("professionalAccessPasswordWrap").classList.toggle("hidden",Boolean(linkedAccess));
+  $("professionalAccessPassword").required=!linkedAccess;
   $("professionalAccessActive").checked=linkedAccess?.active??true;
   $("professionalAccessStatus").textContent=linkedAccess
     ? (linkedAccess.active?"ACESSO ATIVO":"ACESSO INATIVO")
@@ -221,7 +224,21 @@ async function saveProfessional(e){
   const professionalId=result.data?.id||id;
 
   const accessEmail=$("professionalAccessEmail").value.trim().toLowerCase();
+  const accessPassword=$("professionalAccessPassword").value;
+
   if(accessEmail){
+    const {data:existingAccess}=await supabase
+      .from("admin_allowlist")
+      .select("email")
+      .eq("professional_id",professionalId)
+      .eq("role","barber")
+      .maybeSingle();
+
+    if(!existingAccess && accessPassword.length<8){
+      $("professionalAdminMessage").textContent="Informe uma senha inicial com pelo menos 8 caracteres.";
+      return;
+    }
+
     const {error:accessError}=await supabase
       .from("admin_allowlist")
       .upsert({
@@ -236,6 +253,25 @@ async function saveProfessional(e){
       $("professionalAdminMessage").textContent="Barbeiro salvo, mas não foi possível salvar o acesso.";
       await loadProfessionals();
       return;
+    }
+
+    if(!existingAccess){
+      const authClient=createClient(
+        "https://cjtgjqxkyvgjlhylrvas.supabase.co",
+        "sb_publishable_q7Qoya_KF0yyjvVdC-ckBQ_Wv6VXaEE",
+        {auth:{persistSession:false,autoRefreshToken:false,detectSessionInUrl:false}}
+      );
+
+      const {error:signUpError}=await authClient.auth.signUp({
+        email:accessEmail,
+        password:accessPassword
+      });
+
+      if(signUpError){
+        $("professionalAdminMessage").textContent="Barbeiro salvo, mas não foi possível criar o login. Verifique se o e-mail já possui conta.";
+        await loadProfessionals();
+        return;
+      }
     }
   }else{
     const {data:existingAccess}=await supabase
