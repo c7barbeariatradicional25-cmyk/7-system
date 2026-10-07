@@ -15,6 +15,8 @@ let openSession = null;
 let pendingAppointments = [];
 let products = [];
 let cashProfessionals = [];
+let cashCustomers = [];
+let activeServiceLinks = [];
 let receiveBenefits = [];
 let appliedCoupon = null;
 
