@@ -70,6 +70,8 @@ let currentBlocks=[];
 let currentWorkingHours=[];
 let agendaView="timeline";
 let timelineClock=null;
+let detailAppointmentId=null;
+let detailProductsCatalog=[];
 
 function localDateInput(date=new Date()){
   const y=date.getFullYear();
@@ -373,7 +375,7 @@ function renderAgendaList(){
     return {
       start:new Date(a.starts_at),
       html:`
-        <article class="appointment-card">
+        <article class="appointment-card clickable-appointment" data-open-appointment="${a.id}" role="button" tabindex="0">
           <div class="appointment-time">
             <strong>${formatTime(a.starts_at)}</strong>
             <small>até ${formatTime(a.ends_at)}</small>
@@ -421,6 +423,21 @@ function renderAgendaList(){
     agendaList.innerHTML=rows.map(r=>r.html).join("");
   }
 
+
+  document.querySelectorAll("[data-open-appointment]").forEach(card=>{
+    const open=()=>openAppointmentDetail(card.dataset.openAppointment);
+    card.addEventListener("click",e=>{
+      if(e.target.closest("select,button")) return;
+      open();
+    });
+    card.addEventListener("keydown",e=>{
+      if(e.key==="Enter"||e.key===" "){
+        e.preventDefault();
+        open();
+      }
+    });
+  });
+
   document.querySelectorAll("[data-appointment-status]").forEach(select=>{
     select.addEventListener("change",async()=>{
       const appointment=currentAppointments.find(a=>String(a.id)===String(select.dataset.appointmentStatus));
@@ -455,6 +472,235 @@ function renderAgendaList(){
     });
   });
 }
+
+
+async function fetchAppointmentDetail(appointmentId){
+  const [{data:appointment,error},{data:extras},{data:productCatalog}]=await Promise.all([
+    supabase.from("appointments")
+      .select("id,customer_id,professional_id,starts_at,ends_at,status,source,total_amount,notes,customer:customers(id,full_name,phone),professional:professionals(id,full_name),appointment_services(id,service_id,service_name,duration_minutes,price,sort_order)")
+      .eq("id",appointmentId)
+      .maybeSingle(),
+    supabase.from("appointment_products")
+      .select("id,appointment_id,product_id,product_name,quantity,unit_price,total_amount,department")
+      .eq("appointment_id",appointmentId)
+      .order("created_at",{ascending:true}),
+    supabase.from("products")
+      .select("id,name,price,stock_quantity,department,category,active")
+      .eq("active",true)
+      .order("department")
+      .order("sort_order")
+  ]);
+
+  if(error||!appointment) return null;
+  detailProductsCatalog=productCatalog||[];
+  appointment.appointment_products=extras||[];
+  return appointment;
+}
+
+function canManageDetail(appointment){
+  return ["admin","reception"].includes(currentRole) ||
+    (currentRole==="barber"&&appointment.professional_id===currentProfessionalId);
+}
+
+function renderAppointmentDetail(appointment){
+  const servicesRows=appointment.appointment_services||[];
+  const productRows=appointment.appointment_products||[];
+  const canManage=canManageDetail(appointment);
+  const finished=appointment.status==="completed"||appointment.status==="cancelled";
+
+  const serviceTotal=servicesRows.reduce((sum,item)=>sum+Number(item.price||0),0);
+  const productTotal=productRows.reduce((sum,item)=>sum+Number(item.total_amount||0),0);
+
+  $("appointmentDetailTitle").textContent=appointment.customer?.full_name||"Atendimento";
+  $("detailCustomer").textContent=[
+    appointment.customer?.full_name||"Cliente",
+    appointment.customer?.phone||""
+  ].filter(Boolean).join(" • ");
+  $("detailProfessional").textContent=appointment.professional?.full_name||"—";
+  $("detailTime").textContent=`${formatTime(appointment.starts_at)}–${formatTime(appointment.ends_at)}`;
+  $("detailStatus").textContent=statusLabels[appointment.status]||appointment.status;
+  $("detailServiceTotal").textContent=money(serviceTotal);
+  $("detailProductTotal").textContent=money(productTotal);
+  $("detailGrandTotal").textContent=money(serviceTotal+productTotal);
+
+  $("detailServicesList").innerHTML=servicesRows.length
+    ?servicesRows.map(item=>`
+      <div class="detail-item">
+        <div><strong>${escapeHtml(item.service_name)}</strong><span>${item.duration_minutes} min</span></div>
+        <strong>${money(item.price)}</strong>
+        ${canManage&&!finished&&servicesRows.length>1?`<button type="button" class="detail-remove" data-remove-service="${item.id}">×</button>`:""}
+      </div>
+    `).join("")
+    :'<div class="detail-empty">Nenhum serviço.</div>';
+
+  $("detailProductsList").innerHTML=productRows.length
+    ?productRows.map(item=>`
+      <div class="detail-item">
+        <div>
+          <strong>${escapeHtml(item.product_name)}</strong>
+          <span>${Number(item.quantity)}x • ${item.department==="convenience"?"Consumível":"Produto"}</span>
+        </div>
+        <strong>${money(item.total_amount)}</strong>
+        ${canManage&&!finished?`<button type="button" class="detail-remove" data-remove-product="${item.id}">×</button>`:""}
+      </div>
+    `).join("")
+    :'<div class="detail-empty">Nenhum produto ou consumível adicionado.</div>';
+
+  const currentServiceIds=new Set(servicesRows.map(item=>String(item.service_id)));
+  $("detailAddService").innerHTML='<option value="">Adicionar serviço...</option>'+
+    services
+      .filter(s=>!currentServiceIds.has(String(s.id)))
+      .map(s=>`<option value="${s.id}">${escapeHtml(s.name)} — ${money(s.price)}</option>`)
+      .join("");
+
+  $("detailAddProduct").innerHTML='<option value="">Adicionar produto/consumível...</option>'+
+    detailProductsCatalog
+      .filter(p=>Number(p.stock_quantity||0)>0)
+      .map(p=>`<option value="${p.id}">${escapeHtml(p.name)} — ${money(p.price)} • estoque ${Number(p.stock_quantity||0)}</option>`)
+      .join("");
+
+  $("detailAddService").disabled=!canManage||finished;
+  $("detailAddServiceBtn").disabled=!canManage||finished;
+  $("detailAddProduct").disabled=!canManage||finished;
+  $("detailProductQty").disabled=!canManage||finished;
+  $("detailAddProductBtn").disabled=!canManage||finished;
+
+  $("detailStartBtn").classList.toggle("hidden",!canManage||finished||appointment.status==="in_service");
+  $("detailStartBtn").textContent=appointment.status==="waiting"?"INICIAR ATENDIMENTO":"MARCAR EM ATENDIMENTO";
+  $("detailCheckoutBtn").classList.toggle("hidden",!canManage||finished);
+  $("appointmentDetailMessage").textContent="";
+
+  document.querySelectorAll("[data-remove-service]").forEach(btn=>{
+    btn.addEventListener("click",()=>removeDetailService(btn.dataset.removeService));
+  });
+  document.querySelectorAll("[data-remove-product]").forEach(btn=>{
+    btn.addEventListener("click",()=>removeDetailProduct(btn.dataset.removeProduct));
+  });
+}
+
+async function refreshAppointmentDetail(){
+  if(!detailAppointmentId) return;
+  const appointment=await fetchAppointmentDetail(detailAppointmentId);
+  if(!appointment){
+    $("appointmentDetailMessage").textContent="Não foi possível carregar o atendimento.";
+    return;
+  }
+  renderAppointmentDetail(appointment);
+}
+
+async function openAppointmentDetail(appointmentId){
+  detailAppointmentId=appointmentId;
+  $("appointmentDetailMessage").textContent="Carregando atendimento...";
+  $("appointmentDetailModal").classList.remove("hidden");
+  await refreshAppointmentDetail();
+}
+
+function closeAppointmentDetail(){
+  $("appointmentDetailModal").classList.add("hidden");
+  detailAppointmentId=null;
+}
+
+async function removeDetailService(id){
+  const {error}=await supabase.rpc("remove_appointment_service",{p_appointment_service_id:id});
+  if(error){
+    $("appointmentDetailMessage").textContent=String(error.message||"").includes("ao menos um serviço")
+      ?"O atendimento precisa manter pelo menos um serviço."
+      :"Não foi possível remover o serviço.";
+    return;
+  }
+  await Promise.all([refreshAppointmentDetail(),loadAgenda()]);
+}
+
+async function removeDetailProduct(id){
+  const {error}=await supabase.rpc("remove_appointment_product",{p_appointment_product_id:id});
+  if(error){
+    $("appointmentDetailMessage").textContent="Não foi possível remover o item.";
+    return;
+  }
+  await Promise.all([refreshAppointmentDetail(),loadAgenda()]);
+}
+
+document.querySelectorAll("[data-close-appointment-detail]").forEach(el=>{
+  el.addEventListener("click",closeAppointmentDetail);
+});
+
+$("detailAddServiceBtn")?.addEventListener("click",async()=>{
+  const serviceId=Number($("detailAddService").value||0);
+  if(!detailAppointmentId||!serviceId) return;
+
+  $("appointmentDetailMessage").textContent="Adicionando serviço...";
+  const {error}=await supabase.rpc("add_appointment_service",{
+    p_appointment_id:detailAppointmentId,
+    p_service_id:serviceId
+  });
+
+  if(error){
+    $("appointmentDetailMessage").textContent=String(error.message||"").includes("já adicionado")
+      ?"Esse serviço já está no atendimento."
+      :"Não foi possível adicionar o serviço.";
+    return;
+  }
+
+  await Promise.all([refreshAppointmentDetail(),loadAgenda()]);
+});
+
+$("detailAddProductBtn")?.addEventListener("click",async()=>{
+  const productId=Number($("detailAddProduct").value||0);
+  const qty=Math.max(1,Number($("detailProductQty").value||1));
+  if(!detailAppointmentId||!productId) return;
+
+  $("appointmentDetailMessage").textContent="Adicionando item...";
+  const {error}=await supabase.rpc("add_appointment_product",{
+    p_appointment_id:detailAppointmentId,
+    p_product_id:productId,
+    p_quantity:qty
+  });
+
+  if(error){
+    $("appointmentDetailMessage").textContent=String(error.message||"").includes("Estoque insuficiente")
+      ?"Estoque insuficiente para adicionar esse item."
+      :"Não foi possível adicionar o item.";
+    return;
+  }
+
+  $("detailProductQty").value="1";
+  await refreshAppointmentDetail();
+});
+
+$("detailStartBtn")?.addEventListener("click",async()=>{
+  if(!detailAppointmentId) return;
+  const {error}=await supabase.from("appointments")
+    .update({
+      status:"in_service",
+      service_started_at:new Date().toISOString(),
+      updated_at:new Date().toISOString()
+    })
+    .eq("id",detailAppointmentId);
+
+  if(error){
+    $("appointmentDetailMessage").textContent="Não foi possível iniciar o atendimento.";
+    return;
+  }
+
+  await Promise.all([refreshAppointmentDetail(),loadAgenda()]);
+});
+
+$("detailCheckoutBtn")?.addEventListener("click",async()=>{
+  if(!detailAppointmentId) return;
+  if(window.C7Cash?.checkoutAppointment){
+    const ok=await window.C7Cash.checkoutAppointment(detailAppointmentId);
+    if(ok) closeAppointmentDetail();
+  }else{
+    $("appointmentDetailMessage").textContent="O Caixa ainda está carregando. Tente novamente.";
+  }
+});
+
+window.addEventListener("c7-checkout-complete",async e=>{
+  if(detailAppointmentId&&String(e.detail?.appointmentId)===String(detailAppointmentId)){
+    closeAppointmentDetail();
+  }
+  await loadAgenda();
+});
 
 function professionalsForView(){
   if(professionalFilter.value){
@@ -554,7 +800,7 @@ function renderTimeline(){
         : "";
 
       return `
-        <article class="live-booking status-${a.status}" style="top:${top}px;height:${height}px">
+        <article class="live-booking status-${a.status} clickable-appointment" data-open-appointment="${a.id}" role="button" tabindex="0" style="top:${top}px;height:${height}px">
           <div class="live-booking-time">${formatTime(a.starts_at)}–${formatTime(a.ends_at)}</div>
           <strong>${customer}</strong>
           <span>${service}</span>
@@ -642,6 +888,21 @@ function renderTimeline(){
       </div>
     </div>
   `;
+
+
+  agendaTimeline.querySelectorAll("[data-open-appointment]").forEach(card=>{
+    const open=()=>openAppointmentDetail(card.dataset.openAppointment);
+    card.addEventListener("click",e=>{
+      if(e.target.closest("button")) return;
+      open();
+    });
+    card.addEventListener("keydown",e=>{
+      if(e.key==="Enter"||e.key===" "){
+        e.preventDefault();
+        open();
+      }
+    });
+  });
 
   agendaTimeline.querySelectorAll("[data-timeline-checkout]").forEach(btn=>{
     btn.addEventListener("click",async e=>{
