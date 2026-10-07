@@ -71,23 +71,13 @@ async function loadCommissions(){
     actions.appendChild(value);
 
     if(currentRole==="admin"&&values.ids.length){
-      const pay=document.createElement("button");
-      pay.type="button";
-      pay.textContent="MARCAR PAGO";
-      pay.addEventListener("click",async()=>{
-        if(!confirm("Marcar as comissões pendentes deste barbeiro como pagas?")) return;
-        const {error}=await supabase.from("commission_entries").update({
-          status:"paid",
-          paid_at:new Date().toISOString()
-        }).in("id",values.ids);
-
-        if(error){
-          alert("Não foi possível atualizar as comissões.");
-          return;
-        }
-        await loadCommissions();
+      const go=document.createElement("button");
+      go.type="button";
+      go.textContent="IR PARA ACERTOS";
+      go.addEventListener("click",()=>{
+        document.querySelector('.nav-item[data-section="acertos"]')?.click();
       });
-      actions.appendChild(pay);
+      actions.appendChild(go);
     }
 
     row.append(main,actions);
@@ -298,12 +288,59 @@ async function loadWeeklySettlements(){
   });
 }
 
+
+async function loadSettlementHistory(){
+  if(!["admin","reception"].includes(currentRole)) return;
+
+  const {data,error}=await supabase
+    .from("employee_settlements")
+    .select("id,period_start,period_end,gross_commission,consumption_discount,net_payable,status,paid_at,payment_method,cash_session_id,notes,professional:professionals(full_name)")
+    .eq("status","paid")
+    .order("paid_at",{ascending:false})
+    .limit(60);
+
+  const target=$("settlementHistoryList");
+  if(!target) return;
+
+  if(error){
+    target.innerHTML='<div class="cash-empty">Não foi possível carregar o histórico de acertos.</div>';
+    return;
+  }
+
+  const rows=data||[];
+  const methodLabels={cash:"Dinheiro",pix:"Pix",credit:"Crédito",debit:"Débito",other:"Outro"};
+
+  target.innerHTML=rows.length
+    ? rows.map(item=>`
+      <div class="finance-row settlement-history-row">
+        <div>
+          <strong>${item.professional?.full_name||"Colaborador"}</strong>
+          <span>
+            ${new Date(item.period_start+"T12:00:00").toLocaleDateString("pt-BR")}
+            a
+            ${new Date(item.period_end+"T12:00:00").toLocaleDateString("pt-BR")}
+            • Comissão ${money(item.gross_commission)}
+            • Consumo ${money(item.consumption_discount)}
+            • ${methodLabels[item.payment_method]||item.payment_method||"—"}
+          </span>
+          <small>
+            Pago em ${item.paid_at?new Date(item.paid_at).toLocaleString("pt-BR"):"—"}
+            ${item.cash_session_id?` • Caixa ${String(item.cash_session_id).slice(0,8)}`:""}
+          </small>
+        </div>
+        <div class="finance-value">${money(item.net_payable)}</div>
+      </div>
+    `).join("")
+    : '<div class="cash-empty">Nenhum acerto pago ainda.</div>';
+}
+
 async function loadFinance(){
   await Promise.all([
     loadCommissions(),
     loadCashHistory(),
     loadEmployeeConsumptions(),
-    loadWeeklySettlements()
+    loadWeeklySettlements(),
+    loadSettlementHistory()
   ]);
 }
 
@@ -314,6 +351,7 @@ async function init(){
   $("refreshCashHistoryBtn")?.addEventListener("click",loadCashHistory);
   $("refreshEmployeeConsumptionBtn")?.addEventListener("click",loadEmployeeConsumptions);
   $("refreshSettlementsBtn")?.addEventListener("click",loadWeeklySettlements);
+  $("refreshSettlementHistoryBtn")?.addEventListener("click",loadSettlementHistory);
 
   document.querySelectorAll("[data-close-settlement-payment]").forEach(el=>{
     el.addEventListener("click",()=>$("settlementPaymentModal")?.classList.add("hidden"));
@@ -345,6 +383,7 @@ async function init(){
       loadCommissions(),
       loadEmployeeConsumptions(),
       loadWeeklySettlements(),
+      loadSettlementHistory(),
       loadCashHistory()
     ]);
     window.dispatchEvent(new Event("c7-settlement-paid"));
