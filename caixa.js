@@ -608,7 +608,7 @@ $("movementForm")?.addEventListener("submit",async e=>{
     session_id:openSession.id,
     transaction_type:type,
     direction,
-    payment_method:type==="income"?"cash":null,
+    payment_method:type==="withdrawal"?"cash":$("movementMethod").value,
     description:$("movementDescription").value.trim(),
     gross_amount:amount,
     discount_amount:0,
@@ -652,13 +652,16 @@ $("closeCashForm")?.addEventListener("submit",async e=>{
   if(!openSession) return;
 
   const counted=Number($("closingAmount").value||0);
-  $("closeCashMessage").textContent="Fechando caixa...";
+  const expected=Number($("closingAmount").dataset.expected||0);
+  $("closeCashMessage").textContent="Fechando Caixa...";
 
   const {error}=await supabase.from("cash_sessions").update({
     status:"closed",
     closed_by:currentUser,
     closed_at:new Date().toISOString(),
     closing_amount:counted,
+    expected_closing_amount:expected,
+    closing_difference:Number((counted-expected).toFixed(2)),
     notes:$("closingNotes").value.trim()||openSession.notes||null
   }).eq("id",openSession.id);
 
