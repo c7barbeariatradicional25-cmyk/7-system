@@ -7,12 +7,24 @@ const supabase=createClient(
 
 const $=id=>document.getElementById(id);
 let currentRole=null;
+let currentProfessionalId=null;
 
 async function loadContext(){
   const {data:{session}}=await supabase.auth.getSession();
   if(!session) return false;
   const {data}=await supabase.from("profiles").select("role").eq("user_id",session.user.id).single();
   currentRole=data?.role||null;
+
+  if(currentRole==="barber"){
+    const {data:professional}=await supabase
+      .from("professionals")
+      .select("id")
+      .eq("user_id",session.user.id)
+      .eq("active",true)
+      .maybeSingle();
+    currentProfessionalId=professional?.id||null;
+  }
+
   return true;
 }
 
@@ -58,7 +70,10 @@ function renderColumn(targetId,items){
     const actions=document.createElement("div");
     actions.className="ops-card-actions";
 
-    if(["admin","reception"].includes(currentRole)){
+    const canOperate=["admin","reception"].includes(currentRole)||
+      (currentRole==="barber"&&a.professional_id===currentProfessionalId);
+
+    if(canOperate){
       if(["scheduled","confirmed"].includes(a.status)){
         const btn=document.createElement("button");
         btn.className="primary";
@@ -112,13 +127,19 @@ async function loadOperations(){
   const end=new Date();
   end.setHours(23,59,59,999);
 
-  const {data,error}=await supabase
+  let query=supabase
     .from("appointments")
-    .select("id,starts_at,status,arrived_at,service_started_at,completed_at,customer:customers(full_name),professional:professionals(full_name),appointment_services(service_name)")
+    .select("id,professional_id,starts_at,status,arrived_at,service_started_at,completed_at,customer:customers(full_name),professional:professionals(full_name),appointment_services(service_name)")
     .gte("starts_at",start.toISOString())
     .lte("starts_at",end.toISOString())
     .not("status","eq","cancelled")
     .order("starts_at",{ascending:true});
+
+  if(currentRole==="barber"&&currentProfessionalId){
+    query=query.eq("professional_id",currentProfessionalId);
+  }
+
+  const {data,error}=await query;
 
   if(error) return;
 
