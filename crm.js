@@ -93,31 +93,57 @@ function renderCustomers(items){
 
   active.forEach(customer=>{
     const card=makeEl("article","customer-card");
-    const info=makeEl("div");
-    info.appendChild(makeEl("strong","",customer.full_name||"Cliente"));
-    info.appendChild(makeEl("span","",customer.phone||"Sem telefone"));
+
+    const identity=makeEl("div","customer-identity");
+    const avatar=makeEl("div","customer-avatar",(customer.full_name||"C").slice(0,1).toUpperCase());
+    const identityText=makeEl("div","customer-identity-text");
+    identityText.appendChild(makeEl("strong","customer-name",customer.full_name||"Cliente"));
+    identityText.appendChild(makeEl("span","customer-phone",customer.phone||"Sem telefone"));
 
     if(customer.tags?.length){
       const tags=makeEl("div","tag-row");
       customer.tags.forEach(tag=>tags.appendChild(makeEl("span","tag-pill",tag)));
-      info.appendChild(tags);
+      identityText.appendChild(tags);
     }
 
+    identity.append(avatar,identityText);
+
+    const last=customer.last_visit_at
+      ? new Date(customer.last_visit_at).toLocaleDateString("pt-BR")
+      : "—";
+
+    const next=customer.next_visit_at
+      ? new Date(customer.next_visit_at).toLocaleString("pt-BR",{
+          day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"
+        })
+      : "—";
+
+    const metrics=makeEl("div","customer-metrics-grid");
+
     const visits=makeEl("div","customer-metric");
-    visits.appendChild(makeEl("strong","",String(customer.completed_visits||0)));
     visits.appendChild(makeEl("small","","ATENDIMENTOS"));
+    visits.appendChild(makeEl("strong","",String(customer.completed_visits||0)));
 
     const spent=makeEl("div","customer-metric");
+    spent.appendChild(makeEl("small","","TOTAL GASTO"));
     spent.appendChild(makeEl("strong","",money(customer.total_spent)));
-    const last=customer.last_visit_at ? new Date(customer.last_visit_at).toLocaleDateString("pt-BR") : "—";
-    spent.appendChild(makeEl("small","",`TOTAL GASTO • ÚLTIMA ${last}`));
-    spent.appendChild(makeEl("span","",statusText(customer)));
+
+    const lastVisit=makeEl("div","customer-metric");
+    lastVisit.appendChild(makeEl("small","","ÚLTIMA VISITA"));
+    lastVisit.appendChild(makeEl("strong","",last));
+
+    const nextVisit=makeEl("div","customer-metric");
+    nextVisit.appendChild(makeEl("small","","PRÓXIMO HORÁRIO"));
+    nextVisit.appendChild(makeEl("strong","",next));
+    nextVisit.appendChild(makeEl("span","customer-status-text",statusText(customer)));
+
+    metrics.append(visits,spent,lastVisit,nextVisit);
 
     const button=makeEl("button","customer-open","ABRIR PERFIL");
     button.type="button";
     button.addEventListener("click",()=>openCustomer(customer.id));
 
-    card.append(info,visits,spent,button);
+    card.append(identity,metrics,button);
     list.appendChild(card);
   });
 }
