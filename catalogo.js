@@ -225,9 +225,18 @@ function renderProducts(){
     const status=document.createElement("div");
     status.className="catalog-meta";
     const st=document.createElement("strong");
-    st.textContent=p.active?"ATIVO":"INATIVO";
+    const currentStock=Number(p.stock_quantity||0);
+    const minStock=Number(p.min_stock||0);
+    st.textContent=!p.active
+      ?"INATIVO"
+      :currentStock<=0
+        ?"SEM ESTOQUE"
+        :currentStock<=minStock
+          ?"ESTOQUE BAIXO"
+          :"OK";
+    st.className=currentStock<=minStock?"stock-low":"";
     const sl=document.createElement("small");
-    sl.textContent="LINK PÚBLICO";
+    sl.textContent="STATUS";
     status.append(st,sl);
 
     const actions=document.createElement("div");
@@ -237,11 +246,21 @@ function renderProducts(){
       edit.textContent="EDITAR";
       edit.addEventListener("click",()=>openProduct(p.id));
 
+      const stockBtn=document.createElement("button");
+      stockBtn.textContent="ESTOQUE";
+      stockBtn.addEventListener("click",()=>{
+        openProduct(p.id);
+        setTimeout(()=>{
+          $("stockAdjustmentQty")?.focus();
+          $("stockAdjustmentArea")?.scrollIntoView({behavior:"smooth",block:"nearest"});
+        },60);
+      });
+
       const toggle=document.createElement("button");
       toggle.textContent=p.active?"DESATIVAR":"ATIVAR";
       toggle.className="active-toggle"+(p.active?"":" off");
       toggle.addEventListener("click",()=>toggleProduct(p));
-      actions.append(edit,toggle);
+      actions.append(edit,stockBtn,toggle);
     }
 
       row.append(main,price,status,actions);
