@@ -2861,3 +2861,22 @@ body{
     flex-direction:column;
   }
 }
+
+
+/* FINANCEIRO E PAGAMENTO DE ACERTOS */
+.finance-main-panel{
+  margin-top:14px;
+}
+.finance-value.out{
+  color:#9a533c;
+}
+#financialExpenseList .finance-row,
+#weeklySettlementList .finance-row{
+  min-height:68px;
+}
+#settlementNetPayable{
+  color:#2f6a4b;
+}
+#settlementConsumption{
+  color:#9a533c;
+}
