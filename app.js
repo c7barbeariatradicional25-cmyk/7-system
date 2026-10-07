@@ -614,8 +614,8 @@ function renderTimeline(){
 
   agendaTimeline.innerHTML=`
     <div class="live-timeline-shell">
-      ${head}
       <div class="live-timeline-scroll">
+        ${head}
         <div class="live-timeline-body" style="--pro-count:${pros.length};--timeline-height:${timelineHeight}px">
           <div class="live-time-rail" style="height:${timelineHeight}px">
             ${timeLabels.join("")}
