@@ -30,7 +30,8 @@ function titleForType(type){
   }[type]||"Notificação";
 }
 
-function automationLabel(type){
+function automationLabel(type,item){
+  if(type==="custom") return item?.payload?.custom_automation_name||"PERSONALIZADA";
   return {
     booking_confirmation:"CONFIRMAÇÃO",
     booking_reminder:"LEMBRETE",
@@ -148,8 +149,30 @@ function appointmentText(p){
   return `${dateLabel}, às ${timeLabel}`;
 }
 
+function expandCustomMessage(template,item){
+  const p=item.payload||{};
+  const fullName=p.customer_name||"Cliente";
+  const firstName=fullName.split(" ")[0];
+  let date="";
+  let time="";
+  if(p.starts_at){
+    const d=new Date(p.starts_at);
+    date=d.toLocaleDateString("pt-BR",{day:"2-digit",month:"2-digit",year:"numeric",timeZone:"America/Sao_Paulo"});
+    time=d.toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit",timeZone:"America/Sao_Paulo"});
+  }
+  return String(template||"")
+    .replaceAll("{nome}",fullName)
+    .replaceAll("{primeiro_nome}",firstName)
+    .replaceAll("{profissional}",p.professional_name||"Equipe C7")
+    .replaceAll("{data}",date)
+    .replaceAll("{hora}",time);
+}
+
 function manualMessageText(item){
   const p=item.payload||{};
+  if(item.automation_type==="custom"&&p.message_template){
+    return expandCustomMessage(p.message_template,item);
+  }
   const name=(p.customer_name||"Cliente").split(" ")[0];
   const professional=p.professional_name||"nossa equipe";
 
@@ -210,7 +233,7 @@ function renderManualMessages(){
         return `
           <article class="manual-message-card urgent">
             <div class="manual-message-top">
-              <span>${automationLabel(item.automation_type)}</span>
+              <span>${automationLabel(item.automation_type,item)}</span>
               <small>${formatDate(item.scheduled_at)}</small>
             </div>
             <strong>${p.customer_name||"Cliente"}</strong>
