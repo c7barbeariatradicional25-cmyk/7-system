@@ -3594,3 +3594,74 @@ body{
   flex:1 1 180px;
   min-height:38px;
 }
+
+/* SEMI-AUTOMAÇÃO WHATSAPP */
+.manual-message-section{
+  display:grid;
+  gap:10px;
+  padding:14px;
+  margin-bottom:12px;
+  border-bottom:1px solid var(--line);
+  background:rgba(180,120,74,.06);
+}
+.manual-message-section-head{
+  display:flex;
+  justify-content:space-between;
+  gap:10px;
+  align-items:center;
+}
+.manual-message-section-head span{
+  color:#9b6b48;
+  font:700 8px Oswald,sans-serif;
+  letter-spacing:1.5px;
+}
+.manual-message-section-head strong{
+  font-size:10px;
+  color:#3b2a20;
+}
+.manual-message-card{
+  padding:12px;
+  border:1px solid #dfc9b8;
+  border-radius:12px;
+  background:#fffaf5;
+}
+.manual-message-top{
+  display:flex;
+  justify-content:space-between;
+  gap:8px;
+  align-items:center;
+}
+.manual-message-top span{
+  color:#8b5f40;
+  font:700 8px Oswald,sans-serif;
+  letter-spacing:1.2px;
+}
+.manual-message-top small{
+  color:#9b8a7c;
+  font-size:8px;
+}
+.manual-message-card>strong{
+  display:block;
+  margin-top:7px;
+  color:#2d2119;
+  font-size:11px;
+}
+.manual-message-card>p{
+  margin:6px 0 10px;
+  color:#6f5f53;
+  font-size:9px;
+  line-height:1.55;
+}
+.manual-whatsapp-btn{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-height:32px;
+  padding:0 10px;
+  border:1px solid #7d9e7a;
+  background:#edf5ec;
+  color:#365438;
+  text-decoration:none;
+  font:700 8px Oswald,sans-serif;
+  letter-spacing:.8px;
+}
