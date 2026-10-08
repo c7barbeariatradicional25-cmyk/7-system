@@ -524,7 +524,7 @@
           <div>
             <span class="eyebrow">COMUNICAÇÃO</span>
             <h2>Automações</h2>
-            <p>Confirmações, lembretes e mensagens que precisam ser enviadas aos clientes.</p>
+            <p>WhatsApp semi-automático, e-mails automáticos e relacionamento com clientes.</p>
           </div>
           <button id="refreshAutomationsBtn" class="ghost-btn" type="button">ATUALIZAR</button>
         </div>
@@ -533,11 +533,49 @@
           <article><span>WHATSAPP PENDENTE</span><strong id="automationWhatsappPending">0</strong></article>
           <article><span>E-MAIL PENDENTE</span><strong id="automationEmailPending">0</strong></article>
           <article><span>ENVIADAS HOJE</span><strong id="automationSentToday">0</strong></article>
-          <article><span>PRÓXIMOS LEMBRETES</span><strong id="automationUpcoming">0</strong></article>
+          <article><span>PROGRAMADAS</span><strong id="automationUpcoming">0</strong></article>
         </div>
 
+        <article class="automation-settings-panel">
+          <div class="cash-panel-head">
+            <div><span>REGRAS</span><h3>Configuração das automações</h3></div>
+            <button id="saveAutomationSettingsBtn" class="primary-btn" type="button">SALVAR REGRAS</button>
+          </div>
+          <div class="automation-settings-grid">
+            <label class="automation-setting-card">
+              <input id="autoBookingConfirmation" type="checkbox">
+              <span><strong>Confirmação</strong><small>Ao criar um agendamento</small></span>
+            </label>
+            <label class="automation-setting-card">
+              <input id="autoBookingReminder" type="checkbox">
+              <span><strong>Lembrete</strong><small><input id="autoReminderHours" type="number" min="1" max="168"> horas antes</small></span>
+            </label>
+            <label class="automation-setting-card">
+              <input id="autoPostService" type="checkbox">
+              <span><strong>Pós-atendimento</strong><small><input id="autoPostServiceHours" type="number" min="0" max="168"> horas depois</small></span>
+            </label>
+            <label class="automation-setting-card">
+              <input id="autoReactivation" type="checkbox">
+              <span><strong>Reativação</strong><small>Após <input id="autoReactivationDays" type="number" min="7" max="365"> dias sem voltar</small></span>
+            </label>
+            <label class="automation-setting-card">
+              <input id="autoBirthday" type="checkbox">
+              <span><strong>Aniversário</strong><small>No dia do aniversário</small></span>
+            </label>
+            <label class="automation-setting-card">
+              <input id="autoEmailActive" type="checkbox">
+              <span><strong>E-mail automático</strong><small>Envio pelo Resend</small></span>
+            </label>
+            <label class="automation-setting-card">
+              <input id="autoWhatsappActive" type="checkbox">
+              <span><strong>WhatsApp manual</strong><small>Gera mensagem pronta para envio</small></span>
+            </label>
+          </div>
+          <p id="automationSettingsMessage" class="form-message"></p>
+        </article>
+
         <div class="automation-tabs">
-          <button class="automation-tab active" type="button" data-automation-tab="pending">PENDENTES</button>
+          <button class="automation-tab active" type="button" data-automation-tab="pending">AÇÃO AGORA</button>
           <button class="automation-tab" type="button" data-automation-tab="scheduled">PROGRAMADAS</button>
           <button class="automation-tab" type="button" data-automation-tab="sent">ENVIADAS</button>
         </div>
@@ -545,7 +583,7 @@
         <div class="automation-grid">
           <article class="automation-panel">
             <div class="cash-panel-head">
-              <div><span>WHATSAPP</span><h3>Mensagens</h3></div>
+              <div><span>WHATSAPP</span><h3>Mensagens para enviar</h3></div>
             </div>
             <div id="automationWhatsappList" class="automation-list">
               <div class="agenda-empty">Carregando mensagens...</div>
@@ -554,7 +592,7 @@
 
           <article class="automation-panel">
             <div class="cash-panel-head">
-              <div><span>E-MAIL</span><h3>Confirmações e lembretes</h3></div>
+              <div><span>E-MAIL</span><h3>Envios automáticos</h3></div>
             </div>
             <div id="automationEmailList" class="automation-list">
               <div class="agenda-empty">Carregando e-mails...</div>
@@ -1482,5 +1520,6 @@
   <script type="module" src="notificacoes.js"></script>
   <script type="module" src="automacoes.js"></script>
   <script type="module" src="barbeiro.js"></script>
+  <div id="c7AlertToast" class="c7-alert-toast hidden" role="status" aria-live="assertive"></div>
 </body>
 </html>
