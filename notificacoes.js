@@ -8,6 +8,7 @@ const supabase=createClient(
 const $=id=>document.getElementById(id);
 let filter="active";
 let notifications=[];
+let manualMessages=[];
 
 function formatDate(value){
   if(!value) return "—";
@@ -50,10 +51,70 @@ function visibleNotifications(){
 
 function updateBadge(){
   const unread=notifications.filter(n=>!n.read_at&&!n.archived_at).length;
+  const due=manualMessages.filter(m=>m.status==="pending"&&new Date(m.scheduled_at)<=new Date()).length;
+  const total=unread+due;
   const badge=$("notificationBadge");
   if(!badge) return;
-  badge.textContent=unread>99?"99+":String(unread);
-  badge.classList.toggle("hidden",unread===0);
+  badge.textContent=total>99?"99+":String(total);
+  badge.classList.toggle("hidden",total===0);
+}
+
+function whatsappPhone(raw){
+  const digits=String(raw||"").replace(/\D/g,"");
+  if(!digits) return "";
+  return digits.startsWith("55")?digits:"55"+digits;
+}
+
+function manualMessageText(item){
+  const p=item.payload||{};
+  const name=(p.customer_name||"Cliente").split(" ")[0];
+  const date=new Date(p.starts_at);
+  const dateLabel=date.toLocaleDateString("pt-BR",{day:"2-digit",month:"2-digit",year:"numeric",timeZone:"America/Sao_Paulo"});
+  const timeLabel=date.toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit",timeZone:"America/Sao_Paulo"});
+  const professional=p.professional_name||"nossa equipe";
+
+  if(item.automation_type==="booking_reminder"){
+    return `Olá, ${name}! Passando para lembrar do seu horário na C7 Barbearia Tradicional amanhã, ${dateLabel}, às ${timeLabel}, com ${professional}. Se precisar reagendar ou cancelar, fale com a gente por aqui. ✂️`;
+  }
+
+  return `Olá, ${name}! Seu horário na C7 Barbearia Tradicional está confirmado para ${dateLabel}, às ${timeLabel}, com ${professional}. Se precisar reagendar ou cancelar, fale com a gente por aqui. ✂️`;
+}
+
+function renderManualMessages(){
+  const due=manualMessages.filter(item=>
+    item.status==="pending"&&new Date(item.scheduled_at)<=new Date()
+  );
+
+  if(!due.length) return "";
+
+  return `
+    <section class="manual-message-section">
+      <div class="manual-message-section-head">
+        <span>WHATSAPP</span>
+        <strong>${due.length} mensagem${due.length===1?"":"ns"} para enviar</strong>
+      </div>
+      ${due.map(item=>{
+        const p=item.payload||{};
+        const label=item.automation_type==="booking_reminder"?"LEMBRETE":"CONFIRMAÇÃO";
+        const text=manualMessageText(item);
+        const url=`https://wa.me/${whatsappPhone(item.phone)}?text=${encodeURIComponent(text)}`;
+        return `
+          <article class="manual-message-card">
+            <div class="manual-message-top">
+              <span>${label}</span>
+              <small>${formatDate(item.scheduled_at)}</small>
+            </div>
+            <strong>${p.customer_name||"Cliente"}</strong>
+            <p>${text}</p>
+            <div class="notification-actions">
+              <a class="manual-whatsapp-btn" href="${url}" target="_blank" rel="noopener">ABRIR WHATSAPP</a>
+              <button type="button" data-manual-sent="${item.id}">MARCAR COMO ENVIADA</button>
+            </div>
+          </article>
+        `;
+      }).join("")}
+    </section>
+  `;
 }
 
 function render(){
@@ -62,13 +123,14 @@ function render(){
   if(!list) return;
 
   const rows=visibleNotifications();
+  const manualHtml=renderManualMessages();
 
-  if(!rows.length){
+  if(!rows.length&&!manualHtml){
     list.innerHTML='<div class="notification-empty">Nenhuma notificação por aqui.</div>';
     return;
   }
 
-  list.innerHTML=rows.map(item=>{
+  list.innerHTML=manualHtml+rows.map(item=>{
     const unread=!item.read_at&&!item.archived_at;
     return `
       <article class="notification-item ${unread?"unread":""}" data-notification-id="${item.id}">
@@ -94,11 +156,39 @@ function render(){
   list.querySelectorAll("[data-archive]").forEach(btn=>btn.addEventListener("click",()=>archiveOne(btn.dataset.archive)));
   list.querySelectorAll("[data-unarchive]").forEach(btn=>btn.addEventListener("click",()=>unarchiveOne(btn.dataset.unarchive)));
   list.querySelectorAll("[data-open-appointment]").forEach(btn=>btn.addEventListener("click",()=>openAppointment(btn.dataset.openAppointment)));
+  list.querySelectorAll("[data-manual-sent]").forEach(btn=>btn.addEventListener("click",()=>markManualSent(btn.dataset.manualSent)));
+}
+
+async function loadManualMessages(){
+  const {data,error}=await supabase
+    .from("whatsapp_automation_queue")
+    .select("id,automation_type,appointment_id,customer_id,phone,status,scheduled_at,sent_at,payload,created_at")
+    .eq("status","pending")
+    .lte("scheduled_at",new Date().toISOString())
+    .order("scheduled_at",{ascending:true})
+    .limit(100);
+
+  manualMessages=error?[]:(data||[]);
+}
+
+async function markManualSent(id){
+  const now=new Date().toISOString();
+  const {error}=await supabase
+    .from("whatsapp_automation_queue")
+    .update({status:"sent",sent_at:now,updated_at:now})
+    .eq("id",id);
+
+  if(!error){
+    manualMessages=manualMessages.filter(item=>item.id!==id);
+    render();
+  }
 }
 
 async function loadNotifications(){
   const {data:{session}}=await supabase.auth.getSession();
   if(!session) return;
+
+  await loadManualMessages();
 
   const {data,error}=await supabase
     .from("notifications")
@@ -224,6 +314,7 @@ async function init(){
   const channel=supabase
     .channel("c7-notifications")
     .on("postgres_changes",{event:"*",schema:"public",table:"notifications"},()=>loadNotifications())
+    .on("postgres_changes",{event:"*",schema:"public",table:"whatsapp_automation_queue"},()=>loadNotifications())
     .subscribe();
 
   window.addEventListener("beforeunload",()=>supabase.removeChannel(channel));
