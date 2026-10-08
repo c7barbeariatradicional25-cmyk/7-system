@@ -1374,6 +1374,39 @@
   </aside>
   <div id="notificationDrawerBackdrop" class="notification-drawer-backdrop hidden"></div>
 
+  <div id="customAutomationModal" class="modal hidden" role="dialog" aria-modal="true">
+    <div class="modal-backdrop" data-close-custom-automation></div>
+    <section class="modal-card custom-automation-modal">
+      <div class="modal-head">
+        <div><span>AUTOMAÇÃO</span><h2 id="customAutomationModalTitle">Nova automação</h2></div>
+        <button type="button" class="modal-close" data-close-custom-automation>×</button>
+      </div>
+      <form id="customAutomationForm" class="appointment-form">
+        <input id="customAutomationId" type="hidden">
+        <div class="form-grid two">
+          <label><span>Nome da automação</span><input id="customAutomationName" type="text" required></label>
+          <label><span>Canal</span><select id="customAutomationChannel"><option value="whatsapp">WhatsApp</option><option value="email">E-mail</option><option value="both">WhatsApp + E-mail</option></select></label>
+        </div>
+        <label><span>Descrição interna</span><input id="customAutomationDescription" type="text"></label>
+        <div class="form-grid three">
+          <label><span>Quando acontece</span><select id="customAutomationTrigger"><option value="after_booking">Depois que agenda</option><option value="before_appointment">Antes do horário</option><option value="after_service">Depois do atendimento</option><option value="inactive_customer">Cliente sem voltar</option><option value="birthday">No aniversário</option></select></label>
+          <label><span>Tempo</span><input id="customAutomationOffset" type="number" min="0" max="365" value="0"></label>
+          <label><span>Unidade</span><select id="customAutomationUnit"><option value="minutes">Minutos</option><option value="hours" selected>Horas</option><option value="days">Dias</option></select></label>
+        </div>
+        <label><span>Mensagem</span><textarea id="customAutomationMessage" rows="6" required></textarea></label>
+        <p class="custom-automation-help">Variáveis: {nome}, {primeiro_nome}, {profissional}, {data}, {hora}</p>
+        <label id="customAutomationEmailSubjectWrap"><span>Assunto do e-mail</span><input id="customAutomationEmailSubject" type="text"></label>
+        <label class="check-row"><input id="customAutomationMarketing" type="checkbox"><span>Somente clientes com consentimento de marketing</span></label>
+        <label class="check-row"><input id="customAutomationActive" type="checkbox" checked><span>Automação ativa</span></label>
+        <p id="customAutomationMessageStatus" class="form-message"></p>
+        <div class="modal-actions">
+          <button type="button" class="ghost-btn" data-close-custom-automation>CANCELAR</button>
+          <button type="submit" class="primary-btn">SALVAR AUTOMAÇÃO</button>
+        </div>
+      </form>
+    </section>
+  </div>
+
   <div id="promotionModal" class="modal hidden" role="dialog" aria-modal="true">
     <div class="modal-backdrop" data-close-promotion></div>
     <section class="modal-card modal-small">
