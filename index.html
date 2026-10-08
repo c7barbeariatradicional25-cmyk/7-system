@@ -54,6 +54,7 @@
         <button class="nav-item" data-section="produtos">Produtos</button>
         <button class="nav-item" data-section="equipe">Equipe</button>
         <button class="nav-item" data-section="promocoes">Promoções</button>
+        <button class="nav-item" data-section="automacoes">Automações</button>
         <button class="nav-item" data-section="relatorios">Relatórios</button>
         <button class="nav-item" data-section="configuracoes">Configurações</button>
       </nav>
@@ -514,6 +515,50 @@
               <button id="newBirthdayCampaignBtn" class="primary-btn" type="button">CONFIGURAR</button>
             </div>
             <div id="birthdayList" class="promo-list"></div>
+          </article>
+        </div>
+      </section>
+
+      <section id="automacoes" class="section">
+        <div class="catalog-toolbar">
+          <div>
+            <span class="eyebrow">COMUNICAÇÃO</span>
+            <h2>Automações</h2>
+            <p>Confirmações, lembretes e mensagens que precisam ser enviadas aos clientes.</p>
+          </div>
+          <button id="refreshAutomationsBtn" class="ghost-btn" type="button">ATUALIZAR</button>
+        </div>
+
+        <div class="automation-stats">
+          <article><span>WHATSAPP PENDENTE</span><strong id="automationWhatsappPending">0</strong></article>
+          <article><span>E-MAIL PENDENTE</span><strong id="automationEmailPending">0</strong></article>
+          <article><span>ENVIADAS HOJE</span><strong id="automationSentToday">0</strong></article>
+          <article><span>PRÓXIMOS LEMBRETES</span><strong id="automationUpcoming">0</strong></article>
+        </div>
+
+        <div class="automation-tabs">
+          <button class="automation-tab active" type="button" data-automation-tab="pending">PENDENTES</button>
+          <button class="automation-tab" type="button" data-automation-tab="scheduled">PROGRAMADAS</button>
+          <button class="automation-tab" type="button" data-automation-tab="sent">ENVIADAS</button>
+        </div>
+
+        <div class="automation-grid">
+          <article class="automation-panel">
+            <div class="cash-panel-head">
+              <div><span>WHATSAPP</span><h3>Mensagens</h3></div>
+            </div>
+            <div id="automationWhatsappList" class="automation-list">
+              <div class="agenda-empty">Carregando mensagens...</div>
+            </div>
+          </article>
+
+          <article class="automation-panel">
+            <div class="cash-panel-head">
+              <div><span>E-MAIL</span><h3>Confirmações e lembretes</h3></div>
+            </div>
+            <div id="automationEmailList" class="automation-list">
+              <div class="agenda-empty">Carregando e-mails...</div>
+            </div>
           </article>
         </div>
       </section>
@@ -1435,6 +1480,7 @@
   <script type="module" src="financeiro.js"></script>
   <script type="module" src="promocoes.js"></script>
   <script type="module" src="notificacoes.js"></script>
+  <script type="module" src="automacoes.js"></script>
   <script type="module" src="barbeiro.js"></script>
 </body>
 </html>
