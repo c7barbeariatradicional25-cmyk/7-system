@@ -10,6 +10,7 @@ let tab="pending";
 let whatsappRows=[];
 let emailRows=[];
 let settings=null;
+let customAutomations=[];
 
 function localDate(value){
   if(!value) return "—";
@@ -24,7 +25,8 @@ function phoneForWa(raw){
   return digits.startsWith("55")?digits:"55"+digits;
 }
 
-function kindLabel(type){
+function kindLabel(type,item){
+  if(type==="custom") return item?.payload?.custom_automation_name||"PERSONALIZADA";
   return {
     booking_confirmation:"CONFIRMAÇÃO",
     booking_reminder:"LEMBRETE",
@@ -40,20 +42,44 @@ function kindIcon(type){
     booking_reminder:"⏰",
     reactivation:"↻",
     post_service:"★",
-    birthday:"🎉"
+    birthday:"🎉",
+    custom:"⚙"
   }[type]||"•";
 }
 
 function appointmentText(p){
-  if(!p.starts_at) return "";
+  if(!p?.starts_at) return "";
   const d=new Date(p.starts_at);
   const date=d.toLocaleDateString("pt-BR",{day:"2-digit",month:"2-digit",year:"numeric",timeZone:"America/Sao_Paulo"});
   const time=d.toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit",timeZone:"America/Sao_Paulo"});
   return date+" às "+time;
 }
 
+function expandTemplate(template,item){
+  const p=item.payload||{};
+  const fullName=p.customer_name||"Cliente";
+  const firstName=fullName.split(" ")[0];
+  let date="";
+  let time="";
+  if(p.starts_at){
+    const d=new Date(p.starts_at);
+    date=d.toLocaleDateString("pt-BR",{day:"2-digit",month:"2-digit",year:"numeric",timeZone:"America/Sao_Paulo"});
+    time=d.toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit",timeZone:"America/Sao_Paulo"});
+  }
+  return String(template||"")
+    .replaceAll("{nome}",fullName)
+    .replaceAll("{primeiro_nome}",firstName)
+    .replaceAll("{profissional}",p.professional_name||"Equipe C7")
+    .replaceAll("{data}",date)
+    .replaceAll("{hora}",time);
+}
+
 function messageText(item){
   const p=item.payload||{};
+  if(item.automation_type==="custom"&&p.message_template){
+    return expandTemplate(p.message_template,item);
+  }
+
   const name=(p.customer_name||"Cliente").split(" ")[0];
   const professional=p.professional_name||"nossa equipe";
 
@@ -85,6 +111,9 @@ function filterRows(rows){
 
 function detailLine(item){
   const p=item.payload||{};
+  if(item.automation_type==="custom"){
+    return p.custom_automation_name||"Automação personalizada";
+  }
   if(item.automation_type==="booking_confirmation"||item.automation_type==="booking_reminder"){
     return `${appointmentText(p)} • ${p.professional_name||"C7"}`;
   }
@@ -112,7 +141,7 @@ function renderCard(item,channel){
   return `
     <article class="automation-card ${!isSent&&!isScheduled?"needs-action":""}">
       <div class="automation-card-top">
-        <span class="automation-kind"><b>${kindIcon(item.automation_type)}</b>${kindLabel(item.automation_type)}</span>
+        <span class="automation-kind"><b>${kindIcon(item.automation_type)}</b>${kindLabel(item.automation_type,item)}</span>
         <em class="automation-status ${status.toLowerCase()}">${status}</em>
       </div>
       <strong>${p.customer_name||"Cliente"}</strong>
@@ -122,6 +151,77 @@ function renderCard(item,channel){
       <div class="automation-card-actions">${action}</div>
     </article>
   `;
+}
+
+function triggerLabel(value){
+  return {
+    after_booking:"Depois que agenda",
+    before_appointment:"Antes do horário",
+    after_service:"Depois do atendimento",
+    inactive_customer:"Cliente sem voltar",
+    birthday:"No aniversário"
+  }[value]||value;
+}
+
+function channelLabel(value){
+  return {whatsapp:"WhatsApp",email:"E-mail",both:"WhatsApp + E-mail"}[value]||value;
+}
+
+function ruleText(item){
+  if(item.trigger_type==="birthday") return "No dia do aniversário";
+  const unit={minutes:"min",hours:"h",days:"dias"}[item.offset_unit]||item.offset_unit;
+  const value=item.offset_value;
+  if(item.trigger_type==="before_appointment") return value+" "+unit+" antes";
+  if(item.trigger_type==="after_booking") return value===0?"Imediatamente após agendar":value+" "+unit+" depois de agendar";
+  if(item.trigger_type==="after_service") return value===0?"Ao finalizar atendimento":value+" "+unit+" após atendimento";
+  if(item.trigger_type==="inactive_customer") return value+" "+unit+" sem retorno";
+  return triggerLabel(item.trigger_type);
+}
+
+function builtinLibrary(){
+  if(!settings) return [];
+  return [
+    {name:"Confirmação de agendamento",description:"Confirma o novo horário do cliente.",channel:"both",rule:"Imediatamente após agendar",active:settings.booking_confirmation_active},
+    {name:"Lembrete de agendamento",description:"Lembra o cliente antes do horário.",channel:"both",rule:settings.booking_reminder_hours+"h antes",active:settings.booking_reminder_active},
+    {name:"Pós-atendimento",description:"Contato depois do serviço concluído.",channel:"both",rule:settings.post_service_delay_hours+"h após atendimento",active:settings.post_service_active},
+    {name:"Reativação",description:"Contato com cliente que não voltou.",channel:"both",rule:settings.reactivation_days+" dias sem retorno",active:settings.reactivation_active},
+    {name:"Aniversário",description:"Mensagem no aniversário do cliente.",channel:"both",rule:"No dia do aniversário",active:settings.birthday_active}
+  ];
+}
+
+function renderLibrary(){
+  const list=$("automationLibraryList");
+  if(!list) return;
+
+  const builtins=builtinLibrary().map((item,index)=>({...item,id:"builtin-"+index,builtin:true}));
+  const custom=customAutomations.map(item=>({...item,rule:ruleText(item),builtin:false}));
+  const rows=[...builtins,...custom];
+
+  list.innerHTML=rows.map(item=>`
+    <article class="automation-library-card ${item.active?"active":"inactive"}">
+      <div class="automation-library-card-head">
+        <span class="automation-library-type">${item.builtin?"PADRÃO":"PERSONALIZADA"}</span>
+        <span class="automation-library-state">${item.active?"ATIVA":"PAUSADA"}</span>
+      </div>
+      <strong>${item.name}</strong>
+      <p>${item.description||"Sem descrição."}</p>
+      <div class="automation-library-meta">
+        <span>${channelLabel(item.channel)}</span>
+        <span>${item.rule}</span>
+      </div>
+      ${item.builtin
+        ?'<small class="automation-library-note">Configure nas regras abaixo.</small>'
+        :`<div class="automation-library-actions">
+            <button type="button" data-custom-edit="${item.id}">EDITAR</button>
+            <button type="button" data-custom-toggle="${item.id}">${item.active?"PAUSAR":"ATIVAR"}</button>
+            <button type="button" data-custom-delete="${item.id}">EXCLUIR</button>
+          </div>`}
+    </article>
+  `).join("");
+
+  list.querySelectorAll("[data-custom-edit]").forEach(btn=>btn.addEventListener("click",()=>openCustomAutomation(btn.dataset.customEdit)));
+  list.querySelectorAll("[data-custom-toggle]").forEach(btn=>btn.addEventListener("click",()=>toggleCustomAutomation(btn.dataset.customToggle)));
+  list.querySelectorAll("[data-custom-delete]").forEach(btn=>btn.addEventListener("click",()=>deleteCustomAutomation(btn.dataset.customDelete)));
 }
 
 function render(){
@@ -176,20 +276,24 @@ function renderSettings(){
 }
 
 async function load(){
-  const [{data:w},{data:e},{data:s}]=await Promise.all([
+  const [wr,er,sr,cr]=await Promise.all([
     supabase.from("whatsapp_automation_queue")
       .select("id,automation_type,appointment_id,customer_id,phone,status,scheduled_at,sent_at,payload,created_at")
       .order("scheduled_at",{ascending:false}).limit(300),
     supabase.from("email_automation_queue")
       .select("id,automation_type,appointment_id,customer_id,email,status,scheduled_at,sent_at,payload,created_at")
       .order("scheduled_at",{ascending:false}).limit(300),
-    supabase.from("automation_settings").select("*").eq("singleton",true).maybeSingle()
+    supabase.from("automation_settings").select("*").eq("singleton",true).maybeSingle(),
+    supabase.from("custom_automations").select("*").order("created_at",{ascending:true})
   ]);
 
-  whatsappRows=w||[];
-  emailRows=e||[];
-  settings=s||null;
+  whatsappRows=wr.data||[];
+  emailRows=er.data||[];
+  settings=sr.data||null;
+  customAutomations=cr.data||[];
+
   renderSettings();
+  renderLibrary();
   render();
 }
 
@@ -232,8 +336,89 @@ async function saveSettings(){
     return;
   }
   settings=data;
+  renderLibrary();
   msg.textContent="Regras atualizadas.";
   setTimeout(()=>{if(msg.textContent==="Regras atualizadas.") msg.textContent=""},2500);
+}
+
+function openCustomAutomation(id=null){
+  const item=id?customAutomations.find(x=>x.id===id):null;
+  $("customAutomationModalTitle").textContent=item?"Editar automação":"Nova automação";
+  $("customAutomationId").value=item?.id||"";
+  $("customAutomationName").value=item?.name||"";
+  $("customAutomationDescription").value=item?.description||"";
+  $("customAutomationChannel").value=item?.channel||"whatsapp";
+  $("customAutomationTrigger").value=item?.trigger_type||"after_booking";
+  $("customAutomationOffset").value=item?.offset_value??0;
+  $("customAutomationUnit").value=item?.offset_unit||"hours";
+  $("customAutomationMessage").value=item?.message_template||"";
+  $("customAutomationEmailSubject").value=item?.email_subject||"";
+  $("customAutomationMarketing").checked=Boolean(item?.marketing_only);
+  $("customAutomationActive").checked=item?Boolean(item.active):true;
+  $("customAutomationMessageStatus").textContent="";
+  syncCustomAutomationFields();
+  $("customAutomationModal").classList.remove("hidden");
+}
+
+function closeCustomAutomation(){
+  $("customAutomationModal")?.classList.add("hidden");
+}
+
+function syncCustomAutomationFields(){
+  const channel=$("customAutomationChannel").value;
+  const trigger=$("customAutomationTrigger").value;
+  $("customAutomationEmailSubjectWrap").classList.toggle("hidden",channel==="whatsapp");
+  const noOffset=trigger==="birthday";
+  $("customAutomationOffset").disabled=noOffset;
+  $("customAutomationUnit").disabled=noOffset;
+  if(noOffset) $("customAutomationOffset").value=0;
+}
+
+async function saveCustomAutomation(e){
+  e.preventDefault();
+  const id=$("customAutomationId").value||null;
+  const payload={
+    name:$("customAutomationName").value.trim(),
+    description:$("customAutomationDescription").value.trim()||null,
+    channel:$("customAutomationChannel").value,
+    trigger_type:$("customAutomationTrigger").value,
+    offset_value:Number($("customAutomationOffset").value||0),
+    offset_unit:$("customAutomationUnit").value,
+    message_template:$("customAutomationMessage").value.trim(),
+    email_subject:$("customAutomationEmailSubject").value.trim()||null,
+    marketing_only:$("customAutomationMarketing").checked,
+    active:$("customAutomationActive").checked,
+    updated_at:new Date().toISOString()
+  };
+
+  const msg=$("customAutomationMessageStatus");
+  msg.textContent="Salvando...";
+
+  const result=id
+    ?await supabase.from("custom_automations").update(payload).eq("id",id)
+    :await supabase.from("custom_automations").insert(payload);
+
+  if(result.error){
+    msg.textContent="Não foi possível salvar a automação.";
+    return;
+  }
+
+  closeCustomAutomation();
+  await load();
+}
+
+async function toggleCustomAutomation(id){
+  const item=customAutomations.find(x=>x.id===id);
+  if(!item) return;
+  const {error}=await supabase.from("custom_automations")
+    .update({active:!item.active,updated_at:new Date().toISOString()}).eq("id",id);
+  if(!error) await load();
+}
+
+async function deleteCustomAutomation(id){
+  if(!confirm("Excluir esta automação personalizada?")) return;
+  const {error}=await supabase.from("custom_automations").delete().eq("id",id);
+  if(!error) await load();
 }
 
 document.querySelectorAll("[data-automation-tab]").forEach(btn=>{
@@ -246,6 +431,11 @@ document.querySelectorAll("[data-automation-tab]").forEach(btn=>{
 
 $("refreshAutomationsBtn")?.addEventListener("click",load);
 $("saveAutomationSettingsBtn")?.addEventListener("click",saveSettings);
+$("newCustomAutomationBtn")?.addEventListener("click",()=>openCustomAutomation());
+$("customAutomationForm")?.addEventListener("submit",saveCustomAutomation);
+$("customAutomationChannel")?.addEventListener("change",syncCustomAutomationFields);
+$("customAutomationTrigger")?.addEventListener("change",syncCustomAutomationFields);
+document.querySelectorAll("[data-close-custom-automation]").forEach(el=>el.addEventListener("click",closeCustomAutomation));
 document.querySelector('.nav-item[data-section="automacoes"]')?.addEventListener("click",load);
 
 (async()=>{
@@ -256,6 +446,7 @@ document.querySelector('.nav-item[data-section="automacoes"]')?.addEventListener
   const channel=supabase.channel("c7-automations-live")
     .on("postgres_changes",{event:"*",schema:"public",table:"whatsapp_automation_queue"},load)
     .on("postgres_changes",{event:"*",schema:"public",table:"email_automation_queue"},load)
+    .on("postgres_changes",{event:"*",schema:"public",table:"custom_automations"},load)
     .subscribe();
 
   window.addEventListener("beforeunload",()=>supabase.removeChannel(channel));
