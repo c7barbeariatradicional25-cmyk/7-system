@@ -4039,3 +4039,132 @@ body{
   .notification-priority-summary button{width:100%}
   .c7-alert-toast{top:12px;right:12px;width:calc(100vw - 24px)}
 }
+
+
+/* BIBLIOTECA E CONSTRUTOR DE AUTOMAÇÕES */
+.automation-library-panel{
+  margin:14px 0 16px;
+  padding:16px;
+  border:1px solid var(--line);
+  background:#090909;
+}
+.automation-library-head{
+  display:flex;
+  justify-content:space-between;
+  gap:14px;
+  align-items:flex-start;
+}
+.automation-library-head h3{
+  margin-top:4px;
+  font:600 22px Oswald,sans-serif;
+}
+.automation-library-head p{
+  margin-top:5px;
+  color:#696969;
+  font-size:9px;
+}
+.automation-library-list{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:10px;
+  margin-top:14px;
+}
+.automation-library-card{
+  min-height:180px;
+  display:flex;
+  flex-direction:column;
+  padding:14px;
+  border:1px solid rgba(255,255,255,.09);
+  background:#070707;
+}
+.automation-library-card.active{
+  box-shadow:inset 3px 0 0 #79957b;
+}
+.automation-library-card.inactive{
+  opacity:.62;
+  box-shadow:inset 3px 0 0 #595959;
+}
+.automation-library-card-head{
+  display:flex;
+  justify-content:space-between;
+  gap:8px;
+}
+.automation-library-type{
+  color:#c4926b;
+  font:600 8px Oswald,sans-serif;
+  letter-spacing:1.2px;
+}
+.automation-library-state{
+  padding:4px 7px;
+  border:1px solid rgba(255,255,255,.08);
+  color:#809c82;
+  font-size:7px;
+  font-weight:800;
+}
+.automation-library-card.inactive .automation-library-state{color:#777}
+.automation-library-card>strong{
+  display:block;
+  margin-top:13px;
+  font:600 17px Oswald,sans-serif;
+}
+.automation-library-card>p{
+  min-height:30px;
+  margin-top:6px;
+  color:#777;
+  font-size:9px;
+  line-height:1.5;
+}
+.automation-library-meta{
+  display:flex;
+  flex-wrap:wrap;
+  gap:6px;
+  margin-top:12px;
+}
+.automation-library-meta span{
+  padding:5px 7px;
+  border:1px solid rgba(255,255,255,.08);
+  background:#050505;
+  color:#999;
+  font-size:7px;
+}
+.automation-library-note{
+  display:block;
+  margin-top:auto;
+  padding-top:12px;
+  color:#555;
+  font-size:7px;
+}
+.automation-library-actions{
+  display:flex;
+  gap:6px;
+  margin-top:auto;
+  padding-top:12px;
+  flex-wrap:wrap;
+}
+.automation-library-actions button{
+  min-height:30px;
+  padding:0 8px;
+  border:1px solid rgba(255,255,255,.12);
+  background:#080808;
+  color:#b6b6b6;
+  font:600 7px Oswald,sans-serif;
+  letter-spacing:.7px;
+  cursor:pointer;
+}
+.custom-automation-modal{width:min(100%,760px)}
+.custom-automation-help{
+  padding:10px 12px;
+  border:1px dashed rgba(255,255,255,.10);
+  background:#060606;
+  color:#777;
+  font-size:8px;
+  line-height:1.5;
+}
+@media(max-width:1100px){
+  .automation-library-list{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:700px){
+  .automation-library-head{flex-direction:column}
+  .automation-library-head .primary-btn{width:100%}
+  .automation-library-list{grid-template-columns:1fr}
+}
