@@ -665,6 +665,7 @@ $("closeCashBtn")?.addEventListener("click",()=>{
   $("closeCashMessage").textContent="";
   updateClosePreview();
   openModal("closeCashModal");
+  window.C7ClosingReport?.load(openSession);
 });
 
 document.querySelectorAll("[data-close-close-cash]").forEach(el=>el.addEventListener("click",()=>closeModal("closeCashModal")));
