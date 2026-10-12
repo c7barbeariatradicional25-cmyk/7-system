@@ -4921,3 +4921,214 @@ body{
   #automacoes .automation-library-card{min-height:auto}
   #automacoes .automation-settings-grid{grid-template-columns:1fr}
 }
+
+
+/* =========================================================
+   C7 SYSTEM — FECHAMENTO DO REFINO GLOBAL
+   Timeline, notificações, login e construtor
+   ========================================================= */
+
+/* LOGIN — mantém identidade escura, melhora leitura */
+.login-card{
+  width:min(100%,460px);
+  padding:36px 34px;
+  border-radius:20px;
+  border:1px solid rgba(255,255,255,.12);
+  box-shadow:0 28px 80px rgba(0,0,0,.34);
+}
+.login-logo{width:195px;height:108px;margin-bottom:20px}
+.system-label{font-size:11px;letter-spacing:3px}
+.login-card h1{font-size:34px}
+.login-card>p{font-size:13px;line-height:1.5;color:#9b9b96}
+.login-form{gap:16px;margin-top:28px}
+.login-form label span{font-size:12px;color:#c0c0bb}
+.login-form input{
+  height:52px;
+  padding:0 15px;
+  border-radius:11px;
+  font-size:14px;
+}
+.login-form button{
+  height:52px;
+  border-radius:11px;
+  font-size:12px;
+}
+.first-note{font-size:11px!important}
+.message{font-size:11px!important}
+
+/* AGENDA EM GRADE */
+.agenda-timeline{
+  margin-top:18px;
+  border:1px solid var(--c7-border);
+  border-radius:14px;
+  background:#fff;
+  overflow:auto;
+}
+.timeline-head{
+  background:#f6f1ec;
+  border-color:var(--c7-border);
+}
+.timeline-head>div{
+  min-height:64px;
+  padding:13px;
+  border-color:var(--c7-border);
+}
+.timeline-head .timeline-corner{
+  color:#806f62;
+  font-size:10px;
+}
+.timeline-head .pro-head strong{
+  color:var(--c7-text);
+  font-size:15px;
+}
+.timeline-head .pro-head small{
+  color:#7d6e63;
+  font-size:10px;
+}
+.timeline-row{
+  min-height:64px;
+  border-color:#eee5dd;
+}
+.timeline-time{
+  padding:10px 11px;
+  color:#75665b;
+  font-size:11px;
+  border-color:var(--c7-border);
+  background:#fbf8f5;
+}
+.timeline-cell{
+  min-height:64px;
+  padding:5px;
+  border-color:#eee5dd;
+}
+.timeline-cell.outside-hours{
+  background:repeating-linear-gradient(135deg,#faf7f3 0 6px,#f4efe9 6px 12px);
+}
+.timeline-booking{
+  min-height:54px;
+  padding:9px;
+  border:1px solid #d7c9bc;
+  border-radius:9px;
+  background:#fff;
+  box-shadow:0 3px 10px rgba(42,31,23,.04);
+}
+.timeline-booking strong{
+  color:var(--c7-text);
+  font-size:12px;
+}
+.timeline-booking span{
+  margin-top:4px;
+  color:var(--c7-text-soft);
+  font-size:10px;
+}
+.timeline-block{
+  min-height:54px;
+  padding:9px;
+  border:1px dashed #cfbcae;
+  border-radius:9px;
+  background:#faf5f0;
+  color:#735f50;
+}
+.timeline-block strong{font-size:11px}
+.timeline-block span{font-size:10px}
+
+/* NOTIFICAÇÕES */
+.notification-drawer{
+  width:min(560px,96vw);
+  background:#f7f3ef;
+  color:var(--c7-text);
+  border-color:var(--c7-border);
+}
+.notification-drawer-head{
+  padding:28px 26px 22px;
+  border-color:var(--c7-border);
+}
+.notification-drawer-head span{
+  font-size:10px;
+  color:#9a6a47;
+}
+.notification-drawer-head h2{font-size:31px}
+.notification-toolbar{
+  padding:14px 20px;
+  border-color:var(--c7-border);
+}
+.notification-filter,
+.notification-archive-all{
+  min-height:38px;
+  height:auto;
+  padding:0 11px;
+  font-size:9px;
+}
+.notification-list{padding:16px}
+.notification-item{
+  gap:13px;
+  padding:17px 16px;
+  border-color:var(--c7-border);
+  box-shadow:0 5px 16px rgba(42,31,23,.04);
+}
+.notification-item-top strong{font-size:11px}
+.notification-item-top span{font-size:9px}
+.notification-content h3{font-size:15px}
+.notification-content p{font-size:11px;line-height:1.5}
+.notification-actions button{
+  min-height:34px;
+  height:auto;
+  font-size:9px;
+  padding:0 10px;
+}
+.notification-empty{font-size:12px}
+
+/* CONSTRUTOR DE AUTOMAÇÃO */
+.custom-automation-modal{width:min(820px,calc(100vw - 28px))}
+.custom-automation-help{
+  padding:12px 14px;
+  border:1px dashed #d7c6b7;
+  border-radius:10px;
+  background:#faf5f0;
+  color:#6f5d4f;
+  font-size:11px;
+  line-height:1.55;
+}
+
+/* HISTÓRICOS / INSIGHTS / ACERTOS */
+.history-row{
+  padding:14px 2px;
+  border-color:#e7ddd4;
+}
+.history-row strong{font-size:12px;color:var(--c7-text)}
+.history-row span{font-size:10px;color:var(--c7-text-soft)}
+.history-row .history-value{font-size:15px}
+.customer-insight-stats span,
+.customer-insight-grid>article>span{font-size:10px}
+.customer-insight-stats strong{font-size:23px}
+.customer-insight-row span{font-size:11px}
+.customer-insight-row strong{font-size:12px}
+.customer-insight-empty{font-size:11px}
+
+/* CHECKBOXES E RÓTULOS */
+.check-row span{font-size:11px!important;color:#5f5147!important}
+.check-row input{width:18px!important;height:18px!important}
+
+/* PLACEHOLDERS E VAZIOS */
+.placeholder{
+  min-height:330px;
+  border:1px dashed #d6c9be;
+  border-radius:14px;
+  background:#faf7f3;
+}
+.placeholder span{font-size:11px;color:#8d7969}
+.placeholder h2{font-size:32px;color:var(--c7-text)}
+.placeholder p{font-size:13px;color:var(--c7-text-soft)}
+
+/* MOBILE: legibilidade sem inflar demais */
+@media(max-width:640px){
+  .nav-item{font-size:11px}
+  .appointment-card{grid-template-columns:72px 1fr;gap:12px;padding:14px}
+  .appointment-time strong{font-size:23px}
+  .appointment-info strong{font-size:13px}
+  .appointment-info span{font-size:10px}
+  .notification-drawer-head{padding:22px 18px 17px}
+  .notification-list{padding:11px}
+  .modal-card{padding:18px 16px}
+  .modal-head h2{font-size:26px}
+}
