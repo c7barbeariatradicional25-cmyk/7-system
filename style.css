@@ -5132,3 +5132,31 @@ body{
   .modal-card{padding:18px 16px}
   .modal-head h2{font-size:26px}
 }
+
+
+/* C7 V1 — refinamento visual da agenda interna, sem alterar funcionalidades */
+#agenda .agenda-toolbar{gap:16px}
+#agenda .agenda-date-nav button,#agenda .agenda-date-nav input,#agenda .agenda-actions select{min-height:46px;border-radius:11px;font-size:14px}
+#agenda .agenda-summary{gap:14px}
+#agenda .agenda-summary>div{border-radius:16px;min-height:105px;padding:19px 20px;box-shadow:0 8px 25px rgba(20,18,15,.035)}
+#agenda .agenda-summary span{font-size:12px;letter-spacing:.5px}
+#agenda .agenda-summary strong{font-size:26px;margin-top:9px}
+#agenda .agenda-list{gap:12px}
+#agenda .appointment-card{padding:20px 22px;border-radius:16px;box-shadow:0 8px 24px rgba(25,23,20,.035);transition:border-color .16s,box-shadow .16s,transform .16s}
+#agenda .appointment-card:hover{border-color:#bfb7ac;box-shadow:0 14px 32px rgba(25,23,20,.075);transform:translateY(-1px)}
+#agenda .appointment-time strong{font-size:30px}
+#agenda .appointment-time small{font-size:12px}
+#agenda .appointment-info strong{font-size:16px}
+#agenda .appointment-info span{font-size:13px;line-height:1.5}
+#agenda .source-badge{font-size:11px;padding:8px 10px;border-radius:8px}
+#agenda .status-select{font-size:13px;min-height:42px;border-radius:9px}
+#agenda .agenda-timeline{border-radius:18px;box-shadow:0 9px 28px rgba(25,23,20,.04)}
+#agenda .timeline-head .pro-head strong{font-size:15px}
+#agenda .timeline-head .pro-head small{font-size:11px}
+#agenda .timeline-time{font-size:12px}
+#agenda .timeline-booking{border-radius:10px;padding:10px}
+#agenda .timeline-booking strong{font-size:12px}
+#agenda .timeline-booking span{font-size:11px}
+#agenda button:focus-visible,#agenda select:focus-visible,#agenda input:focus-visible{outline:3px solid rgba(102,91,77,.28);outline-offset:2px}
+@media(max-width:700px){#agenda .agenda-toolbar{gap:12px}#agenda .agenda-summary>div{padding:14px;min-height:86px}#agenda .agenda-summary strong{font-size:22px}#agenda .appointment-card{padding:16px;gap:12px}#agenda .appointment-info strong{font-size:15px}#agenda .appointment-meta{gap:8px}#agenda .appointment-card:hover{transform:none}}
+@media(prefers-reduced-motion:reduce){#agenda .appointment-card{transition:none}#agenda .appointment-card:hover{transform:none}}
