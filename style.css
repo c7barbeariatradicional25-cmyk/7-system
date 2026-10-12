@@ -4341,3 +4341,583 @@ body{
 @media(max-width:700px){
   #automacoes .automation-library-list{grid-template-columns:1fr}
 }
+
+
+/* =========================================================
+   C7 SYSTEM — REFINO VISUAL GLOBAL V1
+   Legibilidade, consistência e hierarquia em todas as áreas
+   ========================================================= */
+:root{
+  --c7-bg:#f4f1ed;
+  --c7-surface:#fffdfa;
+  --c7-card:#ffffff;
+  --c7-border:#e2d8cf;
+  --c7-border-strong:#d4c4b7;
+  --c7-text:#241b15;
+  --c7-text-soft:#66584e;
+  --c7-muted:#88796e;
+  --c7-accent:#a96c3e;
+  --c7-accent-soft:#f4e8de;
+  --c7-success:#4f7555;
+  --c7-danger:#9b5146;
+  --c7-radius:14px;
+  --c7-shadow:0 8px 24px rgba(42,31,23,.055);
+}
+
+body{
+  background:var(--c7-bg);
+  color:var(--c7-text);
+  font-size:15px;
+  line-height:1.45;
+  -webkit-font-smoothing:antialiased;
+  text-rendering:optimizeLegibility;
+}
+
+.main-panel{
+  padding:30px 34px 42px;
+}
+
+.section{
+  padding-top:28px;
+}
+
+.topbar{
+  padding-bottom:24px;
+}
+
+.topbar h1{
+  font-size:38px;
+  line-height:1;
+  color:var(--c7-text);
+}
+
+.topbar>div:first-child>span{
+  font-size:10px;
+  color:#8a796b;
+}
+
+.user-chip strong{font-size:13px}
+.user-chip small{font-size:10px;color:#88796e}
+
+/* CABEÇALHOS DE ÁREA */
+.catalog-toolbar h2,
+.cash-toolbar h2,
+.ops-toolbar h2,
+.report-toolbar h2,
+.performance-profile h2{
+  font-size:32px;
+  line-height:1.08;
+  color:var(--c7-text);
+}
+
+.catalog-toolbar p,
+.cash-toolbar p,
+.ops-toolbar p,
+.report-toolbar p,
+.performance-profile p{
+  font-size:13px;
+  line-height:1.5;
+  color:var(--c7-text-soft);
+}
+
+.eyebrow,
+.cash-panel-head span,
+.customer-history-head span,
+.detail-panel-head span{
+  font-size:10px;
+  letter-spacing:1.6px;
+  color:#9a6a47;
+}
+
+/* BOTÕES GLOBAIS */
+.primary-btn,
+.ghost-btn,
+.logout,
+.catalog-actions button,
+.finance-actions button,
+.ops-card-actions button,
+.pending-receive,
+.customer-open,
+.block-delete,
+.automation-tab,
+.automation-action,
+.automation-card-actions button{
+  min-height:44px;
+  border-radius:10px;
+  font-size:11px;
+  font-weight:700;
+  letter-spacing:.7px;
+}
+
+.primary-btn{
+  background:#211913;
+  color:#fff;
+  border-color:#211913;
+}
+
+.primary-btn:hover{
+  background:#3b2a20;
+  border-color:#3b2a20;
+}
+
+.ghost-btn{
+  background:#fff;
+  color:#4d3c30;
+  border-color:var(--c7-border-strong);
+}
+
+.ghost-btn:hover{
+  background:#f7f0e9;
+}
+
+/* FORMULÁRIOS */
+.appointment-form{
+  gap:16px;
+}
+
+.appointment-form label>span,
+.login-form label span,
+.working-hour-row label span{
+  font-size:11px;
+  font-weight:700;
+  color:#78675b;
+}
+
+.appointment-form input,
+.appointment-form select,
+.appointment-form textarea,
+.crm-search-wrap input,
+.report-period input,
+.agenda-date-nav input,
+.agenda-actions select,
+.status-select,
+.detail-add-row select,
+.detail-add-row input,
+.working-hour-row input[type="time"]{
+  min-height:46px;
+  border:1px solid var(--c7-border-strong);
+  border-radius:10px;
+  background:#fff;
+  color:var(--c7-text);
+  font-size:13px;
+}
+
+.appointment-form textarea{
+  min-height:110px;
+  padding:12px 14px;
+  line-height:1.5;
+}
+
+.appointment-form input:focus,
+.appointment-form select:focus,
+.appointment-form textarea:focus,
+.crm-search-wrap input:focus{
+  outline:none;
+  border-color:#b67a50;
+  box-shadow:0 0 0 3px rgba(182,122,80,.12);
+}
+
+.form-hint,
+.form-message{
+  font-size:11px;
+  line-height:1.45;
+}
+
+/* MODAIS */
+.modal-card{
+  border:1px solid var(--c7-border);
+  border-radius:18px;
+  background:#fffdfa;
+  color:var(--c7-text);
+  box-shadow:0 24px 70px rgba(35,25,18,.22);
+}
+
+.modal-head{
+  border-color:var(--c7-border);
+}
+
+.modal-head span{font-size:10px;color:#9a6a47}
+.modal-head h2{font-size:30px;color:var(--c7-text)}
+.modal-close{color:#806f63}
+
+/* CARDS / PAINÉIS GLOBAIS */
+.panel,
+.cash-panel,
+.report-panel,
+.team-admin-panel,
+.settings-card,
+.finance-main-panel,
+.ops-column,
+.agenda-summary>div,
+.crm-stats article,
+.cash-stats article,
+.ops-stats article,
+.report-stats article,
+.product-admin-stats article,
+.customer-insight-stats article{
+  border:1px solid var(--c7-border);
+  border-radius:var(--c7-radius);
+  background:var(--c7-surface);
+  box-shadow:var(--c7-shadow);
+}
+
+.cash-panel-head{
+  border-color:var(--c7-border);
+}
+
+.cash-panel-head h3,
+.customer-history-head h3{
+  font-size:23px;
+  color:var(--c7-text);
+}
+
+/* KPI / NÚMEROS */
+.stats{
+  gap:14px;
+}
+
+.stats article{
+  min-height:145px;
+  padding:20px;
+  border:1px solid var(--c7-border);
+  border-radius:var(--c7-radius);
+  background:var(--c7-surface);
+  box-shadow:var(--c7-shadow);
+}
+
+.stats span,
+.agenda-summary span,
+.crm-stats span,
+.cash-stats span,
+.ops-stats span,
+.report-stats span,
+.product-admin-stats span{
+  font-size:10px;
+  color:#826d5d;
+  letter-spacing:1.1px;
+}
+
+.stats strong{
+  margin-top:18px;
+  font-size:38px;
+  color:var(--c7-text);
+}
+
+.stats small{
+  margin-top:10px;
+  font-size:11px;
+  color:#88796f;
+}
+
+.agenda-summary strong,
+.crm-stats strong,
+.cash-stats strong,
+.ops-stats strong,
+.report-stats strong,
+.product-admin-stats strong{
+  font-size:25px;
+  color:var(--c7-text);
+}
+
+/* DASHBOARD */
+.dashboard-grid{gap:14px;margin-top:14px}
+.panel{
+  min-height:230px;
+  padding:20px;
+}
+.panel>span{font-size:10px;color:#8b6c54}
+.panel h2{font-size:25px;color:var(--c7-text)}
+.panel p{
+  margin-top:42px;
+  font-size:13px;
+  color:var(--c7-text-soft);
+}
+.dashboard-alert{
+  padding:11px 12px;
+  border:1px solid var(--c7-border);
+  border-radius:9px;
+  background:#faf6f2;
+  color:var(--c7-text-soft);
+  font-size:11px;
+}
+.dashboard-alert strong{font-size:12px;color:var(--c7-text)}
+
+/* AGENDA */
+.agenda-toolbar{gap:16px}
+.agenda-date-nav button,
+.agenda-actions select{
+  min-height:44px;
+  border-radius:10px;
+}
+.agenda-summary{gap:12px;margin-top:18px}
+.agenda-summary>div{padding:16px}
+.agenda-list{gap:12px;margin-top:18px}
+.agenda-empty{
+  min-height:170px;
+  border-color:#d8ccc2;
+  border-radius:13px;
+  color:#8d7c6f;
+  font-size:12px;
+  background:#faf7f3;
+}
+.appointment-card,
+.block-card{
+  padding:17px 18px;
+  border:1px solid var(--c7-border);
+  border-radius:13px;
+  background:#fff;
+  box-shadow:0 5px 16px rgba(42,31,23,.035);
+}
+.appointment-time strong{font-size:27px;color:var(--c7-text)}
+.appointment-time small{font-size:10px;color:#817166}
+.appointment-info strong{font-size:14px;color:var(--c7-text)}
+.appointment-info span{font-size:11px;color:var(--c7-text-soft)}
+.amount-badge{font-size:18px;color:var(--c7-text)}
+.source-badge{font-size:9px;border-color:var(--c7-border);color:#78685d}
+.status-select{font-size:11px}
+
+/* CRM */
+.crm-stats{gap:12px;margin-top:18px}
+.crm-stats article{padding:16px}
+.customer-list{gap:12px;margin-top:18px}
+.customer-card{
+  padding:18px 20px;
+  border:1px solid var(--c7-border);
+  border-radius:14px;
+  background:#fff;
+  box-shadow:var(--c7-shadow);
+}
+.customer-card .customer-name,
+.customer-card strong{font-size:15px;color:var(--c7-text)}
+.customer-card .customer-phone,
+.customer-card span{font-size:11px;color:var(--c7-text-soft)}
+.customer-metric small{font-size:9px;color:#8c715c}
+.customer-metric strong{font-size:20px}
+.customer-metric .customer-status-text{font-size:10px}
+.tag-pill{font-size:9px;padding:5px 8px}
+.customer-open{font-size:10px}
+
+/* CAIXA + FINANCEIRO */
+.cash-stats,
+.report-stats{gap:12px;margin-top:18px}
+.cash-stats article,
+.report-stats article{padding:17px}
+.cash-layout,
+.finance-grid,
+.report-grid{gap:14px;margin-top:14px}
+.cash-panel,
+.report-panel{padding:18px}
+.cash-row,
+.pending-row,
+.finance-row,
+.report-row{
+  padding:13px 14px;
+  border:1px solid var(--c7-border);
+  border-radius:10px;
+  background:#fff;
+}
+.cash-row-time strong,
+.pending-row-time strong{font-size:17px;color:var(--c7-text)}
+.cash-row-time small,
+.pending-row-time small{font-size:9px;color:#89776a}
+.cash-row-main strong,
+.pending-row-main strong,
+.finance-row strong,
+.report-row strong{font-size:12px;color:var(--c7-text)}
+.cash-row-main span,
+.pending-row-main span,
+.finance-row span,
+.report-row span{font-size:10px;color:var(--c7-text-soft)}
+.cash-row-value,
+.finance-value,
+.report-row-value{font-size:16px;color:var(--c7-text)}
+.cash-empty{font-size:11px;color:#8a796c}
+.pending-receive{font-size:10px}
+
+/* OPERAÇÕES */
+.ops-stats{gap:12px;margin-top:18px}
+.ops-stats article{padding:16px}
+.ops-board{gap:12px;margin-top:14px}
+.ops-column{
+  min-height:430px;
+  overflow:hidden;
+}
+.ops-column-head{
+  padding:15px;
+  border-color:var(--c7-border);
+}
+.ops-column-head span{font-size:9px;color:#9b7255}
+.ops-column-head h3{font-size:18px;color:var(--c7-text)}
+.ops-list{gap:9px;padding:11px}
+.ops-card{
+  padding:13px;
+  border:1px solid var(--c7-border);
+  border-radius:10px;
+  background:#fff;
+}
+.ops-card-head strong{font-size:12px;color:var(--c7-text)}
+.ops-card-head span{font-size:15px;color:var(--c7-text)}
+.ops-card-meta{font-size:10px;color:var(--c7-text-soft)}
+.ops-card-actions button{font-size:9px;color:#5e493a;border-color:var(--c7-border-strong);background:#fff}
+.ops-card-actions button.primary{background:#211913;color:#fff}
+
+/* CATÁLOGO / PRODUTOS / SERVIÇOS */
+.catalog-list{gap:11px;margin-top:18px}
+.catalog-row{
+  padding:16px;
+  border:1px solid var(--c7-border);
+  border-radius:12px;
+  background:#fff;
+  box-shadow:0 4px 14px rgba(42,31,23,.03);
+}
+.catalog-main strong{font-size:14px;color:var(--c7-text)}
+.catalog-main span{font-size:10px;color:var(--c7-text-soft)}
+.catalog-meta strong{font-size:18px;color:var(--c7-text)}
+.catalog-meta small{font-size:9px;color:#817166}
+.catalog-actions button{font-size:9px;color:#5f4b3d;border-color:var(--c7-border-strong);background:#fff}
+.product-department-tab{
+  min-height:42px;
+  font-size:10px;
+}
+
+/* EQUIPE / CONFIGURAÇÕES */
+.team-admin-grid{gap:14px}
+.team-admin-panel,
+.settings-card{padding:18px}
+.working-hours-list,
+.access-list{gap:10px}
+.working-hour-row,
+.access-row{
+  padding:12px;
+  border:1px solid var(--c7-border);
+  border-radius:10px;
+  background:#fff;
+}
+.day-toggle{font-size:11px;color:var(--c7-text-soft)}
+.access-row strong{font-size:12px;color:var(--c7-text)}
+.access-row span{font-size:10px;color:var(--c7-text-soft)}
+.access-row button{font-size:9px;color:#5d493b;border-color:var(--c7-border-strong);background:#fff}
+
+/* RELATÓRIOS */
+.report-row{min-height:54px}
+
+/* DETALHE DO ATENDIMENTO — MAIS LEGÍVEL */
+#appointmentDetailModal .appointment-detail-modal{
+  width:min(940px,calc(100vw - 32px));
+  max-width:940px;
+  padding:20px 22px 18px;
+}
+#appointmentDetailModal .modal-head h2{font-size:28px}
+#appointmentDetailModal .appointment-detail-summary span,
+#appointmentDetailModal .detail-panel-head span,
+#appointmentDetailModal .appointment-detail-total span{
+  font-size:9px;
+}
+#appointmentDetailModal .appointment-detail-summary strong{font-size:12px}
+#appointmentDetailModal .detail-panel{padding:13px 14px}
+#appointmentDetailModal .detail-panel-head strong{font-size:19px}
+#appointmentDetailModal .detail-item{padding:9px 10px}
+#appointmentDetailModal .detail-item>div strong{font-size:11px}
+#appointmentDetailModal .detail-item>div span{font-size:9px}
+#appointmentDetailModal .detail-item>strong{font-size:11px}
+#appointmentDetailModal .detail-empty{font-size:9px}
+#appointmentDetailModal .detail-add-row select,
+#appointmentDetailModal .detail-add-row input{font-size:11px}
+#appointmentDetailModal .detail-add-row .ghost-btn{font-size:9px}
+#appointmentDetailModal .appointment-detail-total strong{font-size:26px}
+#appointmentDetailModal .appointment-detail-total small{font-size:9px}
+#appointmentDetailModal .appointment-detail-actions .ghost-btn,
+#appointmentDetailModal .appointment-detail-actions .primary-btn{font-size:10px}
+
+/* AUTOMAÇÕES — LEITURA CONFORTÁVEL */
+#automacoes .automation-stats span{font-size:10px}
+#automacoes .automation-stats strong{font-size:30px}
+#automacoes .automation-library-panel,
+#automacoes .automation-settings-panel,
+#automacoes .automation-panel{
+  padding:20px;
+  border-radius:16px;
+}
+#automacoes .automation-library-head h3{font-size:27px}
+#automacoes .automation-library-head p{font-size:12px}
+#automacoes .automation-library-list{gap:14px}
+#automacoes .automation-library-card{
+  min-height:205px;
+  padding:18px;
+  border-radius:14px;
+}
+#automacoes .automation-library-type{font-size:9px}
+#automacoes .automation-library-state{font-size:9px;padding:5px 8px}
+#automacoes .automation-library-card>strong{font-size:21px}
+#automacoes .automation-library-card>p{font-size:12px;line-height:1.5}
+#automacoes .automation-library-meta{gap:7px}
+#automacoes .automation-library-meta span{font-size:10px;padding:6px 9px}
+#automacoes .automation-library-note{font-size:10px}
+#automacoes .automation-library-actions button{font-size:9px;min-height:34px}
+#automacoes .automation-settings-grid{gap:12px}
+#automacoes .automation-setting-card{min-height:92px;padding:15px}
+#automacoes .automation-setting-card strong{font-size:14px}
+#automacoes .automation-setting-card small{font-size:11px}
+#automacoes .automation-setting-card small input{font-size:11px;height:31px;width:62px}
+#automacoes .automation-tab{font-size:10px;min-height:40px}
+#automacoes .automation-card{padding:16px}
+#automacoes .automation-card-top>span{font-size:10px}
+#automacoes .automation-status{font-size:9px}
+#automacoes .automation-card>strong{font-size:14px}
+#automacoes .automation-card>small,
+#automacoes .automation-card>p{font-size:11px}
+#automacoes .automation-due{font-size:10px;padding:8px 10px}
+#automacoes .automation-action,
+#automacoes .automation-card-actions button{font-size:10px;min-height:38px}
+
+/* NOTIFICAÇÕES */
+.notification-priority-summary span{font-size:9px}
+.notification-priority-summary strong{font-size:19px}
+.notification-priority-summary small{font-size:10px}
+.notification-priority-summary button{font-size:9px}
+.manual-message-section-head span{font-size:9px}
+.manual-message-section-head strong{font-size:12px}
+.manual-message-card>strong{font-size:13px}
+.manual-message-card>p{font-size:11px}
+.manual-message-top span,
+.manual-message-top small{font-size:9px}
+.manual-whatsapp-btn{min-height:38px;font-size:9px}
+.c7-alert-toast strong{font-size:12px}
+.c7-alert-toast span{font-size:11px}
+
+/* SIDEBAR — preserva personalidade, melhora leitura */
+.sidebar{padding:22px 16px}
+.brand strong{font-size:16px}
+.brand small{font-size:9px}
+.nav-item{
+  min-height:46px;
+  height:auto;
+  padding:0 13px;
+  font-size:13px;
+  font-weight:600;
+}
+.logout{
+  min-height:44px;
+  font-size:12px;
+}
+
+/* RESPONSIVO */
+@media(max-width:1100px){
+  .main-panel{padding:26px 24px 38px}
+  #automacoes .automation-library-list{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+
+@media(max-width:700px){
+  body{font-size:14px}
+  .main-panel{padding:20px 14px 92px}
+  .topbar h1{font-size:31px}
+  .catalog-toolbar h2,
+  .cash-toolbar h2,
+  .ops-toolbar h2,
+  .report-toolbar h2{font-size:28px}
+  .stats article{min-height:126px;padding:16px}
+  .stats strong{font-size:31px}
+  #automacoes .automation-library-list{grid-template-columns:1fr}
+  #automacoes .automation-library-card{min-height:auto}
+  #automacoes .automation-settings-grid{grid-template-columns:1fr}
+}
