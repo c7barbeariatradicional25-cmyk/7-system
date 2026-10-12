@@ -133,7 +133,7 @@ function renderCard(item,channel){
   if(channel==="whatsapp"&&!isSent&&!isScheduled){
     const url=`https://wa.me/${phoneForWa(item.phone)}?text=${encodeURIComponent(messageText(item))}`;
     action=`
-      <a class="automation-action whatsapp" href="${url}" target="_blank" rel="noopener">ABRIR WHATSAPP</a>
+      <a class="automation-action whatsapp" href="${url}" target="_blank" rel="noopener" data-auto-whatsapp-sent="${item.id}">ABRIR WHATSAPP</a>
       <button type="button" data-mark-channel="whatsapp" data-mark-sent="${item.id}">MARCAR COMO ENVIADA</button>
     `;
   }
@@ -238,6 +238,12 @@ function render(){
 
   document.querySelectorAll("[data-mark-sent]").forEach(btn=>{
     btn.addEventListener("click",()=>markSent(btn.dataset.markChannel,btn.dataset.markSent));
+  });
+  document.querySelectorAll("[data-auto-whatsapp-sent]").forEach(link=>{
+    link.addEventListener("click",()=>{
+      const id=link.dataset.autoWhatsappSent;
+      setTimeout(()=>markSent("whatsapp",id),250);
+    });
   });
 
   const now=new Date();
