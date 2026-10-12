@@ -242,7 +242,7 @@ function render(){
   document.querySelectorAll("[data-auto-whatsapp-sent]").forEach(link=>{
     link.addEventListener("click",()=>{
       const id=link.dataset.autoWhatsappSent;
-      setTimeout(()=>markSent("whatsapp",id),250);
+      markSent("whatsapp",id);
     });
   });
 
@@ -306,10 +306,19 @@ async function load(){
 async function markSent(channel,id){
   const table=channel==="email"?"email_automation_queue":"whatsapp_automation_queue";
   const now=new Date().toISOString();
-  const {error}=await supabase.from(table)
+  const {data,error}=await supabase.from(table)
     .update({status:"sent",sent_at:now,updated_at:now})
-    .eq("id",id);
-  if(!error) await load();
+    .eq("id",id).eq("status","pending")
+    .select("id");
+  if(error){
+    alert("Não foi possível registrar o envio. A mensagem continua pendente.");
+    return;
+  }
+  if(channel==="whatsapp"){
+    whatsappRows=whatsappRows.filter(item=>item.id!==id);
+    render();
+  }
+  await load();
 }
 
 async function saveSettings(){
