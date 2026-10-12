@@ -524,7 +524,89 @@ function updateProductPreview(){
   $("cashProductTotal").textContent=money(Number(product?.price||0)*qty);
 }
 
-$("sellProductBtn")?.addEventListener("click",()=>{\n  $("productSaleForm").reset();\n  $("cashProductQty").value="1";\n  $("productSaleMessage").textContent="";\n\n  const activeOptions=activeServiceLinks.map(a=>\n    '<option value="appointment:'+a.id+'">EM ATENDIMENTO — '+(a.customer?.full_name||"Cliente")+' • '+(a.professional?.full_name||"Barbeiro")+'</option>'\n  ).join("");\n\n  const activeCustomerIds=new Set(activeServiceLinks.map(a=>a.customer_id).filter(Boolean));\n  const otherCustomerOptions=cashCustomers\n    .filter(customer=>!activeCustomerIds.has(customer.id))\n    .map(customer=>'<option value="customer:'+customer.id+'">'+customer.full_name+(customer.phone?' • '+customer.phone:"")+'</option>')\n    .join("");\n\n  $("cashProductCustomerLink").innerHTML=\n    '<option value="">Venda Avulsa</option>'+\n    (activeOptions?'<optgroup label="Em Atendimento">'+activeOptions+'</optgroup>':"")+\n    (otherCustomerOptions?'<optgroup label="Outros Clientes">'+otherCustomerOptions+'</optgroup>':"");\n\n  $("cashProduct").innerHTML='<option value="">Selecione</option>'+\n    products.map(product=>'<option value="'+product.id+'">'+product.name+' — '+money(product.price)+'</option>').join("");\n\n  if(activeServiceLinks.length===1){\n    $("cashProductCustomerLink").value="appointment:"+activeServiceLinks[0].id;\n  }\n\n  updateProductPreview();\n  openModal("productSaleModal");\n});\n\ndocument.querySelectorAll("[data-close-product-sale]").forEach(el=>el.addEventListener("click",()=>closeModal("productSaleModal")));\n$("cashProduct")?.addEventListener("change",updateProductPreview);\n$("cashProductQty")?.addEventListener("input",updateProductPreview);\n\n$("productSaleForm")?.addEventListener("submit",async e=>{\n  e.preventDefault();\n\n  const product=products.find(p=>String(p.id)===$("cashProduct").value);\n  const qty=Math.max(1,Number($("cashProductQty").value||1));\n\n  if(!product){\n    $("productSaleMessage").textContent="Selecione um produto.";\n    return;\n  }\n\n  let customerId=null;\n  let appointmentId=null;\n  const link=$("cashProductCustomerLink").value;\n\n  if(link.startsWith("appointment:")){\n    appointmentId=link.split(":")[1];\n    const appointment=activeServiceLinks.find(a=>a.id===appointmentId);\n    customerId=appointment?.customer_id||null;\n  }else if(link.startsWith("customer:")){\n    customerId=link.split(":")[1];\n  }\n\n  $("productSaleMessage").textContent="Registrando venda...";\n\n  const {error}=await supabase.rpc("sell_product",{\n    p_product_id:Number(product.id),\n    p_quantity:qty,\n    p_payment_method:$("cashProductMethod").value,\n    p_customer_id:customerId,\n    p_appointment_id:appointmentId\n  });\n\n  if(error){\n    const message=String(error.message||"");\n    $("productSaleMessage").textContent=\n      message.includes("Estoque insuficiente")?"Estoque insuficiente para concluir a venda.":\n      message.includes("Caixa fechado")?"O Caixa está fechado.":\n      "Não foi possível registrar a venda.";\n    return;\n  }\n\n  closeModal("productSaleModal");\n  window.dispatchEvent(new Event("c7-customer-consumption-updated"));\n  await loadCash();\n});\n\n$("cashMovementBtn")?.addEventListener("click",()=>{
+$("sellProductBtn")?.addEventListener("click",()=>{
+  $("productSaleForm").reset();
+  $("cashProductQty").value="1";
+  $("productSaleMessage").textContent="";
+
+  const activeOptions=activeServiceLinks.map(a=>
+    '<option value="appointment:'+a.id+'">EM ATENDIMENTO — '+(a.customer?.full_name||"Cliente")+' • '+(a.professional?.full_name||"Barbeiro")+'</option>'
+  ).join("");
+
+  const activeCustomerIds=new Set(activeServiceLinks.map(a=>a.customer_id).filter(Boolean));
+  const otherCustomerOptions=cashCustomers
+    .filter(customer=>!activeCustomerIds.has(customer.id))
+    .map(customer=>'<option value="customer:'+customer.id+'">'+customer.full_name+(customer.phone?' • '+customer.phone:"")+'</option>')
+    .join("");
+
+  $("cashProductCustomerLink").innerHTML=
+    '<option value="">Venda Avulsa</option>'+
+    (activeOptions?'<optgroup label="Em Atendimento">'+activeOptions+'</optgroup>':"")+
+    (otherCustomerOptions?'<optgroup label="Outros Clientes">'+otherCustomerOptions+'</optgroup>':"");
+
+  $("cashProduct").innerHTML='<option value="">Selecione</option>'+
+    products.map(product=>'<option value="'+product.id+'">'+product.name+' — '+money(product.price)+'</option>').join("");
+
+  if(activeServiceLinks.length===1){
+    $("cashProductCustomerLink").value="appointment:"+activeServiceLinks[0].id;
+  }
+
+  updateProductPreview();
+  openModal("productSaleModal");
+});
+
+document.querySelectorAll("[data-close-product-sale]").forEach(el=>el.addEventListener("click",()=>closeModal("productSaleModal")));
+$("cashProduct")?.addEventListener("change",updateProductPreview);
+$("cashProductQty")?.addEventListener("input",updateProductPreview);
+
+$("productSaleForm")?.addEventListener("submit",async e=>{
+  e.preventDefault();
+
+  const product=products.find(p=>String(p.id)===$("cashProduct").value);
+  const qty=Math.max(1,Number($("cashProductQty").value||1));
+
+  if(!product){
+    $("productSaleMessage").textContent="Selecione um produto.";
+    return;
+  }
+
+  let customerId=null;
+  let appointmentId=null;
+  const link=$("cashProductCustomerLink").value;
+
+  if(link.startsWith("appointment:")){
+    appointmentId=link.split(":")[1];
+    const appointment=activeServiceLinks.find(a=>a.id===appointmentId);
+    customerId=appointment?.customer_id||null;
+  }else if(link.startsWith("customer:")){
+    customerId=link.split(":")[1];
+  }
+
+  $("productSaleMessage").textContent="Registrando venda...";
+
+  const {error}=await supabase.rpc("sell_product",{
+    p_product_id:Number(product.id),
+    p_quantity:qty,
+    p_payment_method:$("cashProductMethod").value,
+    p_customer_id:customerId,
+    p_appointment_id:appointmentId
+  });
+
+  if(error){
+    const message=String(error.message||"");
+    $("productSaleMessage").textContent=
+      message.includes("Estoque insuficiente")?"Estoque insuficiente para concluir a venda.":
+      message.includes("Caixa fechado")?"O Caixa está fechado.":
+      "Não foi possível registrar a venda.";
+    return;
+  }
+
+  closeModal("productSaleModal");
+  window.dispatchEvent(new Event("c7-customer-consumption-updated"));
+  await loadCash();
+});
+
+$("cashMovementBtn")?.addEventListener("click",()=>{
   $("movementForm").reset();
   $("movementMessage").textContent="";
   openModal("movementModal");
