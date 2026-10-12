@@ -4168,3 +4168,176 @@ body{
   .automation-library-head .primary-btn{width:100%}
   .automation-library-list{grid-template-columns:1fr}
 }
+
+
+/* AUTOMAÇÕES — VISUAL CLARO E LEGÍVEL */
+#automacoes .automation-library-panel,
+#automacoes .automation-settings-panel,
+#automacoes .automation-panel{
+  background:#fffaf5;
+  border:1px solid #e5d9cf;
+  box-shadow:0 8px 24px rgba(45,33,25,.05);
+}
+
+#automacoes .automation-library-head h3,
+#automacoes .cash-panel-head h3{
+  color:#2b211a;
+}
+
+#automacoes .automation-library-head p,
+#automacoes .cash-panel-head span{
+  color:#816b5b;
+}
+
+#automacoes .automation-library-list{
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:12px;
+}
+
+#automacoes .automation-library-card{
+  min-height:190px;
+  padding:16px;
+  border:1px solid #e7dcd2;
+  border-radius:14px;
+  background:#fff;
+  box-shadow:0 5px 16px rgba(45,33,25,.035);
+}
+
+#automacoes .automation-library-card.active{
+  box-shadow:inset 4px 0 0 #7d9b80,0 5px 16px rgba(45,33,25,.035);
+}
+
+#automacoes .automation-library-card.inactive{
+  opacity:.72;
+  box-shadow:inset 4px 0 0 #a9a19a,0 5px 16px rgba(45,33,25,.025);
+}
+
+#automacoes .automation-library-type{
+  color:#b3703f;
+}
+
+#automacoes .automation-library-state{
+  border-color:#d9e5da;
+  background:#f1f7f1;
+  color:#4e7353;
+}
+
+#automacoes .automation-library-card.inactive .automation-library-state{
+  border-color:#ddd8d4;
+  background:#f5f2ef;
+  color:#7c746f;
+}
+
+#automacoes .automation-library-card>strong{
+  color:#2b211a;
+  font-size:18px;
+}
+
+#automacoes .automation-library-card>p{
+  color:#746458;
+  font-size:9px;
+}
+
+#automacoes .automation-library-meta span{
+  border-color:#e5dbd1;
+  background:#faf6f2;
+  color:#715e50;
+}
+
+#automacoes .automation-library-note{
+  color:#9a8a7e;
+}
+
+#automacoes .automation-library-actions button{
+  border-color:#dfd2c7;
+  background:#fff;
+  color:#5e493a;
+}
+
+#automacoes .automation-setting-card{
+  border:1px solid #e4d8cd;
+  border-radius:12px;
+  background:#fff;
+}
+
+#automacoes .automation-setting-card strong{
+  color:#2b211a;
+}
+
+#automacoes .automation-setting-card small{
+  color:#7c6d62;
+}
+
+#automacoes .automation-setting-card small input{
+  border-color:#ddd0c5;
+  background:#fffaf7;
+  color:#2b211a;
+}
+
+#automacoes .automation-tabs{
+  margin-top:18px;
+}
+
+#automacoes .automation-tab{
+  border-color:#ddcfc3;
+  background:#fff;
+  color:#6c5544;
+}
+
+#automacoes .automation-tab.active{
+  background:#2b211a;
+  border-color:#2b211a;
+  color:#fff;
+}
+
+#automacoes .automation-card{
+  border-color:#e5dacf;
+  background:#fff;
+}
+
+#automacoes .automation-card.needs-action{
+  border-color:#d5aa85;
+  box-shadow:inset 4px 0 0 #bd7f4f;
+  background:#fffaf6;
+}
+
+#automacoes .automation-card>strong{
+  color:#2b211a;
+}
+
+#automacoes .automation-card>small,
+#automacoes .automation-card>p{
+  color:#746458;
+}
+
+#automacoes .automation-due{
+  border-color:#eadfd6;
+  background:#fbf7f3;
+  color:#7c6a5c;
+}
+
+#automacoes .automation-card.needs-action .automation-due{
+  border-color:#e0c3aa;
+  color:#a46637;
+  background:#fff5ed;
+}
+
+#automacoes .automation-card-actions button,
+#automacoes .automation-action{
+  border-color:#dbcbbd;
+  background:#fff;
+  color:#594638;
+}
+
+#automacoes .automation-action.whatsapp{
+  background:#edf6ee;
+  border-color:#b7d0b8;
+  color:#315a38;
+}
+
+@media(max-width:1100px){
+  #automacoes .automation-library-list{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:700px){
+  #automacoes .automation-library-list{grid-template-columns:1fr}
+}
