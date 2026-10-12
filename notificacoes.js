@@ -239,7 +239,7 @@ function renderManualMessages(){
             <strong>${p.customer_name||"Cliente"}</strong>
             <p>${text}</p>
             <div class="notification-actions">
-              <a class="manual-whatsapp-btn" href="${url}" target="_blank" rel="noopener">ABRIR WHATSAPP</a>
+              <a class="manual-whatsapp-btn" href="${url}" target="_blank" rel="noopener" data-auto-manual-sent="${item.id}">ABRIR WHATSAPP</a>
               <button type="button" data-manual-sent="${item.id}">MARCAR COMO ENVIADA</button>
             </div>
           </article>
@@ -284,6 +284,12 @@ function render(){
   list.querySelectorAll("[data-unarchive]").forEach(btn=>btn.addEventListener("click",()=>unarchiveOne(btn.dataset.unarchive)));
   list.querySelectorAll("[data-open-appointment]").forEach(btn=>btn.addEventListener("click",()=>openAppointment(btn.dataset.openAppointment)));
   list.querySelectorAll("[data-manual-sent]").forEach(btn=>btn.addEventListener("click",()=>markManualSent(btn.dataset.manualSent)));
+  list.querySelectorAll("[data-auto-manual-sent]").forEach(link=>{
+    link.addEventListener("click",()=>{
+      const id=link.dataset.autoManualSent;
+      setTimeout(()=>markManualSent(id),250);
+    });
+  });
   $("openAutomationsFromNotifications")?.addEventListener("click",()=>{
     closeDrawer();
     document.querySelector('.nav-item[data-section="automacoes"]')?.click();
