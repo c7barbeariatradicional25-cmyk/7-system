@@ -310,8 +310,8 @@ async function markSent(channel,id){
     .update({status:"sent",sent_at:now,updated_at:now})
     .eq("id",id).eq("status","pending")
     .select("id");
-  if(error){
-    alert("Não foi possível registrar o envio. A mensagem continua pendente.");
+  if(error || !data?.length){
+    alert("Não foi possível confirmar a atualização da mensagem. Atualize a fila antes de tentar novamente.");
     return;
   }
   if(channel==="whatsapp"){
