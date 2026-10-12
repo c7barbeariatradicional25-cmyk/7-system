@@ -287,7 +287,7 @@ function render(){
   list.querySelectorAll("[data-auto-manual-sent]").forEach(link=>{
     link.addEventListener("click",()=>{
       const id=link.dataset.autoManualSent;
-      setTimeout(()=>markManualSent(id),250);
+      markManualSent(id);
     });
   });
   $("openAutomationsFromNotifications")?.addEventListener("click",()=>{
@@ -307,11 +307,14 @@ async function loadManualMessages(){
 async function markManualSent(id){
   const now=new Date().toISOString();
   const {error}=await supabase.from("whatsapp_automation_queue")
-    .update({status:"sent",sent_at:now,updated_at:now}).eq("id",id);
-  if(!error){
-    manualMessages=manualMessages.filter(item=>item.id!==id);
-    render();
+    .update({status:"sent",sent_at:now,updated_at:now})
+    .eq("id",id).eq("status","pending");
+  if(error){
+    alert("Não foi possível registrar o envio. A mensagem continua pendente.");
+    return;
   }
+  manualMessages=manualMessages.filter(item=>item.id!==id);
+  render();
 }
 
 async function loadNotifications({signal=false}={}){
