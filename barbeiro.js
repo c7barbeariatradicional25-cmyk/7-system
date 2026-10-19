@@ -216,7 +216,7 @@ async function loadPerformance(){
 }
 
 function init(){
-  document.querySelectorAll('.nav-item[data-section="desempenho"]').forEach(btn=>{
+  document.querySelectorAll('.nav-item[data-section="desempenho"],.nav-item[data-section="meus-clientes"],.nav-item[data-section="meus-consumos"],.nav-item[data-section="minhas-comissoes"]').forEach(btn=>{
     btn.addEventListener("click",()=>loadPerformance().catch(console.error));
   });
   $("performanceOpenAgendaBtn")?.addEventListener("click",()=>{
@@ -226,7 +226,7 @@ function init(){
   $("portalAgendaBtn")?.addEventListener("click",()=>document.querySelector('.nav-item[data-section="agenda"]')?.click());
   window.addEventListener("c7-checkout-complete",()=>loadPerformance().catch(console.error));
   window.addEventListener("c7-mode-changed",()=>{
-    if(document.getElementById("desempenho")?.classList.contains("active"))loadPerformance().catch(console.error);
+    if(["desempenho","meus-clientes","meus-consumos","minhas-comissoes"].some(id=>document.getElementById(id)?.classList.contains("active")))loadPerformance().catch(console.error);
   });
   supabase.auth.onAuthStateChange((event)=>{
     if(event==="SIGNED_IN"||event==="INITIAL_SESSION"){
