@@ -120,7 +120,8 @@ function selectedWeekday(){
   return new Date(y,m-1,d).getDay();
 }
 
-function showLogin(){loginView.classList.remove("hidden");appView.classList.add("hidden")}
+function showLogin(){loginView.classList.remove("hidden");appView.classList.add("hidden");$("resetPasswordView")?.classList.add("hidden")}
+function showReset(){loginView.classList.add("hidden");appView.classList.add("hidden");$("resetPasswordView")?.classList.remove("hidden")}
 function showApp(){loginView.classList.add("hidden");appView.classList.remove("hidden")}
 
 async function loadProfile(userId){
@@ -185,6 +186,31 @@ async function loadProfile(userId){
   await initAgenda();
 }
 
+$("forgotPasswordBtn")?.addEventListener("click",async()=>{
+  const email=$("email").value.trim();
+  if(!email){loginMessage.textContent="Informe seu e-mail acima para recuperar a senha.";return;}
+  loginMessage.textContent="Solicitando recuperação...";
+  const {error}=await supabase.auth.resetPasswordForEmail(email,{
+    redirectTo:"https://sistema.c7barbeariatradicional.com.br/"
+  });
+  loginMessage.textContent=error
+    ? "Não foi possível enviar. Verifique a configuração de URLs do Supabase."
+    : "Se a conta existir, você receberá um novo link. Verifique seu e-mail.";
+});
+$("resetPasswordForm")?.addEventListener("submit",async e=>{
+  e.preventDefault();
+  const password=$("resetNewPassword").value;
+  if(password.length<8||password!==$("resetConfirmPassword").value){
+    $("resetPasswordMessage").textContent="As senhas devem ser iguais e ter pelo menos 8 caracteres.";return;
+  }
+  $("resetPasswordMessage").textContent="Atualizando senha...";
+  const {error}=await supabase.auth.updateUser({password});
+  if(error){$("resetPasswordMessage").textContent="Não foi possível atualizar. Solicite um novo link.";return;}
+  await supabase.auth.signOut();
+  history.replaceState(null,"",window.location.pathname);
+  $("resetPasswordMessage").textContent="Senha atualizada! Entre com sua nova senha.";
+  setTimeout(()=>showLogin(),1500);
+});
 loginForm.addEventListener("submit",async e=>{
   e.preventDefault();
   loginMessage.textContent="Entrando...";
@@ -1519,11 +1545,15 @@ blockForm.addEventListener("submit",async e=>{
 
 setAgendaView("timeline");
 
+const recoveryFragment=new URLSearchParams(window.location.hash.slice(1));
+const isRecoveryLink=recoveryFragment.get("type")==="recovery" || new URLSearchParams(window.location.search).get("type")==="recovery";
 const {data:{session}}=await supabase.auth.getSession();
-if(session) await loadProfile(session.user.id); else showLogin();
+if(isRecoveryLink){if(session)showReset();else{showLogin();loginMessage.textContent="Link expirado ou inválido. Solicite outro em Esqueci minha senha.";}}
+else if(session) await loadProfile(session.user.id); else showLogin();
 
-supabase.auth.onAuthStateChange((_event,session)=>{
-  if(!session) showLogin();
+supabase.auth.onAuthStateChange((event,session)=>{
+  if(event==="PASSWORD_RECOVERY"){showReset();return;}
+  if(!session&&!isRecoveryLink)showLogin();
 });
 
 window.addEventListener("c7-checkout-complete",async()=>{
