@@ -348,13 +348,13 @@ async function loadAgenda(){
 
   currentAppointments=appointmentsResult.data||[];
   currentBlocks=blocksResult.data||[];
+  currentWorkingHours=hoursResult.data||[];
   const {data:unlocks}=await supabase.from("c7_lunch_unlocks").select("professional_id").eq("day",selected);
   const unlocked=new Set((unlocks||[]).map(x=>x.professional_id));
   const activeToday=new Set(currentWorkingHours.map(x=>x.professional_id));
   for(const pro of professionals.filter(x=>activeToday.has(x.id)&&!unlocked.has(x.id))){
     currentBlocks.push({id:"lunch:"+pro.id,professional_id:pro.id,starts_at:new Date(selected+"T12:00:00").toISOString(),ends_at:new Date(selected+"T13:00:00").toISOString(),reason:"Almoço diário",professional:{id:pro.id,full_name:pro.full_name},recurringLunch:true});
   }
-  currentWorkingHours=hoursResult.data||[];
 
   renderAgendaList();
   renderTimeline();
@@ -403,7 +403,7 @@ function renderAgendaList(){
 
   const blockRows=currentBlocks.map(b=>{
     const canDelete=["admin","reception"].includes(currentRole)||
-      (currentRole==="barber"&&b.professional_id===currentProfessionalId);
+      (!b.recurringLunch&&currentRole==="barber"&&b.professional_id===currentProfessionalId);
     return {
       start:new Date(b.starts_at),
       html:`
