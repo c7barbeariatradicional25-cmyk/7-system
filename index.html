@@ -919,6 +919,10 @@
             </select>
           </label>
         </div>
+        <div class="form-grid two" id="receiveCardFeeBox" style="display:none">
+          <label><span>Taxa da maquininha (%)</span><input id="receiveCardFee" type="number" min="0" max="100" step="0.01" value="0" inputmode="decimal"></label>
+          <label><span>Taxa descontada</span><strong id="receiveCardFeeValue">R$ 0,00</strong></label>
+        </div>
         <div class="form-grid two">
           <label><span>Benefício</span>
             <select id="receiveBenefit">
@@ -934,7 +938,7 @@
         </div>
 
         <div class="appointment-preview">
-          <div><span>VALOR FINAL</span><strong id="receiveNet">R$ 0</strong></div>
+          <div><span>LÍQUIDO APÓS TAXA</span><strong id="receiveNet">R$ 0</strong></div>
           <div><span>CLIENTE</span><strong id="receiveCustomer">—</strong></div>
           <div><span>BENEFÍCIO</span><strong id="receiveBenefitPreview">Nenhum</strong></div>
         </div>
@@ -974,10 +978,15 @@
             </select>
           </label>
         </div>
+        <div class="form-grid two" id="productCardFeeBox" style="display:none">
+          <label><span>Taxa da maquininha (%)</span><input id="productCardFee" type="number" min="0" max="100" step="0.01" value="0" inputmode="decimal"></label>
+          <label><span>Taxa descontada</span><strong id="productCardFeeValue">R$ 0,00</strong></label>
+        </div>
         <div class="appointment-preview">
           <div><span>UNITÁRIO</span><strong id="cashProductUnit">R$ 0</strong></div>
           <div><span>QUANTIDADE</span><strong id="cashProductQtyPreview">1</strong></div>
-          <div><span>TOTAL</span><strong id="cashProductTotal">R$ 0</strong></div>
+          <div><span>TOTAL BRUTO</span><strong id="cashProductTotal">R$ 0</strong></div>
+          <div><span>LÍQUIDO</span><strong id="cashProductNet">R$ 0</strong></div>
         </div>
         <p id="productSaleMessage" class="form-message"></p>
         <div class="modal-actions">
