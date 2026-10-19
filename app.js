@@ -137,7 +137,7 @@ async function loadProfile(userId){
   userName.textContent=data.full_name||"Usuário C7";
   userRole.textContent=roleLabels[data.role]||data.role;
 
-  if(data.role==="barber"){
+  if(data.role==="barber"||data.role==="admin"){
     const {data:professional}=await supabase
       .from("professionals")
       .select("id,full_name,avatar_url,specialty")
@@ -146,6 +146,7 @@ async function loadProfile(userId){
       .maybeSingle();
 
     currentProfessionalId=professional?.id||null;
+    if(data.role==="admin"&&currentProfessionalId)userRole.textContent="ADMIN / BARBEIRO";
 
     if(professional?.avatar_url && userAvatar){
       userAvatar.innerHTML=`<img src="${escapeHtml(professional.avatar_url)}" alt="${escapeHtml(professional.full_name||"Barbeiro")}">`;
@@ -172,7 +173,7 @@ async function loadProfile(userId){
   });
 
   document.querySelectorAll(".barber-only").forEach(el=>{
-    el.classList.toggle("hidden",data.role!=="barber");
+    el.classList.toggle("hidden",!(data.role==="barber"||(data.role==="admin"&&currentProfessionalId)));
   });
 
   const canCreateAppointment=["admin","reception"].includes(data.role);
