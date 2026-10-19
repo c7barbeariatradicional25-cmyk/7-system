@@ -199,7 +199,7 @@ $("forgotPasswordBtn")?.addEventListener("click",async()=>{
   if(!email){loginMessage.textContent="Informe seu e-mail acima para recuperar a senha.";return;}
   loginMessage.textContent="Solicitando recuperação...";
   const {error}=await supabase.auth.resetPasswordForEmail(email,{
-    redirectTo:"https://sistema.c7barbeariatradicional.com.br/"
+    redirectTo:"https://sistema.c7barbeariatradicional.com.br/?type=recovery"
   });
   loginMessage.textContent=error
     ? "Não foi possível enviar. Verifique a configuração de URLs do Supabase."
@@ -1584,16 +1584,46 @@ blockForm.addEventListener("submit",async e=>{
 
 setAgendaView("timeline");
 
-const recoveryFragment=new URLSearchParams(window.location.hash.slice(1));
-const isRecoveryLink=recoveryFragment.get("type")==="recovery" || new URLSearchParams(window.location.search).get("type")==="recovery";
-const {data:{session}}=await supabase.auth.getSession();
-if(isRecoveryLink){if(session)showReset();else{showLogin();loginMessage.textContent="Link expirado ou inválido. Solicite outro em Esqueci minha senha.";}}
-else if(session) await loadProfile(session.user.id); else showLogin();
-
+// Fluxo de recuperação: registra o listener ANTES de processar sessão e suporta hash, token_hash e code.
+const recoveryHash=new URLSearchParams(window.location.hash.slice(1));
+const recoveryQuery=new URLSearchParams(window.location.search);
+const recoveryRequested=recoveryHash.get("type")==="recovery"||recoveryQuery.get("type")==="recovery"||
+  recoveryQuery.has("token_hash")||recoveryQuery.has("code")||recoveryHash.has("access_token");
+let recoveryMode=recoveryRequested;
+let recoveryProcessing=false;
 supabase.auth.onAuthStateChange((event,session)=>{
-  if(event==="PASSWORD_RECOVERY"){showReset();return;}
-  if(!session&&!isRecoveryLink)showLogin();
+  if(event==="PASSWORD_RECOVERY"){
+    recoveryMode=true;
+    showReset();
+    return;
+  }
+  if(!session&&!recoveryMode)showLogin();
 });
+async function finishRecoveryNavigation(){
+  if(recoveryProcessing)return;
+  recoveryProcessing=true;
+  const authError=recoveryQuery.get("error_description")||recoveryHash.get("error_description");
+  if(authError){showLogin();loginMessage.textContent="Este link expirou ou já foi utilizado. Solicite um novo em Esqueci minha senha.";return;}
+  if(recoveryQuery.has("token_hash")){
+    const {error}=await supabase.auth.verifyOtp({token_hash:recoveryQuery.get("token_hash"),type:"recovery"});
+    if(error){showLogin();loginMessage.textContent="Link de recuperação inválido ou expirado. Solicite outro.";return;}
+  }else if(recoveryQuery.has("code")){
+    const {error}=await supabase.auth.exchangeCodeForSession(recoveryQuery.get("code"));
+    if(error){showLogin();loginMessage.textContent="Não foi possível validar o link. Solicite outro.";return;}
+  }
+  const {data:{session}}=await supabase.auth.getSession();
+  if(recoveryMode){
+    if(session){
+      history.replaceState(null,"",window.location.pathname+"?recuperar=1");
+      showReset();
+    }else{
+      showLogin();
+      loginMessage.textContent="Não foi possível validar o link. Solicite outro em Esqueci minha senha.";
+    }
+  }else if(session)await loadProfile(session.user.id);
+  else showLogin();
+}
+await finishRecoveryNavigation();
 
 window.addEventListener("c7-checkout-complete",async()=>{
   await loadAgenda();
