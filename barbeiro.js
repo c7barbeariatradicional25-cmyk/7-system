@@ -215,21 +215,26 @@ async function loadPerformance(){
     : empty("Nenhum atendimento finalizado ainda.");
 }
 
-async function init(){
-  const pro=await getContext();
-  if(!pro) return;
-
+function init(){
   document.querySelectorAll('.nav-item[data-section="desempenho"]').forEach(btn=>{
-    btn.addEventListener("click",loadPerformance);
+    btn.addEventListener("click",()=>loadPerformance().catch(console.error));
   });
-
   $("performanceOpenAgendaBtn")?.addEventListener("click",()=>{
     document.querySelector('.nav-item[data-section="agenda"]')?.click();
   });
-
-  document.getElementById("portalRefreshBtn")?.addEventListener("click",loadPerformance);
-  document.getElementById("portalAgendaBtn")?.addEventListener("click",()=>document.querySelector("[data-section=agenda]")?.click());
-  window.addEventListener("c7-checkout-complete",loadPerformance);
+  $("portalRefreshBtn")?.addEventListener("click",()=>loadPerformance().catch(console.error));
+  $("portalAgendaBtn")?.addEventListener("click",()=>document.querySelector('.nav-item[data-section="agenda"]')?.click());
+  window.addEventListener("c7-checkout-complete",()=>loadPerformance().catch(console.error));
+  window.addEventListener("c7-mode-changed",()=>{
+    if(document.getElementById("desempenho")?.classList.contains("active"))loadPerformance().catch(console.error);
+  });
+  supabase.auth.onAuthStateChange((event)=>{
+    if(event==="SIGNED_IN"||event==="INITIAL_SESSION"){
+      setTimeout(()=>{
+        if(document.getElementById("desempenho")?.classList.contains("active"))loadPerformance().catch(console.error);
+      },0);
+    }
+  });
+  if(document.getElementById("desempenho")?.classList.contains("active"))loadPerformance().catch(console.error);
 }
-
 init();
