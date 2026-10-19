@@ -17,6 +17,7 @@
 <style>
 .c7-closing-modal{width:min(96vw,1040px);max-height:92vh;overflow-y:auto}.c7-report-header{display:flex;justify-content:space-between;align-items:center;gap:16px;margin:16px 0}.c7-report-header h3{font-size:22px;margin:5px 0}.c7-report-header small,.c7-report-grid small{font-size:13px;color:#777}.c7-report-header>div>span{font-size:12px;letter-spacing:1.3px}.c7-report-header>b{font-size:13px;white-space:nowrap}.c7-report-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:16px 0}.c7-report-kpis>div{background:#f5f4f2;border:1px solid #e2ded9;padding:15px;border-radius:13px}.c7-report-kpis small{font-size:11px;letter-spacing:.8px;display:block}.c7-report-kpis strong{font-size:20px;display:block;margin-top:8px}.c7-report-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-bottom:15px}.c7-report-grid section{background:#fff;border:1px solid #e7e1dc;border-radius:13px;padding:16px;min-width:0}.c7-report-grid h4{margin:0 0 12px;font-size:16px;display:flex;justify-content:space-between}.c7-report-grid p{color:#888;font-size:14px}.c7-report-line{display:flex;justify-content:space-between;gap:15px;border-bottom:1px solid #f1efed;padding:9px 0;font-size:13px}.c7-report-line span{overflow-wrap:anywhere}.c7-report-line strong{white-space:nowrap}.c7-report-actions{display:flex;flex-wrap:wrap;gap:10px;margin:18px 0}.c7-report-actions button{background:#211b17;color:white;border:0;padding:12px 17px;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer}.c7-report-loading,.c7-report-error{padding:15px;background:#f8f5f1;border-radius:10px}.c7-report-error{color:#a53a27}@media(max-width:680px){.c7-report-kpis,.c7-report-grid{grid-template-columns:1fr 1fr}.c7-report-kpis strong{font-size:16px}.c7-report-grid{grid-template-columns:1fr}.c7-closing-modal{width:96vw;padding:18px}}
 </style>
+<style>.c7-password-wrap{display:block;position:relative}.c7-password-wrap input{width:100%;padding-right:92px!important;box-sizing:border-box}.c7-password-toggle{position:absolute;right:10px;top:50%;transform:translateY(-50%);width:auto!important;height:34px!important;min-height:0!important;padding:0 9px!important;background:transparent!important;border:0!important;color:#bb9983!important;font:700 10px Manrope,sans-serif!important;cursor:pointer;letter-spacing:.4px}.c7-password-toggle:hover{color:#fff!important}</style>
 </head>
 <body>
   <main id="loginView" class="login-screen">
@@ -44,8 +45,8 @@
       <h1>Redefinir senha</h1>
       <p>Cadastre uma nova senha para sua conta.</p>
       <form id="resetPasswordForm" class="login-form">
-        <label><span>Nova senha</span><input id="resetNewPassword" type="password" autocomplete="new-password" minlength="8" required></label>
-        <label><span>Confirmar senha</span><input id="resetConfirmPassword" type="password" autocomplete="new-password" minlength="8" required></label>
+        <label><span>Nova senha</span><span class="c7-password-wrap"><input id="resetNewPassword" type="password" autocomplete="new-password" minlength="8" required><button type="button" class="c7-password-toggle" data-password-toggle="resetNewPassword" aria-label="Mostrar nova senha" aria-pressed="false">MOSTRAR</button></span></label>
+        <label><span>Confirmar senha</span><span class="c7-password-wrap"><input id="resetConfirmPassword" type="password" autocomplete="new-password" minlength="8" required><button type="button" class="c7-password-toggle" data-password-toggle="resetConfirmPassword" aria-label="Mostrar confirmação de senha" aria-pressed="false">MOSTRAR</button></span></label>
         <button type="submit">SALVAR NOVA SENHA</button>
       </form>
       <p id="resetPasswordMessage" class="message"></p>
@@ -1630,5 +1631,6 @@
   <script type="module" src="automacoes.js"></script>
   <script type="module" src="barbeiro.js"></script>
   <div id="c7AlertToast" class="c7-alert-toast hidden" role="status" aria-live="assertive"></div>
+<script>document.querySelectorAll("[data-password-toggle]").forEach(function(btn){btn.addEventListener("click",function(){const input=document.getElementById(btn.dataset.passwordToggle);if(!input)return;const visible=input.type==="password";input.type=visible?"text":"password";btn.textContent=visible?"OCULTAR":"MOSTRAR";btn.setAttribute("aria-pressed",String(visible));btn.setAttribute("aria-label",visible?"Ocultar senha":"Mostrar senha");});});</script>
 </body>
 </html>
