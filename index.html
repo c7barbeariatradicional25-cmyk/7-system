@@ -1569,6 +1569,7 @@
       <p id="appointmentDetailMessage" class="form-message"></p>
 
       <div class="appointment-detail-actions">
+        <button id="detailRescheduleBtn" type="button" class="ghost-btn hidden">REAGENDAR</button>
         <button id="detailCancelBtn" type="button" class="ghost-btn hidden" style="color:#ad4034;border-color:#ad4034">CANCELAR ATENDIMENTO</button>
         <button id="detailStartBtn" type="button" class="ghost-btn">INICIAR ATENDIMENTO</button>
         <button id="detailCheckoutBtn" type="button" class="primary-btn">FINALIZAR / RECEBER</button>
@@ -1577,7 +1578,23 @@
   </div>
 
   <style>.lunch-unlock{margin-top:4px;background:#fff;border:1px solid #ab6b53;border-radius:5px;font-size:9px;font-weight:800;color:#88412a;padding:4px 7px;cursor:pointer}.live-block:has(.lunch-unlock){z-index:3}.history-value .block-delete{display:block;margin-top:7px}</style>
-  <script type="module" src="relatorios.js"></script>
+  <div id="staffRescheduleModal" class="modal hidden" role="dialog" aria-modal="true">
+  <div class="modal-backdrop" data-close-staff-reschedule></div>
+  <section class="modal-card modal-small">
+    <div class="modal-head"><div><span>AGENDA</span><h2>Reagendar atendimento</h2></div><button type="button" class="modal-close" data-close-staff-reschedule>×</button></div>
+    <form id="staffRescheduleForm" class="appointment-form">
+      <p id="staffRescheduleInfo"></p>
+      <div class="form-grid two">
+        <label><span>Nova data</span><input id="staffRescheduleDate" type="date" required></label>
+        <label><span>Novo horário</span><input id="staffRescheduleTime" type="time" step="900" required></label>
+      </div>
+      <p class="form-hint">O profissional e os serviços permanecem os mesmos. Verificaremos expediente, almoço e horários ocupados.</p>
+      <p id="staffRescheduleMessage" class="form-message"></p>
+      <div class="modal-actions"><button type="button" class="ghost-btn" data-close-staff-reschedule>VOLTAR</button><button class="primary-btn" type="submit">CONFIRMAR REAGENDAMENTO</button></div>
+    </form>
+  </section>
+</div>
+<script type="module" src="relatorios.js"></script>
   <script type="module" src="financeiro.js"></script>
   <script type="module" src="promocoes.js"></script>
   <script type="module" src="notificacoes.js"></script>
