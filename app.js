@@ -577,6 +577,7 @@ function renderAppointmentDetail(appointment){
   $("detailStartBtn").classList.toggle("hidden",!canManage||finished||appointment.status==="in_service");
   $("detailStartBtn").textContent=appointment.status==="waiting"?"INICIAR ATENDIMENTO":"MARCAR EM ATENDIMENTO";
   $("detailCheckoutBtn").classList.toggle("hidden",!canManage||finished);
+  $("detailRescheduleBtn").classList.toggle("hidden",!canManage||!["scheduled","confirmed","waiting"].includes(appointment.status)||new Date(appointment.starts_at)<=new Date());
   $("detailCancelBtn").classList.toggle("hidden",!canManage||!["scheduled","confirmed","waiting"].includes(appointment.status)||new Date(appointment.starts_at)<=new Date());
   $("appointmentDetailMessage").textContent="";
 
@@ -695,6 +696,39 @@ $("detailStartBtn")?.addEventListener("click",async()=>{
   await Promise.all([refreshAppointmentDetail(),loadAgenda()]);
 });
 
+let staffRescheduleAppointment=null;
+async function openStaffReschedule(appointmentId){
+  const appointment=await fetchAppointmentDetail(appointmentId);
+  if(!appointment||!["scheduled","confirmed","waiting"].includes(appointment.status)||new Date(appointment.starts_at)<=new Date()){
+    alert("Este agendamento não pode ser reagendado.");return;
+  }
+  staffRescheduleAppointment=appointment;
+  const local=new Date(appointment.starts_at);
+  $("staffRescheduleDate").value=localDateInput(local);
+  $("staffRescheduleDate").min=localDateInput();
+  $("staffRescheduleTime").value=local.toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit",hour12:false});
+  $("staffRescheduleInfo").textContent=(appointment.customer?.full_name||"Cliente")+" • "+(appointment.professional?.full_name||"Barbeiro");
+  $("staffRescheduleMessage").textContent="";
+  $("staffRescheduleModal").classList.remove("hidden");
+}
+$("detailRescheduleBtn")?.addEventListener("click",()=>{if(detailAppointmentId)openStaffReschedule(detailAppointmentId);});
+document.querySelectorAll("[data-close-staff-reschedule]").forEach(el=>el.addEventListener("click",()=>{$("staffRescheduleModal").classList.add("hidden");}));
+$("staffRescheduleForm")?.addEventListener("submit",async e=>{
+  e.preventDefault();
+  if(!staffRescheduleAppointment)return;
+  const date=$("staffRescheduleDate").value,time=$("staffRescheduleTime").value;
+  if(!date||!time)return;
+  const startsAt=new Date(date+"T"+time+":00");
+  if(Number.isNaN(startsAt.getTime()))return;
+  $("staffRescheduleMessage").textContent="Verificando disponibilidade...";
+  const {error}=await supabase.rpc("c7_staff_reschedule",{p_appointment_id:staffRescheduleAppointment.id,p_starts_at:startsAt.toISOString()});
+  if(error){$("staffRescheduleMessage").textContent=error.message||"Não foi possível reagendar.";return;}
+  $("staffRescheduleModal").classList.add("hidden");
+  if(detailAppointmentId===staffRescheduleAppointment.id)closeAppointmentDetail();
+  await loadAgenda();
+  window.dispatchEvent(new CustomEvent("c7-appointment-rescheduled",{detail:{appointmentId:staffRescheduleAppointment.id}}));
+});
+window.addEventListener("c7-request-reschedule",e=>{if(e.detail?.appointmentId)openStaffReschedule(e.detail.appointmentId);});
 $("detailCancelBtn")?.addEventListener("click",async()=>{
   if(!detailAppointmentId||!confirm("Cancelar este agendamento?"))return;
   const {error}=await supabase.rpc("c7_cancel_appointment",{p_appointment_id:detailAppointmentId});
