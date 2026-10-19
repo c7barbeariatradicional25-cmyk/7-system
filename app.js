@@ -61,6 +61,8 @@ const statusLabels={
 };
 
 let currentRole=null;
+let accountRole=null;
+let barberPreviewMode=false;
 let currentUser=null;
 let currentProfessionalId=null;
 let professionals=[];
@@ -133,6 +135,7 @@ async function loadProfile(userId){
     return;
   }
 
+  accountRole=data.role;
   currentRole=data.role;
   currentUser=userId;
   userName.textContent=data.full_name||"Usuário C7";
@@ -177,6 +180,11 @@ async function loadProfile(userId){
     el.classList.toggle("hidden",!(data.role==="barber"||(data.role==="admin"&&currentProfessionalId)));
   });
 
+  const previewBtn=$("arthurPortalModeBtn");
+  if(previewBtn){
+    previewBtn.classList.toggle("hidden",!(data.role==="admin"&&currentProfessionalId));
+    previewBtn.textContent="VISUALIZAR COMO BARBEIRO";
+  }
   const canCreateAppointment=["admin","reception"].includes(data.role);
   const canBlockAgenda=["admin","reception","barber"].includes(data.role);
   newAppointmentBtn.classList.toggle("hidden",!canCreateAppointment);
@@ -257,6 +265,34 @@ logoutBtn.addEventListener("click",async()=>{
   showLogin();
 });
 
+function setBarberPreview(enabled){
+  if(accountRole!=="admin"||!currentProfessionalId)return;
+  barberPreviewMode=Boolean(enabled);
+  currentRole=barberPreviewMode?"barber":"admin";
+  userRole.textContent=barberPreviewMode?"BARBEIRO • VISUALIZAÇÃO":"ADMIN / BARBEIRO";
+  const sections=["dashboard","agenda","desempenho","operacoes"];
+  document.querySelectorAll(".nav-item").forEach(item=>{
+    const hide=barberPreviewMode&&!sections.includes(item.dataset.section);
+    item.classList.toggle("hidden",hide);
+  });
+  $("arthurPortalModeBtn").textContent=barberPreviewMode?"VOLTAR PARA ADMIN":"VISUALIZAR COMO BARBEIRO";
+  newAppointmentBtn.classList.toggle("hidden",barberPreviewMode);
+  document.querySelectorAll(".barber-only").forEach(el=>el.classList.remove("hidden"));
+  if(barberPreviewMode){
+    professionalFilter.value=currentProfessionalId;
+    professionalFilter.disabled=true;
+    blockProfessional.value=currentProfessionalId;
+    blockProfessional.disabled=true;
+    openSection("desempenho");
+  }else{
+    professionalFilter.disabled=false;
+    professionalFilter.value="";
+    blockProfessional.disabled=false;
+    openSection("dashboard");
+  }
+  loadAgenda();
+}
+$("arthurPortalModeBtn")?.addEventListener("click",()=>setBarberPreview(!barberPreviewMode));
 function openSection(id){
   document.querySelectorAll(".section").forEach(el=>el.classList.toggle("active",el.id===id));
   document.querySelectorAll(".nav-item").forEach(el=>el.classList.toggle("active",el.dataset.section===id));
