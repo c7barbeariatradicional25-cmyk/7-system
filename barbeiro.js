@@ -96,6 +96,7 @@ async function loadPerformance(){
   const [todayResult,monthResult,commissionResult,upcomingResult,historyResult]=await Promise.all([
     supabase.from("appointments")
       .select("id,professional_id,status,total_amount")
+      .eq("professional_id",pro.id)
       .gte("starts_at",todayStart.toISOString())
       .lte("starts_at",todayEnd.toISOString())
       .neq("status","cancelled"),
@@ -108,19 +109,22 @@ async function loadPerformance(){
 
     supabase.from("commission_entries")
       .select("professional_id,commission_amount,status,created_at")
+      .eq("professional_id",pro.id)
       .gte("created_at",monthStart.toISOString())
       .lte("created_at",monthEnd.toISOString())
       .neq("status","cancelled"),
 
     supabase.from("appointments")
-      .select("id,professional_id,starts_at,status,customer:customers(full_name),appointment_services(service_name,sort_order)")
+      .select("id,professional_id,starts_at,status,customer:customers(full_name)
+      .eq("professional_id",pro.id),appointment_services(service_name,sort_order)")
       .gte("starts_at",now.toISOString())
       .in("status",["scheduled","confirmed","waiting","in_service"])
       .order("starts_at",{ascending:true})
       .limit(6),
 
     supabase.from("appointments")
-      .select("id,professional_id,starts_at,total_amount,status,customer:customers(full_name),appointment_services(service_name,sort_order)")
+      .select("id,professional_id,starts_at,total_amount,status,customer:customers(full_name)
+      .eq("professional_id",pro.id),appointment_services(service_name,sort_order)")
       .eq("status","completed")
       .order("starts_at",{ascending:false})
       .limit(8)
