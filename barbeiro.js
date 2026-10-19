@@ -81,19 +81,24 @@ function empty(text){
 
 async function loadPortalExtras(pro){
  const [clients,consumptions,commissions]=await Promise.all([
- supabase.from("appointments").select("customer_id,customer:customers(full_name,phone)").eq("professional_id",pro.id).limit(300),
- supabase.from("employee_consumptions").select("created_at,quantity,total_amount,status,product:products(name)").eq("professional_id",pro.id).order("created_at",{ascending:false}).limit(60),
+ supabase.from("appointments").select("customer_id,starts_at,status,appointment_services(service_name),customer:customers(full_name,phone)").eq("professional_id",pro.id).order("starts_at",{ascending:false}).limit(300),
+ supabase.from("employee_consumptions").select("created_at,quantity,total_amount,status,amount_settled,product:products(name)").eq("professional_id",pro.id).order("created_at",{ascending:false}).limit(60),
  supabase.from("commission_entries").select("created_at,commission_amount,status").eq("professional_id",pro.id).order("created_at",{ascending:false}).limit(60)
  ]);
  const safe=t=>String(t??"").replace(/[&<>]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));
  const unique=new Map();
- for(const a of clients.data||[])if(a.customer_id&&!unique.has(a.customer_id))unique.set(a.customer_id,a.customer);
- const clientRows=[...unique.values()].filter(Boolean);
- $("portalClients").innerHTML=clients.error?"Não foi possível carregar clientes.":clientRows.length?clientRows.map(c=>'<div class="performance-row"><div><strong>'+safe(c.full_name)+'</strong><span>'+safe(c.phone||"")+'</span></div></div>').join(""):empty("Nenhum cliente.");
+ for(const a of clients.data||[]){if(!a.customer_id||!a.customer)continue;const old=unique.get(a.customer_id)||{...a.customer,visits:[]};old.visits.push(a);unique.set(a.customer_id,old);}
+ const clientRows=[...unique.values()];
+ $("portalClients").innerHTML=clients.error?"Não foi possível carregar clientes.":clientRows.length?clientRows.map(c=>'<details class="portal-client-history"><summary><strong>'+safe(c.full_name)+'</strong> • '+safe(c.phone||"Sem telefone")+' <small>('+c.visits.length+' agendamentos)</small></summary><div>'+c.visits.slice(0,15).map(v=>'<p>'+formatDate(v.starts_at)+' — '+safe((v.appointment_services||[]).map(x=>x.service_name).join(", ")||"Atendimento")+' • '+safe(v.status)+'</p>').join("")+'</div></details>').join(""):empty("Nenhum cliente.");
  const cons=consumptions.data||[];
  $("portalConsumptions").innerHTML=consumptions.error?"Não foi possível carregar consumos.":cons.length?cons.map(c=>'<div class="performance-row"><div><strong>'+safe(c.product?.name||"Produto")+'</strong><span>'+formatDate(c.created_at)+' • '+safe(c.status)+'</span></div><strong>'+money(c.total_amount)+'</strong></div>').join(""):empty("Nenhum consumo.");
- $("portalConsumptionTotal").textContent="Total exibido: "+money(cons.reduce((a,c)=>a+Number(c.total_amount||0),0));
+ const outstanding=cons.filter(c=>!["cancelled","canceled"].includes(c.status)).reduce((a,c)=>a+Math.max(0,Number(c.total_amount||0)-Number(c.amount_settled||0)),0);
+ $("portalConsumptionTotal").textContent="Total exibido: "+money(cons.reduce((a,c)=>a+Number(c.total_amount||0),0))+" • Ainda não quitado: "+money(outstanding);
  const com=commissions.data||[];
+ const pending=com.filter(c=>c.status==="pending").reduce((a,c)=>a+Number(c.commission_amount||0),0);
+ $("portalPendingBalance").textContent=money(pending);
+ $("portalOutstandingConsumption").textContent=money(outstanding);
+ $("portalEstimatedBalance").textContent=money(pending-outstanding);
  $("portalCommissions").innerHTML=commissions.error?"Não foi possível carregar comissões.":com.length?com.map(c=>'<div class="performance-row"><div><strong>'+formatDate(c.created_at)+'</strong><span>'+safe(c.status)+'</span></div><strong>'+money(c.commission_amount)+'</strong></div>').join(""):empty("Nenhuma comissão.");
 }
 async function loadPerformance(){
