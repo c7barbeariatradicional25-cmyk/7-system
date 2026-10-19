@@ -168,7 +168,7 @@ async function loadProfile(userId){
     let hide=false;
 
     if(data.role==="barber"){
-      hide=!["dashboard","agenda","desempenho","operacoes"].includes(section);
+      hide=!["dashboard","agenda","desempenho","operacoes","meus-clientes","meus-consumos","minhas-comissoes"].includes(section);
     }else if(data.role==="reception"){
       hide=section==="configuracoes";
     }
@@ -271,7 +271,7 @@ function setBarberPreview(enabled){
   // Mantém autorização administrativa; a alternância controla apenas a experiência.
   currentRole=accountRole;
   userRole.textContent=barberPreviewMode?"BARBEIRO • ARTHUR":"ADMIN / BARBEIRO";
-  const sections=["dashboard","agenda","desempenho","operacoes"];
+  const sections=["dashboard","agenda","desempenho","operacoes","meus-clientes","meus-consumos","minhas-comissoes"];
   document.querySelectorAll(".nav-item").forEach(item=>{
     const hide=barberPreviewMode&&!sections.includes(item.dataset.section);
     item.classList.toggle("hidden",hide);
