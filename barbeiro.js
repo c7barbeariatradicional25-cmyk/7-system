@@ -103,6 +103,7 @@ async function loadPerformance(){
 
     supabase.from("appointments")
       .select("id,professional_id,status,total_amount")
+      .eq("professional_id",pro.id)
       .gte("starts_at",monthStart.toISOString())
       .lte("starts_at",monthEnd.toISOString())
       .eq("status","completed"),
@@ -202,6 +203,8 @@ async function init(){
     document.querySelector('.nav-item[data-section="agenda"]')?.click();
   });
 
+  document.getElementById("portalRefreshBtn")?.addEventListener("click",loadPerformance);
+  document.getElementById("portalAgendaBtn")?.addEventListener("click",()=>document.querySelector("[data-section=agenda]")?.click());
   window.addEventListener("c7-checkout-complete",loadPerformance);
 }
 
