@@ -190,6 +190,10 @@ async function loadHistory(customerId){
 
     const right=makeEl("div","history-value",money(item.total_amount));
     if(["admin","reception"].includes(currentRole)&&["scheduled","confirmed","waiting"].includes(item.status)&&new Date(item.starts_at)>new Date()){
+      const rebook=makeEl("button","block-delete","REAGENDAR");
+      rebook.type="button";
+      rebook.addEventListener("click",()=>window.dispatchEvent(new CustomEvent("c7-request-reschedule",{detail:{appointmentId:item.id}})));
+      right.appendChild(rebook);
       const cancel=makeEl("button","block-delete","CANCELAR HORÁRIO");
       cancel.type="button";
       cancel.addEventListener("click",async()=>{
