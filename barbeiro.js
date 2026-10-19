@@ -44,7 +44,7 @@ async function getContext(){
     .eq("user_id",session.user.id)
     .maybeSingle();
 
-  if(profile?.role!=="barber") return null;
+  if(!["barber","admin"].includes(profile?.role)) return null;
 
   const {data:professional}=await supabase
     .from("professionals")
@@ -95,42 +95,42 @@ async function loadPerformance(){
 
   const [todayResult,monthResult,commissionResult,upcomingResult,historyResult]=await Promise.all([
     supabase.from("appointments")
-      .select("id,status,total_amount")
+      .select("id,professional_id,status,total_amount")
       .gte("starts_at",todayStart.toISOString())
       .lte("starts_at",todayEnd.toISOString())
       .neq("status","cancelled"),
 
     supabase.from("appointments")
-      .select("id,status,total_amount")
+      .select("id,professional_id,status,total_amount")
       .gte("starts_at",monthStart.toISOString())
       .lte("starts_at",monthEnd.toISOString())
       .eq("status","completed"),
 
     supabase.from("commission_entries")
-      .select("commission_amount,status,created_at")
+      .select("professional_id,commission_amount,status,created_at")
       .gte("created_at",monthStart.toISOString())
       .lte("created_at",monthEnd.toISOString())
       .neq("status","cancelled"),
 
     supabase.from("appointments")
-      .select("id,starts_at,status,customer:customers(full_name),appointment_services(service_name,sort_order)")
+      .select("id,professional_id,starts_at,status,customer:customers(full_name),appointment_services(service_name,sort_order)")
       .gte("starts_at",now.toISOString())
       .in("status",["scheduled","confirmed","waiting","in_service"])
       .order("starts_at",{ascending:true})
       .limit(6),
 
     supabase.from("appointments")
-      .select("id,starts_at,total_amount,status,customer:customers(full_name),appointment_services(service_name,sort_order)")
+      .select("id,professional_id,starts_at,total_amount,status,customer:customers(full_name),appointment_services(service_name,sort_order)")
       .eq("status","completed")
       .order("starts_at",{ascending:false})
       .limit(8)
   ]);
 
-  const today=todayResult.data||[];
-  const month=monthResult.data||[];
-  const commissions=commissionResult.data||[];
-  const upcoming=upcomingResult.data||[];
-  const history=historyResult.data||[];
+  const today=(todayResult.data||[]).filter(a=>a.professional_id===pro.id);
+  const month=(monthResult.data||[]).filter(a=>a.professional_id===pro.id);
+  const commissions=(commissionResult.data||[]).filter(c=>c.professional_id===pro.id);
+  const upcoming=(upcomingResult.data||[]).filter(a=>a.professional_id===pro.id);
+  const history=(historyResult.data||[]).filter(a=>a.professional_id===pro.id);
 
   $("performanceToday").textContent=today.filter(a=>["waiting","in_service","completed"].includes(a.status)).length;
   $("performanceMonthAppointments").textContent=month.length;
