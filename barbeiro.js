@@ -87,9 +87,30 @@ async function loadPortalExtras(pro){
  ]);
  const safe=t=>String(t??"").replace(/[&<>]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));
  const unique=new Map();
- for(const a of clients.data||[]){if(!a.customer_id||!a.customer)continue;const old=unique.get(a.customer_id)||{...a.customer,visits:[]};old.visits.push(a);unique.set(a.customer_id,old);}
- const clientRows=[...unique.values()];
- $("portalClients").innerHTML=clients.error?"Não foi possível carregar clientes.":clientRows.length?clientRows.map(c=>'<details class="portal-client-history"><summary><strong>'+safe(c.full_name)+'</strong> • '+safe(c.phone||"Sem telefone")+' <small>('+c.visits.length+' agendamentos)</small></summary><div>'+c.visits.slice(0,15).map(v=>'<p>'+formatDate(v.starts_at)+' — '+safe((v.appointment_services||[]).map(x=>x.service_name).join(", ")||"Atendimento")+' • '+safe(v.status)+'</p>').join("")+'</div></details>').join(""):empty("Nenhum cliente.");
+ for(const a of clients.data||[]){if(!a.customer_id||!a.customer)continue;let row=unique.get(a.customer_id);if(!row){row={...a.customer,visits:[]};unique.set(a.customer_id,row);}row.visits.push(a);}
+ const clientRows=[...unique.values()].sort((x,y)=>x.full_name.localeCompare(y.full_name,"pt-BR"));
+ const days=["domingo","segunda-feira","terça-feira","quarta-feira","quinta-feira","sexta-feira","sábado"];
+ const frequent=values=>{const counts=new Map();for(const v of values)counts.set(v,(counts.get(v)||0)+1);return [...counts].sort((a,b)=>b[1]-a[1])[0]?.[0]||"—";};
+ const clientCard=c=>{
+   const valid=c.visits.filter(v=>!["cancelled","no_show"].includes(v.status));
+   const completed=valid.filter(v=>v.status==="completed");
+   const preferredDay=frequent(completed.map(v=>days[new Date(v.starts_at).getDay()]));
+   const preferredHour=frequent(completed.map(v=>formatTime(v.starts_at)));
+   const last=completed[0];
+   const phone=String(c.phone||"").replace(/\\D/g,"");
+   return '<details class="portal-client-card"><summary><span class="portal-client-avatar">'+safe((c.full_name||"C").slice(0,1).toUpperCase())+'</span><span class="portal-client-main"><strong>'+safe(c.full_name)+'</strong><small>'+safe(c.phone||"Telefone não informado")+'</small></span><span class="portal-client-bubble">'+c.visits.length+' agend.</span><span class="portal-client-chevron">⌄</span></summary>'+
+   '<div class="portal-client-details"><div class="portal-client-metrics"><div><small>Última visita concluída</small><strong>'+(last?formatDate(last.starts_at):"—")+'</strong></div><div><small>Dia mais frequente</small><strong>'+safe(preferredDay)+'</strong></div><div><small>Horário mais frequente</small><strong>'+safe(preferredHour)+'</strong></div><div><small>Atendimentos concluídos</small><strong>'+completed.length+'</strong></div></div>'+
+   '<div class="portal-client-actions">'+(phone?'<a href="https://wa.me/55'+phone.replace(/^55/,"")+'" target="_blank" rel="noopener noreferrer">ABRIR WHATSAPP</a>':"")+'</div>'+
+   '<strong class="portal-history-title">Histórico individual</strong><div class="portal-history-items">'+c.visits.map(v=>'<div class="portal-history-line"><span>'+formatDate(v.starts_at)+' às '+formatTime(v.starts_at)+'</span><strong>'+safe((v.appointment_services||[]).map(z=>z.service_name).join(", ")||"Atendimento")+'</strong><small>'+safe(({completed:"Concluído",scheduled:"Agendado",confirmed:"Confirmado",cancelled:"Cancelado",no_show:"Não compareceu",waiting:"Aguardando",in_service:"Em atendimento"})[v.status]||v.status)+'</small></div>').join("")+'</div></div></details>';
+ };
+ const renderClients=()=>{
+   const query=String($("portalClientSearch")?.value||"").toLocaleLowerCase("pt-BR").trim();
+   const matches=clientRows.filter(c=>(c.full_name+" "+(c.phone||"")).toLocaleLowerCase("pt-BR").includes(query));
+   $("portalClientCount").textContent=matches.length+" cliente(s)";
+   $("portalClients").innerHTML=clients.error?"Não foi possível carregar seus clientes.":matches.length?matches.map(clientCard).join(""):empty("Nenhum cliente encontrado.");
+ };
+ $("portalClientSearch").oninput=renderClients;
+ renderClients();
  const cons=consumptions.data||[];
  $("portalConsumptions").innerHTML=consumptions.error?"Não foi possível carregar consumos.":cons.length?cons.map(c=>'<div class="performance-row"><div><strong>'+safe(c.product?.name||"Produto")+'</strong><span>'+formatDate(c.created_at)+' • '+safe(c.status)+'</span></div><strong>'+money(c.total_amount)+'</strong></div>').join(""):empty("Nenhum consumo.");
  const outstanding=cons.filter(c=>!["cancelled","canceled"].includes(c.status)).reduce((a,c)=>a+Math.max(0,Number(c.total_amount||0)-Number(c.amount_settled||0)),0);
