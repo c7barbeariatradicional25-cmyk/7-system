@@ -97,7 +97,7 @@ async function loadPortalExtras(pro){
    const preferredDay=frequent(completed.map(v=>days[new Date(v.starts_at).getDay()]));
    const preferredHour=frequent(completed.map(v=>formatTime(v.starts_at)));
    const last=completed[0];
-   const phone=String(c.phone||"").replace(/\\D/g,"");
+   const phone=String(c.phone||"").replace(/\D/g,"");
    return '<details class="portal-client-card"><summary><span class="portal-client-avatar">'+safe((c.full_name||"C").slice(0,1).toUpperCase())+'</span><span class="portal-client-main"><strong>'+safe(c.full_name)+'</strong><small>'+safe(c.phone||"Telefone não informado")+'</small></span><span class="portal-client-bubble">'+c.visits.length+' agend.</span><span class="portal-client-chevron">⌄</span></summary>'+
    '<div class="portal-client-details"><div class="portal-client-metrics"><div><small>Última visita concluída</small><strong>'+(last?formatDate(last.starts_at):"—")+'</strong></div><div><small>Dia mais frequente</small><strong>'+safe(preferredDay)+'</strong></div><div><small>Horário mais frequente</small><strong>'+safe(preferredHour)+'</strong></div><div><small>Atendimentos concluídos</small><strong>'+completed.length+'</strong></div></div>'+
    '<div class="portal-client-actions">'+(phone?'<a href="https://wa.me/55'+phone.replace(/^55/,"")+'" target="_blank" rel="noopener noreferrer">ABRIR WHATSAPP</a>':"")+'</div>'+
