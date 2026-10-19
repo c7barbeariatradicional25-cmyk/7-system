@@ -160,7 +160,7 @@ function applySearch(){
 async function loadHistory(customerId){
   const result=await supabase
     .from("appointments")
-    .select("starts_at,status,total_amount,professional:professionals(full_name),appointment_services(service_name)")
+    .select("id,starts_at,status,total_amount,professional:professionals(full_name),appointment_services(service_name)")
     .eq("customer_id",customerId)
     .order("starts_at",{ascending:false});
 
@@ -188,7 +188,19 @@ async function loadHistory(customerId){
     center.appendChild(makeEl("strong","",services));
     center.appendChild(makeEl("span","",item.professional?.full_name||"Sem profissional"));
 
-    row.append(left,center,makeEl("div","history-value",money(item.total_amount)));
+    const right=makeEl("div","history-value",money(item.total_amount));
+    if(["admin","reception"].includes(currentRole)&&["scheduled","confirmed","waiting"].includes(item.status)&&new Date(item.starts_at)>new Date()){
+      const cancel=makeEl("button","block-delete","CANCELAR HORÁRIO");
+      cancel.type="button";
+      cancel.addEventListener("click",async()=>{
+        if(!confirm("Cancelar este agendamento?"))return;
+        const {error}=await supabase.rpc("c7_cancel_appointment",{p_appointment_id:item.id});
+        if(error){alert(error.message||"Não foi possível cancelar.");return;}
+        await loadHistory(customerId);window.dispatchEvent(new Event("c7-appointment-cancelled"));
+      });
+      right.appendChild(cancel);
+    }
+    row.append(left,center,right);
     target.appendChild(row);
   });
 }
@@ -328,13 +340,26 @@ async function saveCustomer(event){
     return;
   }
 
+  const normalizedPhone=(payload.phone||"").replace(/\D/g,"");
+  const normalizedEmail=(payload.email||"").trim().toLowerCase();
+  const normalizedName=payload.full_name.toLowerCase().replace(/\s+/g," ").trim();
+  const {data:others,error:lookupError}=await supabase.from("customers").select("id,full_name,phone,email");
+  if(lookupError){$("customerMessage").textContent="Não foi possível validar cadastros existentes.";return;}
+  const duplicate=(others||[]).find(c=>{
+    if(c.id===id)return false;
+    const phone=(c.phone||"").replace(/\D/g,"");
+    const email=(c.email||"").trim().toLowerCase();
+    const name=(c.full_name||"").toLowerCase().replace(/\s+/g," ").trim();
+    return (normalizedPhone&&phone===normalizedPhone)||(normalizedEmail&&email===normalizedEmail)||(name===normalizedName&&!normalizedPhone&&!normalizedEmail);
+  });
+  if(duplicate){$("customerMessage").textContent="Cliente já cadastrado: "+duplicate.full_name+". Abra o cadastro existente.";return;}
   $("customerMessage").textContent="Salvando...";
   const result=id
     ? await supabase.from("customers").update(payload).eq("id",id)
     : await supabase.from("customers").insert(payload);
 
   if(result.error){
-    $("customerMessage").textContent="Não foi possível salvar o cliente.";
+    $("customerMessage").textContent=String(result.error.message||"").includes("unique")?"Esse telefone já pertence a outro cliente.":"Não foi possível salvar o cliente.";
     return;
   }
 
