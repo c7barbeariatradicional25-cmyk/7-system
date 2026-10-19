@@ -268,15 +268,17 @@ logoutBtn.addEventListener("click",async()=>{
 function setBarberPreview(enabled){
   if(accountRole!=="admin"||!currentProfessionalId)return;
   barberPreviewMode=Boolean(enabled);
-  currentRole=barberPreviewMode?"barber":"admin";
-  userRole.textContent=barberPreviewMode?"BARBEIRO • VISUALIZAÇÃO":"ADMIN / BARBEIRO";
+  // Mantém autorização administrativa; a alternância controla apenas a experiência.
+  currentRole=accountRole;
+  userRole.textContent=barberPreviewMode?"BARBEIRO • ARTHUR":"ADMIN / BARBEIRO";
   const sections=["dashboard","agenda","desempenho","operacoes"];
   document.querySelectorAll(".nav-item").forEach(item=>{
     const hide=barberPreviewMode&&!sections.includes(item.dataset.section);
     item.classList.toggle("hidden",hide);
   });
-  $("arthurPortalModeBtn").textContent=barberPreviewMode?"VOLTAR PARA ADMIN":"VISUALIZAR COMO BARBEIRO";
+  $("arthurPortalModeBtn").textContent=barberPreviewMode?"ABRIR ADMINISTRAÇÃO":"ABRIR PORTAL DO BARBEIRO";
   newAppointmentBtn.classList.toggle("hidden",barberPreviewMode);
+  blockTimeBtn.classList.toggle("hidden",false);
   document.querySelectorAll(".barber-only").forEach(el=>el.classList.remove("hidden"));
   if(barberPreviewMode){
     professionalFilter.value=currentProfessionalId;
@@ -290,6 +292,7 @@ function setBarberPreview(enabled){
     blockProfessional.disabled=false;
     openSection("dashboard");
   }
+  window.dispatchEvent(new Event("c7-mode-changed"));
   loadAgenda();
 }
 $("arthurPortalModeBtn")?.addEventListener("click",()=>setBarberPreview(!barberPreviewMode));
@@ -1151,7 +1154,7 @@ async function updateDashboard(){
   const openCash=cashResult.data||null;
   const activePros=professionalsResult.data||[];
 
-  if(currentRole==="barber"&&currentProfessionalId){
+  if((currentRole==="barber"||barberPreviewMode)&&currentProfessionalId){
     appointments=appointments.filter(a=>a.professional?.full_name && professionals.find(p=>p.id===currentProfessionalId)?.full_name===a.professional.full_name);
   }
 
@@ -1161,7 +1164,7 @@ async function updateDashboard(){
     .reduce((sum,t)=>sum+Number(t.net_amount||0),0);
   const lowStock=products.filter(p=>Number(p.stock_quantity||0)<=Number(p.min_stock||0));
 
-  if(currentRole==="barber"){
+  if(currentRole==="barber"||barberPreviewMode){
     $("statAppointmentsLabel").textContent="Meus Atendimentos Hoje";
     $("statAppointmentsHint").textContent="Concluídos + em andamento";
     $("statRevenueLabel").textContent="Em Atendimento";
@@ -1185,7 +1188,7 @@ async function updateDashboard(){
     $("statLowStock").textContent=lowStock.length;
   }
 
-  if(currentRole==="barber"){
+  if(currentRole==="barber"||barberPreviewMode){
     $("dashboardCashStatus").textContent="Minha Agenda";
     $("dashboardCashText").textContent="Acompanhe seus atendimentos, bloqueios e checkouts do dia.";
   }else if(openCash){
