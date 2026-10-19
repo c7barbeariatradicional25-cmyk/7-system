@@ -62,6 +62,9 @@
         <button class="nav-item active" data-section="dashboard">Dashboard</button>
         <button class="nav-item" data-section="agenda">Agenda</button>
         <button class="nav-item barber-only hidden" data-section="desempenho">Portal do Barbeiro</button>
+        <button class="nav-item barber-only hidden" data-section="meus-clientes">Meus Clientes</button>
+        <button class="nav-item barber-only hidden" data-section="meus-consumos">Meus Consumos</button>
+        <button class="nav-item barber-only hidden" data-section="minhas-comissoes">Minhas Comissões</button>
         <button class="nav-item" data-section="clientes">Clientes</button>
         <button class="nav-item" data-section="caixa">Caixa</button>
         <button class="nav-item" data-section="financeiro">Financeiro</button>
@@ -168,11 +171,14 @@
             <div id="performanceHistoryList" class="performance-list"></div>
           </article>
         </div>
-<div class="performance-stats portal-balance"><article><span>COMISSÕES PENDENTES</span><strong id="portalPendingBalance">R$ 0</strong></article><article><span>CONSUMOS NÃO QUITADOS</span><strong id="portalOutstandingConsumption">R$ 0</strong></article><article><span>SALDO ESTIMADO</span><strong id="portalEstimatedBalance">R$ 0</strong></article></div><p class="portal-disclaimer">Prévia informativa baseada nos registros exibidos. O fechamento oficial é realizado pela administração.</p><div class="performance-grid">
- <article class="performance-panel"><div class="performance-panel-head"><div><span>EXCLUSIVO</span><h3>Meus Clientes</h3></div></div><div id="portalClients" class="performance-list"><p>Carregando...</p></div></article>
- <article class="performance-panel"><div class="performance-panel-head"><div><span>EXTRATO</span><h3>Meus Consumos</h3></div></div><div id="portalConsumptions" class="performance-list"><p>Carregando...</p></div><strong id="portalConsumptionTotal">Total: R$ 0</strong></article>
- </div><div class="performance-grid"><article class="performance-panel"><div class="performance-panel-head"><div><span>FINANCEIRO INDIVIDUAL</span><h3>Minhas Comissões</h3></div></div><div id="portalCommissions" class="performance-list"><p>Carregando...</p></div></article></div>
       </section>
+
+      <section id="meus-clientes" class="section"><div class="performance-hero"><div><span class="eyebrow">MEU PORTAL</span><h2>Meus Clientes</h2><p>Clientes vinculados aos seus atendimentos e histórico individual.</p></div></div>
+        <article class="performance-panel"><div id="portalClients" class="performance-list">Carregando clientes...</div></article></section>
+      <section id="meus-consumos" class="section"><div class="performance-hero"><div><span class="eyebrow">MEU PORTAL</span><h2>Meus Consumos</h2><p>Produtos, valores e pendências pessoais.</p></div></div>
+        <article class="performance-panel"><div class="performance-panel-head"><h3>Histórico de consumo</h3><strong id="portalConsumptionTotal">—</strong></div><div id="portalConsumptions" class="performance-list">Carregando consumos...</div></article></section>
+      <section id="minhas-comissoes" class="section"><div class="performance-hero"><div><span class="eyebrow">MEU PORTAL</span><h2>Minhas Comissões</h2><p>Extrato individual e previsão de saldo.</p></div></div>
+        <div class="performance-stats portal-balance"><article><span>COMISSÕES PENDENTES</span><strong id="portalPendingBalance">R$ 0</strong></article><article><span>CONSUMOS NÃO QUITADOS</span><strong id="portalOutstandingConsumption">R$ 0</strong></article><article><span>SALDO ESTIMADO</span><strong id="portalEstimatedBalance">R$ 0</strong></article></div><p class="portal-disclaimer">Prévia informativa baseada nos registros exibidos. O fechamento oficial é realizado pela administração.</p><article class="performance-panel"><h3>Extrato de comissões</h3><div id="portalCommissions" class="performance-list">Carregando comissões...</div></article></section>
 
       <section id="agenda" class="section">
         <div class="agenda-toolbar">
