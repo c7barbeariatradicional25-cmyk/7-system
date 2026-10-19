@@ -276,13 +276,26 @@ function selectedBenefit(){
   return receiveBenefits.find(b=>b.key===value)||null;
 }
 
+function cardFee(methodId,inputId,boxId){
+  const enabled=["credit","debit"].includes($(methodId)?.value);
+  $(boxId).style.display=enabled?"":"none";
+  return enabled?Math.min(100,Math.max(0,Number($(inputId)?.value||0))):0;
+}
+$("receiveMethod")?.addEventListener("change",updateReceivePreview);
+$("receiveCardFee")?.addEventListener("input",updateReceivePreview);
+$("cashProductMethod")?.addEventListener("change",updateProductPreview);
+$("productCardFee")?.addEventListener("input",updateProductPreview);
+
 function updateReceivePreview(){
   const item=pendingAppointments.find(a=>a.id===$("receiveAppointment").value);
   const gross=Number($("receiveGross").value||0);
   const discount=Math.min(Number($("receiveDiscount").value||0),gross);
   const benefit=selectedBenefit();
 
-  $("receiveNet").textContent=money(gross-discount);
+  const fee=cardFee("receiveMethod","receiveCardFee","receiveCardFeeBox");
+  const feeAmount=Math.round(Math.max(0,gross-discount)*fee)/100;
+  $("receiveCardFeeValue").textContent=money(feeAmount);
+  $("receiveNet").textContent=money(Math.max(0,gross-discount-feeAmount));
   $("receiveCustomer").textContent=item?.customer?.full_name||"—";
   $("receiveBenefitPreview").textContent=appliedCoupon
     ? `Cupom ${appliedCoupon.code}`
@@ -360,6 +373,7 @@ async function loadReceiveBenefits(item){
 async function openReceiveModal(id=null){
   $("receiveForm").reset();
   $("receiveDiscount").value="0";
+  $("receiveCardFee").value="0";
   $("receiveMessage").textContent="";
   fillReceiveOptions();
 
@@ -486,13 +500,14 @@ $("receiveForm")?.addEventListener("submit",async e=>{
 
   const benefit=appliedCoupon||selectedBenefit();
 
-  const {data,error}=await supabase.rpc("checkout_appointment",{
+  const {data,error}=await supabase.rpc("checkout_appointment_card",{
     p_appointment_id:appointment.id,
     p_payment_method:$("receiveMethod").value,
     p_discount_amount:discount,
     p_benefit_source:benefit?.source||null,
     p_benefit_label:benefit?.label||null,
-    p_coupon_id:appliedCoupon?.id||null
+    p_coupon_id:appliedCoupon?.id||null,
+    p_card_fee_percent:cardFee("receiveMethod","receiveCardFee","receiveCardFeeBox")
   });
 
   if(error){
@@ -521,12 +536,18 @@ function updateProductPreview(){
   const qty=Math.max(1,Number($("cashProductQty").value||1));
   $("cashProductUnit").textContent=money(product?.price||0);
   $("cashProductQtyPreview").textContent=String(qty);
-  $("cashProductTotal").textContent=money(Number(product?.price||0)*qty);
+  const gross=Number(product?.price||0)*qty;
+  $("cashProductTotal").textContent=money(gross);
+  const percent=cardFee("cashProductMethod","productCardFee","productCardFeeBox");
+  const fee=Math.round(gross*percent)/100;
+  $("productCardFeeValue").textContent=money(fee);
+  $("cashProductNet").textContent=money(gross-fee);
 }
 
 $("sellProductBtn")?.addEventListener("click",()=>{
   $("productSaleForm").reset();
   $("cashProductQty").value="1";
+  $("productCardFee").value="0";
   $("productSaleMessage").textContent="";
 
   const activeOptions=activeServiceLinks.map(a=>
@@ -584,12 +605,13 @@ $("productSaleForm")?.addEventListener("submit",async e=>{
 
   $("productSaleMessage").textContent="Registrando venda...";
 
-  const {error}=await supabase.rpc("sell_product",{
+  const {error}=await supabase.rpc("sell_product_card",{
     p_product_id:Number(product.id),
     p_quantity:qty,
     p_payment_method:$("cashProductMethod").value,
     p_customer_id:customerId,
-    p_appointment_id:appointmentId
+    p_appointment_id:appointmentId,
+    p_card_fee_percent:cardFee("cashProductMethod","productCardFee","productCardFeeBox")
   });
 
   if(error){
