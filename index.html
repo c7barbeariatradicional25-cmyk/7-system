@@ -61,7 +61,7 @@
       <nav>
         <button class="nav-item active" data-section="dashboard">Dashboard</button>
         <button class="nav-item" data-section="agenda">Agenda</button>
-        <button class="nav-item barber-only hidden" data-section="desempenho">Meu Desempenho</button>
+        <button class="nav-item barber-only hidden" data-section="desempenho">Portal do Barbeiro</button>
         <button class="nav-item" data-section="clientes">Clientes</button>
         <button class="nav-item" data-section="caixa">Caixa</button>
         <button class="nav-item" data-section="financeiro">Financeiro</button>
@@ -131,7 +131,7 @@
           <div class="performance-profile">
             <div id="performanceAvatar" class="performance-avatar">C7</div>
             <div>
-              <span class="eyebrow">MINHA ÁREA</span>
+              <span class="eyebrow">PORTAL DO BARBEIRO • C7</span>
               <h2 id="performanceName">Barbeiro</h2>
               <p id="performanceSpecialty">C7 Barbearia Tradicional</p>
             </div>
@@ -142,6 +142,7 @@
           </div>
         </div>
 
+        <div class="performance-portal-actions"><button id="portalAgendaBtn" type="button" class="primary-btn">MINHA AGENDA</button><button id="portalRefreshBtn" type="button" class="ghost-btn">ATUALIZAR RESULTADOS</button></div>
         <div class="performance-stats">
           <article><span>ATENDIMENTOS HOJE</span><strong id="performanceToday">0</strong></article>
           <article><span>ATENDIMENTOS NO MÊS</span><strong id="performanceMonthAppointments">0</strong></article>
@@ -1608,7 +1609,8 @@
     </form>
   </section>
 </div>
-<script type="module" src="relatorios.js"></script>
+<style>.performance-portal-actions{display:flex;flex-wrap:wrap;gap:10px;margin:16px 0}.performance-portal-actions button{min-height:42px}@media(max-width:600px){.performance-portal-actions button{flex:1 1 100%}}</style>
+  <script type="module" src="relatorios.js"></script>
   <script type="module" src="financeiro.js"></script>
   <script type="module" src="promocoes.js"></script>
   <script type="module" src="notificacoes.js"></script>
