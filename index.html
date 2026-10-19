@@ -31,12 +31,26 @@
         <label><span>Senha</span><input id="password" type="password" autocomplete="current-password" minlength="8" required></label>
         <button type="submit">ENTRAR</button>
         <button id="firstAccessBtn" type="button" class="secondary-btn">PRIMEIRO ACESSO</button>
+        <button id="forgotPasswordBtn" type="button" class="secondary-btn">ESQUECI MINHA SENHA</button>
       </form>
       <p class="first-note">No primeiro acesso, use um e-mail autorizado e escolha sua senha.</p>
       <p id="loginMessage" class="message"></p>
     </section>
   </main>
 
+  <main id="resetPasswordView" class="login-screen hidden">
+    <section class="login-card">
+      <span class="system-label">C7 SYSTEM</span>
+      <h1>Redefinir senha</h1>
+      <p>Cadastre uma nova senha para sua conta.</p>
+      <form id="resetPasswordForm" class="login-form">
+        <label><span>Nova senha</span><input id="resetNewPassword" type="password" autocomplete="new-password" minlength="8" required></label>
+        <label><span>Confirmar senha</span><input id="resetConfirmPassword" type="password" autocomplete="new-password" minlength="8" required></label>
+        <button type="submit">SALVAR NOVA SENHA</button>
+      </form>
+      <p id="resetPasswordMessage" class="message"></p>
+    </section>
+  </main>
   <div id="appView" class="app-shell hidden">
     <aside class="sidebar">
       <div class="brand">
