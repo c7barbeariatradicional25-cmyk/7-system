@@ -583,7 +583,7 @@ async function loadSystemAccess(){
 
     const role=document.createElement("div");
     const roleStrong=document.createElement("strong");
-    roleStrong.textContent=item.role==="admin"?"ADMIN":item.role==="reception"?"RECEPÇÃO":"BARBEIRO";
+    roleStrong.textContent=item.role==="admin"&&item.professional_id?"ADMIN / BARBEIRO":item.role==="admin"?"ADMIN":item.role==="reception"?"RECEPÇÃO":"BARBEIRO";
     const roleSmall=document.createElement("span");
     roleSmall.textContent=item.active?"ATIVO":"INATIVO";
     role.append(roleStrong,roleSmall);
