@@ -348,6 +348,12 @@ async function loadAgenda(){
 
   currentAppointments=appointmentsResult.data||[];
   currentBlocks=blocksResult.data||[];
+  const {data:unlocks}=await supabase.from("c7_lunch_unlocks").select("professional_id").eq("day",selected);
+  const unlocked=new Set((unlocks||[]).map(x=>x.professional_id));
+  const activeToday=new Set(currentWorkingHours.map(x=>x.professional_id));
+  for(const pro of professionals.filter(x=>activeToday.has(x.id)&&!unlocked.has(x.id))){
+    currentBlocks.push({id:"lunch:"+pro.id,professional_id:pro.id,starts_at:new Date(selected+"T12:00:00").toISOString(),ends_at:new Date(selected+"T13:00:00").toISOString(),reason:"Almoço diário",professional:{id:pro.id,full_name:pro.full_name},recurringLunch:true});
+  }
   currentWorkingHours=hoursResult.data||[];
 
   renderAgendaList();
@@ -410,7 +416,7 @@ function renderAgendaList(){
             <strong>HORÁRIO BLOQUEADO</strong>
             <span>${escapeHtml(b.professional?.full_name||"Profissional")} • ${escapeHtml(b.reason||"Sem motivo informado")}</span>
           </div>
-          ${canDelete?`<button class="block-delete" data-delete-block="${b.id}" type="button">REMOVER</button>`:""}
+          ${canDelete?`<button class="block-delete" data-delete-block="${b.id}" type="button">${b.recurringLunch?"LIBERAR DIA":"REMOVER"}</button>`:""}
         </article>`
     };
   });
@@ -465,8 +471,9 @@ function renderAgendaList(){
 
   document.querySelectorAll("[data-delete-block]").forEach(btn=>{
     btn.addEventListener("click",async()=>{
-      if(!confirm("Remover este bloqueio de horário?")) return;
-      const {error}=await supabase.from("schedule_blocks").delete().eq("id",btn.dataset.deleteBlock);
+      const lunch=btn.dataset.deleteBlock.startsWith("lunch:");
+      if(!confirm(lunch?"Liberar almoço só nesta data?":"Remover este bloqueio?")) return;
+      const {error}=lunch?await supabase.rpc("c7_toggle_lunch",{p_professional_id:btn.dataset.deleteBlock.slice(6),p_day:agendaDate.value,p_unlock:true}):await supabase.from("schedule_blocks").delete().eq("id",btn.dataset.deleteBlock);
       if(error) alert("Não foi possível remover o bloqueio.");
       await loadAgenda();
     });
@@ -570,6 +577,7 @@ function renderAppointmentDetail(appointment){
   $("detailStartBtn").classList.toggle("hidden",!canManage||finished||appointment.status==="in_service");
   $("detailStartBtn").textContent=appointment.status==="waiting"?"INICIAR ATENDIMENTO":"MARCAR EM ATENDIMENTO";
   $("detailCheckoutBtn").classList.toggle("hidden",!canManage||finished);
+  $("detailCancelBtn").classList.toggle("hidden",!canManage||!["scheduled","confirmed","waiting"].includes(appointment.status)||new Date(appointment.starts_at)<=new Date());
   $("appointmentDetailMessage").textContent="";
 
   document.querySelectorAll("[data-remove-service]").forEach(btn=>{
@@ -687,6 +695,12 @@ $("detailStartBtn")?.addEventListener("click",async()=>{
   await Promise.all([refreshAppointmentDetail(),loadAgenda()]);
 });
 
+$("detailCancelBtn")?.addEventListener("click",async()=>{
+  if(!detailAppointmentId||!confirm("Cancelar este agendamento?"))return;
+  const {error}=await supabase.rpc("c7_cancel_appointment",{p_appointment_id:detailAppointmentId});
+  if(error){$("appointmentDetailMessage").textContent=error.message||"Falha ao cancelar.";return;}
+  closeAppointmentDetail();await loadAgenda();window.dispatchEvent(new Event("c7-appointment-cancelled"));
+});
 $("detailCheckoutBtn")?.addEventListener("click",async()=>{
   if(!detailAppointmentId) return;
   if(window.C7Cash?.checkoutAppointment){
@@ -822,9 +836,10 @@ function renderTimeline(){
 
       return `
         <article class="live-block" style="top:${top}px;height:${height}px">
-          <strong>BLOQUEADO</strong>
+          <strong>${b.recurringLunch?"ALMOÇO":"BLOQUEADO"}</strong>
           <span>${formatTime(b.starts_at)}–${formatTime(b.ends_at)}</span>
           <small>${escapeHtml(b.reason||"Indisponível")}</small>
+          ${b.recurringLunch&&["admin","reception"].includes(currentRole)?`<button type="button" class="lunch-unlock" data-unlock-lunch="${b.professional_id}">LIBERAR DIA</button>`:""}
         </article>
       `;
     }).join("");
@@ -906,6 +921,14 @@ function renderTimeline(){
     });
   });
 
+  agendaTimeline.querySelectorAll("[data-unlock-lunch]").forEach(btn=>{
+    btn.addEventListener("click",async e=>{
+      e.stopPropagation();
+      if(!confirm("Liberar almoço somente nesta data?"))return;
+      const {error}=await supabase.rpc("c7_toggle_lunch",{p_professional_id:btn.dataset.unlockLunch,p_day:agendaDate.value,p_unlock:true});
+      if(error)alert("Não foi possível liberar."); await loadAgenda();
+    });
+  });
   agendaTimeline.querySelectorAll("[data-timeline-checkout]").forEach(btn=>{
     btn.addEventListener("click",async e=>{
       e.stopPropagation();
@@ -1264,6 +1287,10 @@ async function saveAppointment({keepOpen=false}={}){
       .limit(1)
   ]);
 
+  const {data:lunchLocked}=await supabase.rpc("c7_lunch_enabled",{p_professional_id:professionalId,p_day:date});
+  if(lunchLocked!==false && startMinutes<780 && endMinutes>720){
+    appointmentMessage.textContent="Horário de almoço bloqueado.";return false;
+  }
   if((conflicts&&conflicts.length)||(blocks&&blocks.length)){
     appointmentMessage.textContent="Esse profissional já está ocupado nesse horário.";
     return false;
