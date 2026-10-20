@@ -16,7 +16,7 @@ const escapeHtml = (value="") => String(value)
 const loginView=$("loginView");
 const appView=$("appView");
 const loginForm=$("loginForm");
-const firstAccessBtn=$("firstAccessBtn");
+
 const loginMessage=$("loginMessage");
 const logoutBtn=$("logoutBtn");
 const userName=$("userName");
@@ -122,7 +122,7 @@ function selectedWeekday(){
   return new Date(y,m-1,d).getDay();
 }
 
-function showLogin(){loginView.classList.remove("hidden");appView.classList.add("hidden");$("resetPasswordView")?.classList.add("hidden")}
+function showLogin(){loginView.classList.remove("hidden");appView.classList.add("hidden");$("resetPasswordView")?.classList.add("hidden");$("recoveryEmailView")?.classList.add("hidden")}
 function showReset(){loginView.classList.add("hidden");appView.classList.add("hidden");$("resetPasswordView")?.classList.remove("hidden")}
 function showApp(){loginView.classList.add("hidden");appView.classList.remove("hidden")}
 
@@ -194,16 +194,30 @@ async function loadProfile(userId){
   await initAgenda();
 }
 
-$("forgotPasswordBtn")?.addEventListener("click",async()=>{
-  const email=$("email").value.trim();
-  if(!email){loginMessage.textContent="Informe seu e-mail acima para recuperar a senha.";return;}
-  loginMessage.textContent="Solicitando recuperação...";
-  const {error}=await supabase.auth.resetPasswordForEmail(email,{
-    redirectTo:"https://sistema.c7barbeariatradicional.com.br/?type=recovery"
-  });
-  loginMessage.textContent=error
-    ? "Não foi possível enviar. Verifique a configuração de URLs do Supabase."
-    : "Se a conta existir, você receberá um novo link. Verifique seu e-mail.";
+$("forgotPasswordBtn")?.addEventListener("click",()=>{
+  showLogin();
+  loginView.classList.add("hidden");
+  $("recoveryEmailView").classList.remove("hidden");
+  $("recoveryEmailInput").value=$("email").value.trim();
+  $("recoveryEmailMessage").textContent="";
+});
+$("backToLoginBtn")?.addEventListener("click",()=>showLogin());
+$("recoveryEmailForm")?.addEventListener("submit",async e=>{
+  e.preventDefault();
+  const email=$("recoveryEmailInput").value.replace(/[\\s\\u00a0\\u200b-\\u200d\\ufeff]/g,"").trim().toLowerCase();
+  $("recoveryEmailInput").value=email;
+  const msg=$("recoveryEmailMessage"),btn=$("sendRecoveryBtn");
+  if(!/^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$/.test(email)){msg.textContent="Informe um e-mail válido.";return;}
+  btn.disabled=true;msg.textContent="Solicitando recuperação...";
+  try{
+    const {error}=await supabase.auth.resetPasswordForEmail(email,{redirectTo:"https://sistema.c7barbeariatradicional.com.br/?type=recovery"});
+    if(error){
+      const reason=String(error.message||"");
+      msg.textContent=/invalid format|validate email/i.test(reason)?"O servidor recusou o endereço. Confira o e-mail cadastrado.":/rate limit|too many/i.test(reason)?"Muitas tentativas. Aguarde alguns minutos.":"Não foi possível solicitar o link: "+reason;
+      console.warn("C7 recovery",error.code,error.status,reason);
+    }else msg.textContent="Solicitação aceita! Confira sua caixa de entrada e spam. Use apenas o link mais recente.";
+  }catch(err){msg.textContent="Falha na conexão. Tente novamente.";console.error(err);}
+  finally{btn.disabled=false;}
 });
 $("resetPasswordForm")?.addEventListener("submit",async e=>{
   e.preventDefault();
@@ -228,36 +242,6 @@ loginForm.addEventListener("submit",async e=>{
   if(error){loginMessage.textContent="E-mail ou senha inválidos.";return}
   loginMessage.textContent="";
   window.location.reload();
-});
-
-firstAccessBtn.addEventListener("click",async()=>{
-  const email=$("email").value.trim();
-  const password=$("password").value;
-
-  if(!email||password.length<8){
-    loginMessage.textContent="Informe o e-mail e uma senha com pelo menos 8 caracteres.";
-    return;
-  }
-
-  loginMessage.textContent="Criando acesso...";
-
-  const {data,error}=await supabase.auth.signUp({
-    email,
-    password,
-    options:{emailRedirectTo:window.location.origin+"/"}
-  });
-
-  if(error){
-    loginMessage.textContent="Não foi possível criar o acesso. Confira se o e-mail está autorizado.";
-    return;
-  }
-
-  if(data.session){
-    loginMessage.textContent="";
-    window.location.reload();
-  } else {
-    loginMessage.textContent="Acesso criado. Confira seu e-mail para confirmar a conta.";
-  }
 });
 
 logoutBtn.addEventListener("click",async()=>{
