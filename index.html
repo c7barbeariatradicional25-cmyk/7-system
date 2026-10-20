@@ -31,14 +31,13 @@
         <label><span>E-mail</span><input id="email" type="email" autocomplete="email" required></label>
         <label><span>Senha</span><input id="password" type="password" autocomplete="current-password" minlength="8" required></label>
         <button type="submit">ENTRAR</button>
-        <button id="firstAccessBtn" type="button" class="secondary-btn">PRIMEIRO ACESSO</button>
         <button id="forgotPasswordBtn" type="button" class="secondary-btn">ESQUECI MINHA SENHA</button>
       </form>
-      <p class="first-note">No primeiro acesso, use um e-mail autorizado e escolha sua senha.</p>
       <p id="loginMessage" class="message"></p>
     </section>
   </main>
 
+  <main id="recoveryEmailView" class="login-screen hidden"><section class="login-card"><span class="system-label">C7 SYSTEM</span><h1>Recuperar acesso</h1><p>Informe seu e-mail cadastrado para receber um link de redefinição.</p><form id="recoveryEmailForm" class="login-form"><label><span>E-mail</span><input id="recoveryEmailInput" type="email" autocomplete="email" required></label><button id="sendRecoveryBtn" type="submit">ENVIAR LINK</button><button id="backToLoginBtn" type="button" class="secondary-btn">VOLTAR AO LOGIN</button></form><p id="recoveryEmailMessage" class="message" role="status"></p></section></main>
   <main id="resetPasswordView" class="login-screen hidden">
     <section class="login-card">
       <span class="system-label">C7 SYSTEM</span>
