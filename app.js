@@ -204,10 +204,10 @@ $("forgotPasswordBtn")?.addEventListener("click",()=>{
 $("backToLoginBtn")?.addEventListener("click",()=>showLogin());
 $("recoveryEmailForm")?.addEventListener("submit",async e=>{
   e.preventDefault();
-  const email=$("recoveryEmailInput").value.replace(/[\\s\\u00a0\\u200b-\\u200d\\ufeff]/g,"").trim().toLowerCase();
+  const email=$("recoveryEmailInput").value.replace(/[\s\u00a0\u200b-\u200d\ufeff]/g,"").trim().toLowerCase();
   $("recoveryEmailInput").value=email;
   const msg=$("recoveryEmailMessage"),btn=$("sendRecoveryBtn");
-  if(!/^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$/.test(email)){msg.textContent="Informe um e-mail válido.";return;}
+  if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){msg.textContent="Informe um e-mail válido.";return;}
   btn.disabled=true;msg.textContent="Solicitando recuperação...";
   try{
     const {error}=await supabase.auth.resetPasswordForEmail(email,{redirectTo:"https://sistema.c7barbeariatradicional.com.br/?type=recovery"});
