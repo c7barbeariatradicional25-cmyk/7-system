@@ -55,10 +55,36 @@ function render(){
      const span=document.createElement("span");span.textContent=label;
      const cb=document.createElement("input");cb.type="checkbox";cb.checked=Boolean(rights[person.email][key]);cb.disabled=protectedAccount||!person.active;
      cb.dataset.permission=key;
+
+     const prereq={
+       "clients.edit":"clients.read","clients.delete":"clients.read","clients.history":"clients.read",
+       "appointments.edit":"appointments.view","appointments.cancel":"appointments.view"
+     }[key];
+     if(prereq && !rights[person.email][prereq]){
+       cb.disabled=true;
+       row.title="Esta permissão exige: "+prereq;
+       cb.checked=false;
+       rights[person.email][key]=false;
+     }
      cb.addEventListener("change",()=>{
-       rights[person.email][key]=cb.checked;
+       const email=person.email;
+       rights[email][key]=cb.checked;
+       if(key==="clients.read" && !cb.checked){
+         for(const dep of ["clients.edit","clients.delete","clients.history"]) rights[email][dep]=false;
+       }
+       if(key==="appointments.view" && !cb.checked){
+         for(const dep of ["appointments.edit","appointments.cancel","appointments.create"])rights[email][dep]=false;
+       }
+       if(key==="appointments.create" && cb.checked){
+         rights[email]["appointments.view"]=true;
+         rights[email]["clients.create"]=true;
+       }
+       if(key==="stock.manage" && cb.checked)rights[email]["products.view"]=true;
+       if(key==="products.manage" && cb.checked)rights[email]["products.view"]=true;
+       if(key==="team.manage" && cb.checked)rights[email]["team.view"]=true;
+       render();
        status("Salvando alterações...");
-       scheduleSave(person.email);
+       scheduleSave(email);
      });
      row.append(span,cb);card.appendChild(row);
    }
@@ -69,7 +95,7 @@ function render(){
 function scheduleSave(email){
  versions[email]=(versions[email]||0)+1;
  clearTimeout(timers[email]);
- timers[email]=setTimeout(()=>write(email),350);
+ timers[email]=setTimeout(()=>{timers[email]=null;write(email);},350);
 }
 async function write(email){
  if(saving[email])return;
@@ -106,7 +132,11 @@ async function loadPeople(preferred=""){
  if(e1||e2){status("Erro ao carregar os funcionários.",true);return;}
  people=(accounts||[]).map(p=>({...p,email:p.email.toLowerCase()}));
  overrides=Object.fromEntries((configs||[]).map(p=>[p.email,p.permissions]));
- for(const p of people)if(!rights[p.email])ensure(p.email);
+ for(const p of people){
+   if(!saving[p.email]&&!timers[p.email]){
+     rights[p.email]={...defaults(p.role),...(overrides[p.email]||{})};
+   } else if(!rights[p.email])ensure(p.email);
+ }
  const selector=$("permissionEmployee");
  selector.replaceChildren();
  for(const p of people){
