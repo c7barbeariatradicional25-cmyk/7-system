@@ -67,12 +67,9 @@ const c7Sections={clientes:"clients.read",agenda:"appointments.view",caixa:"cash
 function c7Allowed(key){return accountRole==="admin" || (personalRights?Boolean(personalRights[key]):true);}
 function c7SectionAllowed(section){return section==="clientes"?(c7Allowed("clients.read")||c7Allowed("clients.create")):c7Allowed(c7Sections[section]);}
 async function c7AttachVisibleNames(appointments){
+ // Sem permissão explícita de leitura, nenhum dado cadastral deve ser retornado.
  if(c7Allowed("clients.read")||!appointments?.length)return appointments;
- const ids=appointments.map(a=>a.id).filter(Boolean);
- const {data,error}=await supabase.rpc("c7_appointment_names",{p_ids:ids.slice(0,250)});
- if(error){console.warn("C7 nomes agenda",error.message);return appointments;}
- const names=new Map((data||[]).map(x=>[x.appointment_id,x.customer_name]));
- return appointments.map(a=>({...a,customer:{full_name:names.get(a.id)||"Cliente"}}));
+ return appointments.map(item=>({...item,customer:{full_name:"Cliente",phone:null}}));
 }
 async function refreshPersonalRights(){if(accountRole==="admin"){personalRights=null;return;}const {data:{session}}=await supabase.auth.getSession();if(!session)return; const {data}=await supabase.from("staff_permissions").select("permissions").eq("email",session.user.email.toLowerCase()).maybeSingle();personalRights=data?.permissions||null;}
 
@@ -1406,6 +1403,11 @@ async function saveAppointment({keepOpen=false}={}){
   appointmentMessage.textContent="Salvando...";
 
   let customerId=null;
+  if(!c7Allowed("clients.read")){
+    const {data:id,error:lookupError}=await supabase.rpc("c7_customer_for_booking",{p_full_name:name,p_phone:phone});
+    if(lookupError||!id){appointmentMessage.textContent="Não foi possível registrar o cliente para este agendamento.";return false;}
+    customerId=id;
+  }else{
   const {data:existingCustomer}=await supabase.from("customers")
     .select("id,full_name")
     .eq("phone",phone)
@@ -1431,6 +1433,7 @@ async function saveAppointment({keepOpen=false}={}){
     }
 
     customerId=newCustomer.id;
+  }
   }
 
   const {data:appointment,error:appointmentError}=await supabase
