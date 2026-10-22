@@ -12,6 +12,8 @@ let customers = [];
 let professionals = [];
 let currentRole = null;
 let currentUser = null;
+let rights=null;
+function can(key){return currentRole==="admin" || (rights?Boolean(rights[key]):["admin","reception"].includes(currentRole));}
 
 const statusLabels={scheduled:"Agendado",confirmed:"Confirmado",waiting:"Aguardando",in_service:"Em atendimento",completed:"Finalizado",cancelled:"Cancelado",no_show:"Faltou"};
 
@@ -44,6 +46,8 @@ async function loadContext(){
   currentUser=session.user.id;
   const {data}=await supabase.from("profiles").select("role").eq("user_id",currentUser).single();
   currentRole=data?.role||null;
+  const {data:permissionRow}=await supabase.from("staff_permissions").select("permissions").eq("email",session.user.email.toLowerCase()).maybeSingle();
+  rights=permissionRow?.permissions||null;
   return true;
 }
 
@@ -57,6 +61,7 @@ async function loadProfessionals(){
 }
 
 async function loadCustomers(){
+  if(!can("clients.read"))return;
   const result=await supabase.from("customer_crm_summary").select("*").order("full_name",{ascending:true});
   if(result.error) return;
   customers=result.data||[];
@@ -288,6 +293,7 @@ async function loadConsumptionProfile(customerId){
 }
 
 async function openCustomer(id=null){
+  if(id&&!can("clients.read"))return;
   $("customerForm").reset();
   $("customerMessage").textContent="";
   $("customerId").value=id||"";
@@ -320,12 +326,12 @@ function closeCustomer(){
 async function saveCustomer(event){
   event.preventDefault();
 
-  if(!["admin","reception"].includes(currentRole)){
+  const id=$("customerId").value||null;
+  if(!can(id?"clients.edit":"clients.create")){
     $("customerMessage").textContent="Seu perfil não possui permissão para alterar clientes.";
     return;
   }
 
-  const id=$("customerId").value||null;
   const payload={
     full_name:$("crmCustomerName").value.trim(),
     phone:$("crmCustomerPhone").value.trim()||null,
@@ -347,7 +353,7 @@ async function saveCustomer(event){
   const normalizedPhone=(payload.phone||"").replace(/\D/g,"");
   const normalizedEmail=(payload.email||"").trim().toLowerCase();
   const normalizedName=payload.full_name.toLowerCase().replace(/\s+/g," ").trim();
-  const {data:others,error:lookupError}=await supabase.from("customers").select("id,full_name,phone,email");
+  const {data:others,error:lookupError}=can("clients.read")?await supabase.from("customers").select("id,full_name,phone,email"):{data:[],error:null};
   if(lookupError){$("customerMessage").textContent="Não foi possível validar cadastros existentes.";return;}
   const duplicate=(others||[]).find(c=>{
     if(c.id===id)return false;
@@ -360,7 +366,7 @@ async function saveCustomer(event){
   $("customerMessage").textContent="Salvando...";
   const result=id
     ? await supabase.from("customers").update(payload).eq("id",id)
-    : await supabase.from("customers").insert(payload);
+    : can("clients.read")?await supabase.from("customers").insert(payload):await supabase.rpc("c7_register_customer",{p_full_name:payload.full_name,p_phone:payload.phone,p_email:payload.email,p_birth_date:payload.birth_date,p_preferred_professional_id:payload.preferred_professional_id,p_tags:payload.tags,p_notes:payload.notes,p_marketing_opt_in:payload.marketing_opt_in});
 
   if(result.error){
     $("customerMessage").textContent=String(result.error.message||"").includes("unique")?"Esse telefone já pertence a outro cliente.":"Não foi possível salvar o cliente.";
@@ -375,6 +381,8 @@ async function initCRM(){
   if(!await loadContext()) return;
 
   await loadProfessionals();
+  if(!can("clients.read")){document.querySelector(".crm-stats")?.classList.add("hidden");$("customerSearch")?.classList.add("hidden");$("customerList")?.classList.add("hidden");}
+  $("newCustomerBtn")?.classList.toggle("hidden",!can("clients.create"));
 
   document.querySelectorAll('.nav-item[data-section="clientes"]').forEach(btn=>{
     btn.addEventListener("click",loadCustomers);
