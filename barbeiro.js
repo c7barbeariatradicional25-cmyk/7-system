@@ -82,7 +82,8 @@ function empty(text){
 async function loadPortalExtras(pro){
  const {data:{session}}=await supabase.auth.getSession();
  const {data:perm}=session?await supabase.from("staff_permissions").select("permissions").eq("email",session.user.email.toLowerCase()).maybeSingle():{data:null};
- const allowed=perm?.permissions?.["clients.read"] ?? false;
+ const {data:roleInfo}=session?await supabase.from("profiles").select("role").eq("user_id",session.user.id).maybeSingle():{data:null};
+ const allowed=roleInfo?.role==="admin" || Boolean(perm?.permissions?.["clients.read"]);
  const [clients,consumptions,commissions]=await Promise.all([
  allowed?supabase.from("appointments").select("customer_id,starts_at,status,appointment_services(service_name),customer:customers(full_name,phone)").eq("professional_id",pro.id).order("starts_at",{ascending:false}).limit(300):Promise.resolve({data:[],error:null}),
  supabase.from("employee_consumptions").select("created_at,quantity,total_amount,status,amount_settled,product:products(name)").eq("professional_id",pro.id).order("created_at",{ascending:false}).limit(60),
