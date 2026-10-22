@@ -10,6 +10,7 @@ const money = (value) => new Intl.NumberFormat("pt-BR",{style:"currency",currenc
 
 let currentUser = null;
 let currentRole = null;
+let c7ModuleRights=null;
 let currentProfessionalId = null;
 let openSession = null;
 let pendingAppointments = [];
@@ -20,12 +21,15 @@ let activeServiceLinks = [];
 let receiveBenefits = [];
 let appliedCoupon = null;
 
+function canAccessCash(){return currentRole==="admin" || (c7ModuleRights?Boolean(c7ModuleRights["cash.view"]):currentRole==="reception");}
 async function loadContext(){
   const {data:{session}}=await supabase.auth.getSession();
   if(!session) return false;
   currentUser=session.user.id;
   const {data}=await supabase.from("profiles").select("role").eq("user_id",currentUser).single();
   currentRole=data?.role||null;
+  const {data:grant}=await supabase.from("staff_permissions").select("permissions").eq("email",session.user.email.toLowerCase()).maybeSingle();
+  c7ModuleRights=grant?.permissions||null;
 
   if(currentRole==="barber"){
     const {data:professional}=await supabase
@@ -41,7 +45,7 @@ async function loadContext(){
 }
 
 async function loadCash(){
-  if(!["admin","reception"].includes(currentRole)) return;
+  if(!canAccessCash()) return;
 
   const start=new Date();
   start.setHours(0,0,0,0);
@@ -227,7 +231,7 @@ document.querySelectorAll("[data-close-open-cash]").forEach(el=>el.addEventListe
 
 $("openCashForm")?.addEventListener("submit",async e=>{
   e.preventDefault();
-  if(!["admin","reception"].includes(currentRole)) return;
+  if(!canAccessCash()) return;
 
   $("openCashMessage").textContent="Abrindo caixa...";
 
@@ -723,7 +727,7 @@ $("closeCashForm")?.addEventListener("submit",async e=>{
 });
 
 async function checkoutAppointment(appointmentId){
-  if(!["admin","reception","barber"].includes(currentRole)){
+  if(!canAccessCash()){
     alert("Seu perfil não possui permissão para registrar pagamentos.");
     return false;
   }
@@ -785,9 +789,9 @@ initCash();
 
 
 window.addEventListener("c7-financial-expense-updated",async()=>{
-  if(["admin","reception"].includes(currentRole)) await loadCash();
+  if(canAccessCash()) await loadCash();
 });
 
 window.addEventListener("c7-settlement-paid",async()=>{
-  if(["admin","reception"].includes(currentRole)) await loadCash();
+  if(canAccessCash()) await loadCash();
 });
