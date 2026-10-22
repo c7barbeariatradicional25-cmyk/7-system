@@ -12,6 +12,8 @@ let currentUser=null;
 let services=[];
 let products=[];
 let productDepartment="barbershop";
+let customPermissions=null;
+const catalogueReceptionDefaults=new Set(["products.view","products.manage","stock.manage","services.manage"]);
 let productAuditEntries=[];
 
 async function loadContext(){
@@ -20,10 +22,16 @@ async function loadContext(){
   currentUser=session.user.id;
   const {data}=await supabase.from("profiles").select("role").eq("user_id",currentUser).single();
   currentRole=data?.role||null;
+  const {data:grant}=await supabase.from("staff_permissions").select("permissions").eq("email",session.user.email.toLowerCase()).maybeSingle();
+  customPermissions=grant?.permissions||null;
   return true;
 }
 
 function canAdmin(){return currentRole==="admin"}
+function can(permission){return canAdmin() || (customPermissions?Boolean(customPermissions[permission]):currentRole==="reception"&&catalogueReceptionDefaults.has(permission))}
+function canServices(){return can("services.manage")}
+function canProducts(){return can("products.manage")}
+function canStock(){return can("stock.manage")}
 
 async function loadServices(){
   const {data,error}=await supabase.from("services").select("*").order("sort_order").order("name");
@@ -101,7 +109,7 @@ function renderServices(){
     const actions=document.createElement("div");
     actions.className="catalog-actions";
 
-    if(canAdmin()){
+    if(canServices()){
       const edit=document.createElement("button");
       edit.textContent="EDITAR";
       edit.addEventListener("click",()=>openService(s.id));
@@ -124,6 +132,7 @@ function renderServices(){
 }
 
 async function toggleService(service){
+  if(!canServices())return;
   await supabase.from("services").update({active:!service.active}).eq("id",service.id);
   await loadServices();
 }
@@ -147,7 +156,7 @@ function closeService(){ $("serviceAdminModal").classList.add("hidden") }
 
 async function saveService(e){
   e.preventDefault();
-  if(!canAdmin()) return;
+  if(!canServices()) return;
   const id=$("serviceAdminId").value;
   const payload={
     name:$("serviceAdminName").value.trim(),
@@ -248,31 +257,41 @@ function renderProducts(){
 
     const actions=document.createElement("div");
     actions.className="catalog-actions";
-    if(canAdmin()){
-      const edit=document.createElement("button");
-      edit.textContent="EDITAR";
-      edit.addEventListener("click",()=>openProduct(p.id));
-
-      const stockBtn=document.createElement("button");
-      stockBtn.textContent="ESTOQUE";
-      stockBtn.addEventListener("click",()=>{
-        openProduct(p.id);
-        setTimeout(()=>{
-          $("stockAdjustmentQty")?.focus();
-          $("stockAdjustmentArea")?.scrollIntoView({behavior:"smooth",block:"nearest"});
-        },60);
-      });
-
-      const toggle=document.createElement("button");
-      toggle.textContent=p.active?"DESATIVAR":"ATIVAR";
-      toggle.className="active-toggle"+(p.active?"":" off");
-      toggle.addEventListener("click",()=>toggleProduct(p));
-      const remove=document.createElement("button");
-      remove.type="button";remove.textContent="EXCLUIR";remove.className="c7-delete-product";
-      remove.addEventListener("click",()=>archiveProduct(p));
-      actions.append(edit,stockBtn,toggle,remove);
+    if(canAdmin() && p.deleted_at){
+      const restore=document.createElement("button");
+      restore.type="button";restore.textContent="RESTAURAR";
+      restore.addEventListener("click",()=>restoreProduct(p));
+      actions.appendChild(restore);
+    }else if(!p.deleted_at){
+      if(canProducts()){
+        const edit=document.createElement("button");
+        edit.textContent="EDITAR";edit.addEventListener("click",()=>openProduct(p.id));
+        const toggle=document.createElement("button");
+        toggle.textContent=p.active?"DESATIVAR":"ATIVAR";
+        toggle.className="active-toggle"+(p.active?"":" off");
+        toggle.addEventListener("click",()=>toggleProduct(p));
+        actions.append(edit,toggle);
+      }
+      if(canStock()){
+        const stockBtn=document.createElement("button");
+        stockBtn.textContent="ESTOQUE";
+        stockBtn.addEventListener("click",()=>{
+          openProduct(p.id);
+          setTimeout(()=>{
+            $("stockAdjustmentQty")?.focus();
+            $("stockAdjustmentArea")?.scrollIntoView({behavior:"smooth",block:"nearest"});
+          },60);
+        });
+        actions.appendChild(stockBtn);
+      }
+      if(canAdmin()){
+        const remove=document.createElement("button");
+        remove.type="button";remove.textContent="EXCLUIR";
+        remove.className="c7-delete-product";
+        remove.addEventListener("click",()=>archiveProduct(p));
+        actions.appendChild(remove);
+      }
     }
-
       row.append(main,price,status,actions);
       body.appendChild(row);
     });
@@ -283,7 +302,7 @@ function renderProducts(){
 }
 
 async function toggleProduct(product){
-  if(!canAdmin())return;
+  if(!canProducts())return;
   const {error}=await supabase.from("products").update({active:!product.active}).eq("id",product.id).is("deleted_at",null);
   if(error){window.alert("Não foi possível alterar o status do produto.");return;}
   await loadProducts();
@@ -320,8 +339,10 @@ function openProduct(id=null){
   $("productAdminSort").value=p?.sort_order??0;
   $("productAdminStock").value=p?.stock_quantity??0;
   $("productAdminActive").checked=p?.active??true;
-  $("stockAdjustmentArea").classList.toggle("hidden",!p);
+  $("stockAdjustmentArea").classList.toggle("hidden",!p||!canStock());
   $("productAdminMessage").textContent="";
+  $("productAdminForm").querySelectorAll("input:not([readonly]),select").forEach(el=>{if(!el.closest("#stockAdjustmentArea"))el.disabled=!canProducts();});
+  $("productAdminForm").querySelector("button[type=submit]")?.classList.toggle("hidden",!canProducts());
   $("productAdminModal").classList.remove("hidden");
 }
 
@@ -329,7 +350,7 @@ function closeProduct(){ $("productAdminModal").classList.add("hidden") }
 
 async function saveProduct(e){
   e.preventDefault();
-  if(!canAdmin()) return;
+  if(!canProducts()) return;
   const id=$("productAdminId").value;
   const payload={
     name:$("productAdminName").value.trim(),
@@ -388,8 +409,8 @@ async function adjustStock(){
 async function init(){
   if(!await loadContext()) return;
 
-  $("newServiceBtn")?.classList.toggle("hidden",!canAdmin());
-  $("newProductBtn")?.classList.toggle("hidden",!canAdmin());
+  $("newServiceBtn")?.classList.toggle("hidden",!canServices());
+  $("newProductBtn")?.classList.toggle("hidden",!canProducts());
 
   document.querySelectorAll('.nav-item[data-section="servicos"]').forEach(btn=>btn.addEventListener("click",loadServices));
   document.querySelectorAll('.nav-item[data-section="produtos"]').forEach(btn=>btn.addEventListener("click",async()=>{
