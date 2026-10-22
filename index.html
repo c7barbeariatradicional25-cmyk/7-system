@@ -73,6 +73,7 @@
         <button class="nav-item" data-section="servicos">Serviços</button>
         <button class="nav-item" data-section="produtos">Produtos</button>
         <button class="nav-item" data-section="equipe">Equipe</button>
+        <button class="nav-item hidden" data-section="permissoes">Permissões</button>
         <button class="nav-item" data-section="promocoes">Promoções</button>
         <button class="nav-item" data-section="automacoes">Automações</button>
         <button class="nav-item" data-section="relatorios">Relatórios</button>
@@ -495,6 +496,16 @@
               <div class="agenda-empty">Carregando acessos...</div>
             </div>
           </article>
+        </div>
+      </section>
+      <section id="permissoes" class="section">
+        <div class="catalog-toolbar"><div><span class="eyebrow">C7 • SEGURANÇA</span><h2>Controle de Acessos</h2><p>Escolha o que cada funcionário pode acessar. As mudanças são salvas automaticamente.</p></div></div>
+        <div class="staff-permissions-layout">
+          <article class="team-admin-panel"><label>FUNCIONÁRIO<select id="permissionEmployee" class="staff-permission-select"></select></label>
+          <h3 id="permissionEmployeeName">Funcionário</h3><p id="permissionEmployeeRole">Carregando...</p><span id="permissionActive" class="staff-permission-badge"></span>
+          <p class="staff-permission-note">O administrador controla cada permissão individualmente. Acesso a dados pessoais exige autorização específica.</p>
+          <p id="permissionStatus" aria-live="polite"></p></article>
+          <div id="permissionGroups" class="staff-permission-groups"></div>
         </div>
       </section>
       <section id="promocoes" class="section">
@@ -1389,6 +1400,7 @@
 
   <script type="module" src="catalogo.js"></script>
   <script type="module" src="equipe.js"></script>
+  <script type="module" src="permissoes.js"></script>
   <script type="module" src="configuracoes.js"></script>
   <aside id="notificationDrawer" class="notification-drawer hidden" aria-label="Central de notificações">
     <div class="notification-drawer-head">
