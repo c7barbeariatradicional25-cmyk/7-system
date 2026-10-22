@@ -101,12 +101,7 @@ function renderServices(){
     const actions=document.createElement("div");
     actions.className="catalog-actions";
 
-    if(canAdmin() && p.deleted_at){
-      const restore=document.createElement("button");
-      restore.type="button";restore.textContent="RESTAURAR";
-      restore.addEventListener("click",()=>restoreProduct(p));
-      actions.appendChild(restore);
-    }else if(canAdmin()){
+    if(canAdmin()){
       const edit=document.createElement("button");
       edit.textContent="EDITAR";
       edit.addEventListener("click",()=>openService(s.id));
