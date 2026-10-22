@@ -298,8 +298,8 @@ async function openCustomer(id=null){
   $("customerMessage").textContent="";
   $("customerId").value=id||"";
   $("customerModalTitle").textContent=id?"Perfil do cliente":"Novo cliente";
-  $("customerHistory").classList.toggle("hidden",!id);
-  $("customerInsights")?.classList.toggle("hidden",!id);
+  $("customerHistory").classList.toggle("hidden",!id||!can("clients.history"));
+  $("customerInsights")?.classList.toggle("hidden",!id||!can("clients.history"));
 
   if(id){
     const customer=customers.find(c=>c.id===id);
@@ -313,7 +313,7 @@ async function openCustomer(id=null){
     $("crmCustomerTags").value=(customer.tags||[]).join(", ");
     $("crmCustomerNotes").value=customer.notes||"";
     $("crmMarketingOptIn").checked=Boolean(customer.marketing_opt_in);
-    await Promise.all([loadHistory(id),loadConsumptionProfile(id)]);
+    if(can("clients.history"))await Promise.all([loadHistory(id),loadConsumptionProfile(id)]);
   }
 
   $("customerModal").classList.remove("hidden");
