@@ -66,6 +66,14 @@ let personalRights=null;
 const c7Sections={clientes:"clients.read",agenda:"appointments.view",caixa:"cash.view",financeiro:"finance.view",acertos:"finance.view",produtos:"products.view",servicos:"services.manage",equipe:"team.view",permissoes:"team.manage","historico-produtos":"products.manage",relatorios:"reports.view",operacoes:"operations.view",promocoes:"promotions.manage",automacoes:"automations.manage",configuracoes:"settings.manage",desempenho:"barber.portal","meus-clientes":"barber.portal","meus-consumos":"barber.portal","minhas-comissoes":"barber.portal"};
 function c7Allowed(key){return accountRole==="admin" || (personalRights?Boolean(personalRights[key]):true);}
 function c7SectionAllowed(section){return section==="clientes"?(c7Allowed("clients.read")||c7Allowed("clients.create")):c7Allowed(c7Sections[section]);}
+async function c7AttachVisibleNames(appointments){
+ if(c7Allowed("clients.read")||!appointments?.length)return appointments;
+ const ids=appointments.map(a=>a.id).filter(Boolean);
+ const {data,error}=await supabase.rpc("c7_appointment_names",{p_ids:ids.slice(0,250)});
+ if(error){console.warn("C7 nomes agenda",error.message);return appointments;}
+ const names=new Map((data||[]).map(x=>[x.appointment_id,x.customer_name]));
+ return appointments.map(a=>({...a,customer:{full_name:names.get(a.id)||"Cliente"}}));
+}
 async function refreshPersonalRights(){if(accountRole==="admin"){personalRights=null;return;}const {data:{session}}=await supabase.auth.getSession();if(!session)return; const {data}=await supabase.from("staff_permissions").select("permissions").eq("email",session.user.email.toLowerCase()).maybeSingle();personalRights=data?.permissions||null;}
 
 let barberPreviewMode=false;
@@ -371,9 +379,10 @@ async function loadAgenda(){
   const end=new Date(`${selected}T23:59:59.999`);
   const weekday=selectedWeekday();
 
+  const CLIENT_SELECT=c7Allowed("clients.read")?"customer:customers(id,full_name,phone)":"customer_id";
   let appointmentQuery=supabase
     .from("appointments")
-    .select("id,professional_id,starts_at,ends_at,status,source,total_amount,notes,customer:customers(id,full_name,phone),professional:professionals(id,full_name),appointment_services(id,service_name,duration_minutes,price)")
+    .select("id,professional_id,starts_at,ends_at,status,source,total_amount,notes,${CLIENT_SELECT},professional:professionals(id,full_name),appointment_services(id,service_name,duration_minutes,price)")
     .gte("starts_at",start.toISOString())
     .lte("starts_at",end.toISOString())
     .order("starts_at",{ascending:true});
@@ -543,9 +552,10 @@ function renderAgendaList(){
 
 
 async function fetchAppointmentDetail(appointmentId){
+  const CLIENT_SELECT=c7Allowed("clients.read")?"customer:customers(id,full_name,phone)":"customer_id";
   const [{data:appointment,error},{data:extras},{data:productCatalog}]=await Promise.all([
     supabase.from("appointments")
-      .select("id,customer_id,professional_id,starts_at,ends_at,status,source,total_amount,notes,customer:customers(id,full_name,phone),professional:professionals(id,full_name),appointment_services(id,service_id,service_name,duration_minutes,price,sort_order)")
+      .select("id,customer_id,professional_id,starts_at,ends_at,status,source,total_amount,notes,${CLIENT_SELECT},professional:professionals(id,full_name),appointment_services(id,service_id,service_name,duration_minutes,price,sort_order)")
       .eq("id",appointmentId)
       .maybeSingle(),
     supabase.from("appointment_products")
@@ -562,6 +572,7 @@ async function fetchAppointmentDetail(appointmentId){
   if(error||!appointment) return null;
   detailProductsCatalog=productCatalog||[];
   appointment.appointment_products=extras||[];
+  if(!c7Allowed("clients.read")){const [safe]=await c7AttachVisibleNames([appointment]);return safe;}
   return appointment;
 }
 
@@ -1118,6 +1129,7 @@ async function updateDashboard(){
   const end=new Date(`${today}T23:59:59.999`);
   const now=new Date();
 
+  const CLIENT_SELECT_DASH=c7Allowed("clients.read")?"customer:customers(full_name)":"customer_id";
   const [
     appointmentsResult,
     transactionsResult,
@@ -1126,7 +1138,7 @@ async function updateDashboard(){
     professionalsResult
   ]=await Promise.all([
     supabase.from("appointments")
-      .select("id,starts_at,status,customer:customers(full_name),professional:professionals(full_name)")
+      .select("id,starts_at,status,${CLIENT_SELECT_DASH},professional:professionals(full_name)")
       .gte("starts_at",start.toISOString())
       .lte("starts_at",end.toISOString())
       .neq("status","cancelled")
@@ -1143,7 +1155,7 @@ async function updateDashboard(){
     supabase.from("professionals").select("id,full_name,active").eq("active",true)
   ]);
 
-  let appointments=appointmentsResult.data||[];
+  let appointments=await c7AttachVisibleNames(appointmentsResult.data||[]);
   const transactions=transactionsResult.data||[];
   const products=productsResult.data||[];
   const openCash=cashResult.data||null;
