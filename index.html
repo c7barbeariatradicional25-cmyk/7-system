@@ -72,6 +72,7 @@
         <button class="nav-item" data-section="operacoes">Operações</button>
         <button class="nav-item" data-section="servicos">Serviços</button>
         <button class="nav-item" data-section="produtos">Produtos</button>
+        <button class="nav-item hidden" data-section="historico-produtos">Histórico de alterações</button>
         <button class="nav-item" data-section="equipe">Equipe</button>
         <button class="nav-item hidden" data-section="permissoes">Permissões</button>
         <button class="nav-item" data-section="promocoes">Promoções</button>
@@ -444,6 +445,7 @@
         <div class="product-department-tabs">
           <button type="button" class="product-department-tab active" data-product-department="barbershop">PRODUTOS DE BARBEARIA</button>
           <button type="button" class="product-department-tab" data-product-department="convenience">BEBIDAS & CONSUMÍVEIS</button>
+          <button type="button" class="product-department-tab" data-product-department="deleted">EXCLUÍDOS</button>
         </div>
 
         <div id="adminProductList" class="catalog-list">
@@ -459,6 +461,41 @@
             <div class="agenda-empty">Carregando movimentações...</div>
           </div>
         </article>
+      </section>
+      <section id="historico-produtos" class="section">
+        <div class="catalog-toolbar">
+          <div>
+            <span class="eyebrow">AUDITORIA • PRODUTOS E ESTOQUE</span>
+            <h2>Histórico de alterações</h2>
+            <p>Registro automático de quem cadastrou, editou, ajustou, excluiu ou restaurou produtos. Data e hora de Goiânia.</p>
+          </div>
+          <button id="refreshProductAuditBtn" class="ghost-btn" type="button">ATUALIZAR HISTÓRICO</button>
+        </div>
+        <div class="c7-audit-filter-bar">
+          <label>Área
+            <select id="productAuditDepartment">
+              <option value="all">Todas as áreas</option>
+              <option value="barbershop">Produtos de barbearia</option>
+              <option value="convenience">Bebidas & consumíveis</option>
+            </select>
+          </label>
+          <label>Tipo de alteração
+            <select id="productAuditAction">
+              <option value="all">Todas as alterações</option>
+              <option value="created">Cadastro</option>
+              <option value="updated">Edição</option>
+              <option value="stock">Estoque</option>
+              <option value="activated">Ativação</option>
+              <option value="deactivated">Desativação</option>
+              <option value="deleted">Exclusão</option>
+              <option value="restored">Restauração</option>
+            </select>
+          </label>
+        </div>
+        <div id="productAuditList" class="c7-audit-list" aria-live="polite">
+          <div class="agenda-empty">Abra esta área para carregar o histórico.</div>
+        </div>
+        <p class="c7-audit-footnote">O registro começa com esta atualização e mantém as alterações anteriores dos produtos a partir de agora. São exibidos os 200 eventos mais recentes.</p>
       </section>
       <section id="equipe" class="section">
         <div class="catalog-toolbar">
