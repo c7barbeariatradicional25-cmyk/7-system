@@ -1646,4 +1646,38 @@ window.addEventListener("c7-checkout-complete",async()=>{
   }
 });
 
-window.addEventListener("focus",async()=>{if(!currentUser||accountRole==="admin")return;await refreshPersonalRights();document.querySelectorAll(".nav-item").forEach(el=>{const key=c7Sections[el.dataset.section];if(key && personalRights)el.classList.toggle("hidden",!c7SectionAllowed(el.dataset.section));});});
+
+let c7RightsChecking=false;
+async function c7VerifyPermissions(){
+ if(!currentUser||c7RightsChecking)return;
+ c7RightsChecking=true;
+ try{
+   const {data:{session}}=await supabase.auth.getSession();
+   if(!session)return;
+   const {data:profile,error:profileError}=await supabase.from("profiles")
+     .select("role,active").eq("user_id",session.user.id).maybeSingle();
+   if(profileError)return;
+   if(!profile?.active || profile.role!==accountRole){
+     await supabase.auth.signOut();
+     window.location.reload();
+     return;
+   }
+   if(accountRole==="admin")return;
+   const {data:grant,error:grantError}=await supabase.from("staff_permissions")
+     .select("permissions").eq("email",session.user.email.toLowerCase()).maybeSingle();
+   if(grantError)return;
+   const latest=grant?.permissions||null;
+   if(JSON.stringify(latest)!==JSON.stringify(personalRights)){
+     window.location.reload();
+   }
+ }catch(error){
+   console.warn("C7 atualização de permissões",error);
+ }finally{c7RightsChecking=false;}
+}
+window.addEventListener("focus",c7VerifyPermissions);
+document.addEventListener("visibilitychange",()=>{
+ if(document.visibilityState==="visible")c7VerifyPermissions();
+});
+setInterval(()=>{
+ if(document.visibilityState==="visible")c7VerifyPermissions();
+},12000);
