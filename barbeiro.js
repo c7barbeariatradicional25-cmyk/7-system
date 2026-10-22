@@ -80,15 +80,18 @@ function empty(text){
 
 
 async function loadPortalExtras(pro){
+ const {data:{session}}=await supabase.auth.getSession();
+ const {data:perm}=session?await supabase.from("staff_permissions").select("permissions").eq("email",session.user.email.toLowerCase()).maybeSingle():{data:null};
+ const allowed=perm?.permissions?.["clients.read"] ?? false;
  const [clients,consumptions,commissions]=await Promise.all([
- supabase.from("appointments").select("customer_id,starts_at,status,appointment_services(service_name),customer:customers(full_name,phone)").eq("professional_id",pro.id).order("starts_at",{ascending:false}).limit(300),
+ allowed?supabase.from("appointments").select("customer_id,starts_at,status,appointment_services(service_name),customer:customers(full_name,phone)").eq("professional_id",pro.id).order("starts_at",{ascending:false}).limit(300):Promise.resolve({data:[],error:null}),
  supabase.from("employee_consumptions").select("created_at,quantity,total_amount,status,amount_settled,product:products(name)").eq("professional_id",pro.id).order("created_at",{ascending:false}).limit(60),
  supabase.from("commission_entries").select("created_at,commission_amount,status").eq("professional_id",pro.id).order("created_at",{ascending:false}).limit(60)
  ]);
  const safe=t=>String(t??"").replace(/[&<>]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));
  const unique=new Map();
  for(const a of clients.data||[]){if(!a.customer_id||!a.customer)continue;let row=unique.get(a.customer_id);if(!row){row={...a.customer,visits:[]};unique.set(a.customer_id,row);}row.visits.push(a);}
- const clientRows=[...unique.values()].sort((x,y)=>x.full_name.localeCompare(y.full_name,"pt-BR"));
+ const clientRows=allowed?[...unique.values()].sort((x,y)=>x.full_name.localeCompare(y.full_name,"pt-BR")):[];
  const days=["domingo","segunda-feira","terça-feira","quarta-feira","quinta-feira","sexta-feira","sábado"];
  const frequent=values=>{const counts=new Map();for(const v of values)counts.set(v,(counts.get(v)||0)+1);return [...counts].sort((a,b)=>b[1]-a[1])[0]?.[0]||"—";};
  const clientCard=c=>{
@@ -107,7 +110,7 @@ async function loadPortalExtras(pro){
    const query=String($("portalClientSearch")?.value||"").toLocaleLowerCase("pt-BR").trim();
    const matches=clientRows.filter(c=>(c.full_name+" "+(c.phone||"")).toLocaleLowerCase("pt-BR").includes(query));
    $("portalClientCount").textContent=matches.length+" cliente(s)";
-   $("portalClients").innerHTML=clients.error?"Não foi possível carregar seus clientes.":matches.length?matches.map(clientCard).join(""):empty("Nenhum cliente encontrado.");
+   $("portalClients").innerHTML=!allowed?empty("Dados de clientes restritos pelo administrador."):clients.error?"Não foi possível carregar seus clientes.":matches.length?matches.map(clientCard).join(""):empty("Nenhum cliente encontrado.");
  };
  $("portalClientSearch").oninput=renderClients;
  renderClients();
@@ -161,7 +164,7 @@ async function loadPerformance(){
       .neq("status","cancelled"),
 
     supabase.from("appointments")
-      .select("id,professional_id,starts_at,status,customer:customers(full_name),appointment_services(service_name,sort_order)")
+      .select("id,professional_id,starts_at,status,appointment_services(service_name,sort_order)")
       .eq("professional_id",pro.id)
       .gte("starts_at",now.toISOString())
       .in("status",["scheduled","confirmed","waiting","in_service"])
@@ -169,7 +172,7 @@ async function loadPerformance(){
       .limit(6),
 
     supabase.from("appointments")
-      .select("id,professional_id,starts_at,total_amount,status,customer:customers(full_name),appointment_services(service_name,sort_order)")
+      .select("id,professional_id,starts_at,total_amount,status,appointment_services(service_name,sort_order)")
       .eq("professional_id",pro.id)
       .eq("status","completed")
       .order("starts_at",{ascending:false})
@@ -202,7 +205,7 @@ async function loadPerformance(){
               <span>${formatDate(a.starts_at)}</span>
             </div>
             <div>
-              <strong>${a.customer?.full_name||"Cliente"}</strong>
+              <strong>Cliente</strong>
               <span>${services}</span>
             </div>
             <span class="performance-status status-${a.status}">${({
