@@ -5160,3 +5160,17 @@ body{
 #agenda button:focus-visible,#agenda select:focus-visible,#agenda input:focus-visible{outline:3px solid rgba(102,91,77,.28);outline-offset:2px}
 @media(max-width:700px){#agenda .agenda-toolbar{gap:12px}#agenda .agenda-summary>div{padding:14px;min-height:86px}#agenda .agenda-summary strong{font-size:22px}#agenda .appointment-card{padding:16px;gap:12px}#agenda .appointment-info strong{font-size:15px}#agenda .appointment-meta{gap:8px}#agenda .appointment-card:hover{transform:none}}
 @media(prefers-reduced-motion:reduce){#agenda .appointment-card{transition:none}#agenda .appointment-card:hover{transform:none}}
+
+/* C7 - permissões individuais */
+.staff-permissions-layout{display:grid;grid-template-columns:minmax(220px,320px) 1fr;gap:18px;margin-top:24px;align-items:start}
+.staff-permission-select{display:block;width:100%;min-height:42px;margin:8px 0 22px;background:#111;color:#fff;border:1px solid #444;padding:9px}
+.staff-permission-note{color:#aaa;font-size:12px;line-height:1.6;margin:20px 0}
+.staff-permission-badge{display:inline-block;padding:7px 12px;border-radius:20px;background:#322;color:#aaa;margin-top:12px;font-size:10px}
+.staff-permission-badge.is-active{background:#18382a;color:#99e1b5}
+.staff-permission-groups{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.staff-permission-group{padding:18px;border:1px solid #333;background:#101010;border-radius:12px}
+.staff-permission-group h3{font-size:17px;margin:0 0 15px;color:#f1f1e8}
+.staff-permission-toggle{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:43px;padding:8px 0;border-top:1px solid #262626;cursor:pointer;font-size:12px}
+.staff-permission-toggle input{appearance:auto!important;accent-color:#d6ba7b;width:18px;height:18px;flex-shrink:0;cursor:pointer}
+#permissionStatus{color:#90cfa6;margin-top:15px;font-size:12px}#permissionStatus[data-error="true"]{color:#e99999}
+@media(max-width:850px){.staff-permissions-layout{grid-template-columns:1fr}.staff-permission-groups{grid-template-columns:1fr}}
