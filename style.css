@@ -5174,3 +5174,47 @@ body{
 .staff-permission-toggle input{appearance:auto!important;accent-color:#d6ba7b;width:18px;height:18px;flex-shrink:0;cursor:pointer}
 #permissionStatus{color:#90cfa6;margin-top:15px;font-size:12px}#permissionStatus[data-error="true"]{color:#e99999}
 @media(max-width:850px){.staff-permissions-layout{grid-template-columns:1fr}.staff-permission-groups{grid-template-columns:1fr}}
+
+
+/* C7 - legibilidade e contraste do controle de acessos */
+#permissoes .staff-permissions-layout > .team-admin-panel{
+  background:#fffdfb;
+  color:#211e1a;
+  border:1px solid #dfd7ce;
+  border-radius:15px;
+  box-shadow:0 6px 24px rgba(36,30,24,.05);
+}
+#permissoes .staff-permissions-layout > .team-admin-panel > label{
+  display:block;color:#3b342e;font-size:12px;font-weight:700;letter-spacing:.04em;
+}
+#permissoes #permissionEmployeeName{color:#1e1b18;font-size:20px;line-height:1.25;margin-top:14px}
+#permissoes #permissionEmployeeRole{color:#514b43;font-size:14px;margin-top:6px}
+#permissoes .staff-permission-note{color:#585249;font-size:13px;line-height:1.55}
+#permissoes #permissionStatus{color:#217147;font-size:12px;font-weight:600;line-height:1.45}
+#permissoes #permissionStatus[data-error="true"]{color:#ae3428}
+#permissoes .staff-permission-select{color:#fff;background:#191919;border:1px solid #48433c;border-radius:8px;font-size:14px;padding:12px;min-height:46px}
+#permissoes .staff-permission-group{background:#151515;color:#f5f1e9;border:1px solid #353535;border-radius:14px;box-shadow:0 6px 20px rgba(0,0,0,.04)}
+#permissoes .staff-permission-group h3{color:#fff;font-size:18px;line-height:1.3;font-weight:700;letter-spacing:0;margin:0 0 14px}
+#permissoes .staff-permission-group .staff-permission-toggle{
+  display:flex;align-items:center;justify-content:space-between;
+  color:#eeeae3 !important;font-size:13px;font-weight:500;line-height:1.45;
+  min-height:48px;gap:16px;padding:10px 0;border-top:1px solid #363636;opacity:1;
+}
+#permissoes .staff-permission-group .staff-permission-toggle span{
+  color:#eeeae3 !important;opacity:1 !important;visibility:visible;
+  font-size:13px;font-weight:500;line-height:1.45;
+}
+#permissoes .staff-permission-group .staff-permission-toggle input[type="checkbox"]{
+  appearance:auto !important;accent-color:#d1ac63;width:19px;height:19px;
+  min-width:19px;min-height:19px;opacity:1;cursor:pointer;flex:none;
+}
+#permissoes .staff-permission-group .staff-permission-toggle:has(input:focus-visible){
+  outline:2px solid #d1ac63;outline-offset:3px;border-radius:3px;
+}
+#permissoes .staff-permission-group .staff-permission-toggle:has(input:disabled) {
+  cursor:not-allowed;opacity:.68;
+}
+@media(max-width:680px){
+ #permissoes .staff-permission-group{padding:16px}
+ #permissoes .staff-permission-group .staff-permission-toggle span{font-size:13px}
+}
