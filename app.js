@@ -64,7 +64,11 @@ let currentRole=null;
 let accountRole=null;
 let personalRights=null;
 const c7Sections={clientes:"clients.read",agenda:"appointments.view",caixa:"cash.view",financeiro:"finance.view",acertos:"finance.view",produtos:"products.view",servicos:"services.manage",equipe:"team.view",permissoes:"team.manage","historico-produtos":"products.manage",relatorios:"reports.view",operacoes:"operations.view",promocoes:"promotions.manage",automacoes:"automations.manage",configuracoes:"settings.manage",desempenho:"barber.portal","meus-clientes":"barber.portal","meus-consumos":"barber.portal","minhas-comissoes":"barber.portal"};
-function c7Allowed(key){return accountRole==="admin" || (personalRights?Boolean(personalRights[key]):true);}
+const c7DefaultPermissions={
+ barber:new Set(["appointments.view","appointments.edit","appointments.cancel","operations.view","barber.portal"]),
+ reception:new Set(["clients.create","clients.read","clients.edit","clients.delete","clients.history","appointments.view","appointments.create","appointments.edit","appointments.cancel","cash.view","finance.view","products.view","products.manage","stock.manage","team.view","reports.view","services.manage","operations.view","promotions.manage","automations.manage"])
+};
+function c7Allowed(key){return accountRole==="admin" || (personalRights?Boolean(personalRights[key]):Boolean(c7DefaultPermissions[accountRole]?.has(key)));}
 function c7SectionAllowed(section){return section==="clientes"?(c7Allowed("clients.read")||c7Allowed("clients.create")):c7Allowed(c7Sections[section]);}
 async function c7AttachVisibleNames(appointments){
  // Sem permissão explícita de leitura, nenhum dado cadastral deve ser retornado.
