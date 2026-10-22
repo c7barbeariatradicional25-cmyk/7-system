@@ -368,6 +368,7 @@ async function saveCustomer(event){
     ? await supabase.from("customers").update(payload).eq("id",id)
     : can("clients.read")?await supabase.from("customers").insert(payload):await supabase.rpc("c7_register_customer",{p_full_name:payload.full_name,p_phone:payload.phone,p_email:payload.email,p_birth_date:payload.birth_date,p_preferred_professional_id:payload.preferred_professional_id,p_tags:payload.tags,p_notes:payload.notes,p_marketing_opt_in:payload.marketing_opt_in});
 
+  if(!id && !can("clients.read") && result.data==="exists"){$("customerMessage").textContent="Cliente já cadastrado. Solicite a um responsável com acesso aos clientes.";return;}
   if(result.error){
     $("customerMessage").textContent=String(result.error.message||"").includes("unique")?"Esse telefone já pertence a outro cliente.":"Não foi possível salvar o cliente.";
     return;
