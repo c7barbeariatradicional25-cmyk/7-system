@@ -203,7 +203,7 @@ async function loadProfile(userId){
     previewBtn.classList.toggle("hidden",!(data.role==="admin"&&currentProfessionalId));
     previewBtn.textContent="VISUALIZAR COMO BARBEIRO";
   }
-  const canCreateAppointment=["admin","reception"].includes(data.role);
+  const canCreateAppointment=c7Allowed("appointments.create")&&c7Allowed("clients.create");
   const canBlockAgenda=["admin","reception","barber"].includes(data.role);
   newAppointmentBtn.classList.toggle("hidden",!canCreateAppointment||!c7Allowed("appointments.create"));
   blockTimeBtn.classList.toggle("hidden",!canBlockAgenda);
@@ -1334,8 +1334,8 @@ $("appointmentDate").addEventListener("change",updateAppointmentPreview);
 $("appointmentTime").addEventListener("input",updateAppointmentPreview);
 
 async function saveAppointment({keepOpen=false}={}){
-  if(!["admin","reception"].includes(currentRole)){
-    appointmentMessage.textContent="Seu perfil não possui permissão para criar agendamentos.";
+  if(!c7Allowed("appointments.create")||!c7Allowed("clients.create")){
+    appointmentMessage.textContent="É necessário ter permissão para criar agendamentos e cadastrar clientes.";
     return false;
   }
 
