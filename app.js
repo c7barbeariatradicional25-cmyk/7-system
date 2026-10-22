@@ -382,7 +382,7 @@ async function loadAgenda(){
   const CLIENT_SELECT=c7Allowed("clients.read")?"customer:customers(id,full_name,phone)":"customer_id";
   let appointmentQuery=supabase
     .from("appointments")
-    .select("id,professional_id,starts_at,ends_at,status,source,total_amount,notes,${CLIENT_SELECT},professional:professionals(id,full_name),appointment_services(id,service_name,duration_minutes,price)")
+    .select(`id,professional_id,starts_at,ends_at,status,source,total_amount,notes,${CLIENT_SELECT},professional:professionals(id,full_name),appointment_services(id,service_name,duration_minutes,price)`)
     .gte("starts_at",start.toISOString())
     .lte("starts_at",end.toISOString())
     .order("starts_at",{ascending:true});
@@ -416,7 +416,7 @@ async function loadAgenda(){
     return;
   }
 
-  currentAppointments=appointmentsResult.data||[];
+  currentAppointments=await c7AttachVisibleNames(appointmentsResult.data||[]);
   currentBlocks=blocksResult.data||[];
   currentWorkingHours=hoursResult.data||[];
   const {data:unlocks}=await supabase.from("c7_lunch_unlocks").select("professional_id").eq("day",selected);
@@ -555,7 +555,7 @@ async function fetchAppointmentDetail(appointmentId){
   const CLIENT_SELECT=c7Allowed("clients.read")?"customer:customers(id,full_name,phone)":"customer_id";
   const [{data:appointment,error},{data:extras},{data:productCatalog}]=await Promise.all([
     supabase.from("appointments")
-      .select("id,customer_id,professional_id,starts_at,ends_at,status,source,total_amount,notes,${CLIENT_SELECT},professional:professionals(id,full_name),appointment_services(id,service_id,service_name,duration_minutes,price,sort_order)")
+      .select(`id,customer_id,professional_id,starts_at,ends_at,status,source,total_amount,notes,${CLIENT_SELECT},professional:professionals(id,full_name),appointment_services(id,service_id,service_name,duration_minutes,price,sort_order)`)
       .eq("id",appointmentId)
       .maybeSingle(),
     supabase.from("appointment_products")
@@ -1138,7 +1138,7 @@ async function updateDashboard(){
     professionalsResult
   ]=await Promise.all([
     supabase.from("appointments")
-      .select("id,starts_at,status,${CLIENT_SELECT_DASH},professional:professionals(full_name)")
+      .select(`id,starts_at,status,${CLIENT_SELECT_DASH},professional:professionals(full_name)`)
       .gte("starts_at",start.toISOString())
       .lte("starts_at",end.toISOString())
       .neq("status","cancelled")
