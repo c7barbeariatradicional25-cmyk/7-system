@@ -65,6 +65,7 @@ let accountRole=null;
 let personalRights=null;
 const c7Sections={clientes:"clients.read",agenda:"appointments.view",caixa:"cash.view",financeiro:"finance.view",acertos:"finance.view",produtos:"products.view",servicos:"services.manage",equipe:"team.view",permissoes:"team.manage",relatorios:"reports.view",operacoes:"operations.view",promocoes:"promotions.manage",automacoes:"automations.manage",configuracoes:"settings.manage",desempenho:"barber.portal","meus-clientes":"barber.portal","meus-consumos":"barber.portal","minhas-comissoes":"barber.portal"};
 function c7Allowed(key){return accountRole==="admin" || (personalRights?Boolean(personalRights[key]):true);}
+function c7SectionAllowed(section){return section==="clientes"?(c7Allowed("clients.read")||c7Allowed("clients.create")):c7Allowed(c7Sections[section]);}
 async function refreshPersonalRights(){if(accountRole==="admin"){personalRights=null;return;}const {data:{session}}=await supabase.auth.getSession();if(!session)return; const {data}=await supabase.from("staff_permissions").select("permissions").eq("email",session.user.email.toLowerCase()).maybeSingle();personalRights=data?.permissions||null;}
 
 let barberPreviewMode=false;
@@ -180,7 +181,7 @@ async function loadProfile(userId){
     }
 
     if(section==="permissoes")hide=data.role!=="admin";
-    else if(personalRights && c7Sections[section])hide=!c7Allowed(c7Sections[section]);
+    else if(personalRights && c7Sections[section])hide=!c7SectionAllowed(section);
     item.classList.toggle("hidden",hide);
   });
 
@@ -289,7 +290,7 @@ function setBarberPreview(enabled){
 }
 $("arthurPortalModeBtn")?.addEventListener("click",()=>setBarberPreview(!barberPreviewMode));
 function openSection(id){
-  if(accountRole!=="admin" && personalRights && c7Sections[id] && !c7Allowed(c7Sections[id]))return;
+  if(accountRole!=="admin" && personalRights && c7Sections[id] && !c7SectionAllowed(id))return;
   document.querySelectorAll(".section").forEach(el=>el.classList.toggle("active",el.id===id));
   document.querySelectorAll(".nav-item").forEach(el=>el.classList.toggle("active",el.dataset.section===id));
   const btn=document.querySelector(`.nav-item[data-section="${id}"]`);
@@ -1625,4 +1626,4 @@ window.addEventListener("c7-checkout-complete",async()=>{
   }
 });
 
-window.addEventListener("focus",async()=>{if(!currentUser||accountRole==="admin")return;await refreshPersonalRights();document.querySelectorAll(".nav-item").forEach(el=>{const key=c7Sections[el.dataset.section];if(key && personalRights)el.classList.toggle("hidden",!c7Allowed(key));});});
+window.addEventListener("focus",async()=>{if(!currentUser||accountRole==="admin")return;await refreshPersonalRights();document.querySelectorAll(".nav-item").forEach(el=>{const key=c7Sections[el.dataset.section];if(key && personalRights)el.classList.toggle("hidden",!c7SectionAllowed(el.dataset.section));});});
