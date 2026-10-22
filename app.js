@@ -556,7 +556,7 @@ async function fetchAppointmentDetail(appointmentId){
   const CLIENT_SELECT=c7Allowed("clients.read")?"customer:customers(id,full_name,phone)":"customer_id";
   const [{data:appointment,error},{data:extras},{data:productCatalog}]=await Promise.all([
     supabase.from("appointments")
-      .select(`id,customer_id,professional_id,starts_at,ends_at,status,source,total_amount,notes,${CLIENT_SELECT},professional:professionals(id,full_name),appointment_services(id,service_id,service_name,duration_minutes,price,sort_order)`)
+      .select(`id,customer_id,professional_id,starts_at,ends_at,status,source,total_amount,notes${c7Allowed("clients.read")?",customer:customers(id,full_name,phone)":""},professional:professionals(id,full_name),appointment_services(id,service_id,service_name,duration_minutes,price,sort_order)`)
       .eq("id",appointmentId)
       .maybeSingle(),
     supabase.from("appointment_products")
@@ -578,8 +578,8 @@ async function fetchAppointmentDetail(appointmentId){
 }
 
 function canManageDetail(appointment){
-  return ["admin","reception"].includes(currentRole) ||
-    (currentRole==="barber"&&appointment.professional_id===currentProfessionalId);
+  if(!c7Allowed("appointments.edit"))return false;
+  return currentRole!=="barber" || appointment.professional_id===currentProfessionalId;
 }
 
 function renderAppointmentDetail(appointment){
@@ -1325,6 +1325,8 @@ function openAppointmentModal(){
 }
 
 function closeAppointmentModal(){
+  appointmentForm.reset();
+  appointmentMessage.textContent="";
   appointmentModal.classList.add("hidden");
 }
 
