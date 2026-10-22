@@ -7,6 +7,7 @@ const supabase=createClient(
 
 const $=id=>document.getElementById(id);
 let currentRole=null;
+let mayConfigure=false;
 let settingsId=null;
 
 async function loadContext(){
@@ -14,6 +15,8 @@ async function loadContext(){
   if(!session) return false;
   const {data}=await supabase.from("profiles").select("role").eq("user_id",session.user.id).single();
   currentRole=data?.role||null;
+  const {data:grants}=await supabase.from("staff_permissions").select("permissions").eq("email",session.user.email.toLowerCase()).maybeSingle();
+  mayConfigure=currentRole==="admin" || Boolean(grants?.permissions?.["settings.manage"]);
   return true;
 }
 
@@ -38,7 +41,7 @@ async function loadSettings(){
 async function saveSettings(e){
   e.preventDefault();
 
-  if(currentRole!=="admin"){
+  if(!mayConfigure){
     $("settingsMessage").textContent="Apenas administradores podem alterar as configurações.";
     return;
   }
