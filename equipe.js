@@ -7,6 +7,7 @@ const supabase=createClient(
 
 const $=id=>document.getElementById(id);
 let currentRole=null;
+let teamPermissions=null;
 let professionals=[];
 let systemAccess=[];
 let editingAccessOriginalEmail=null;
@@ -17,10 +18,13 @@ async function loadContext(){
   if(!session) return false;
   const {data}=await supabase.from("profiles").select("role").eq("user_id",session.user.id).single();
   currentRole=data?.role||null;
+  const {data:cfg}=await supabase.from("staff_permissions").select("permissions").eq("email",session.user.email.toLowerCase()).maybeSingle();
+  teamPermissions=cfg?.permissions||null;
   return true;
 }
 
 function canAdmin(){return currentRole==="admin"}
+function canManageTeam(){return canAdmin()||Boolean(teamPermissions?.["team.manage"])}
 
 async function loadProfessionals(){
   const {data,error}=await supabase
@@ -91,7 +95,7 @@ function renderProfessionals(){
     const actions=document.createElement("div");
     actions.className="catalog-actions";
 
-    if(canAdmin()){
+    if(canManageTeam()){
       const edit=document.createElement("button");
       edit.textContent="EDITAR";
       edit.addEventListener("click",()=>openProfessional(p.id));
@@ -207,7 +211,7 @@ function closeProfessional(){
 
 async function saveProfessional(e){
   e.preventDefault();
-  if(!canAdmin()) return;
+  if(!canManageTeam()) return;
 
   const id=$("professionalAdminId").value;
   const commissionValue=$("professionalAdminCommission").value;
@@ -215,7 +219,7 @@ async function saveProfessional(e){
     full_name:$("professionalAdminName").value.trim(),
     phone:$("professionalAdminPhone").value.trim()||null,
     specialty:$("professionalAdminSpecialty").value.trim()||"Barbeiro",
-    commission_percent:commissionValue===""?null:Number(commissionValue),
+    ...(canAdmin()?{commission_percent:commissionValue===""?null:Number(commissionValue)}:{}),
     sort_order:Number($("professionalAdminSort").value||0),
     active:$("professionalAdminActive").checked,
     updated_at:new Date().toISOString()
@@ -240,7 +244,7 @@ async function saveProfessional(e){
   const accessEmail=$("professionalAccessEmail").value.trim().toLowerCase();
   const accessPassword=$("professionalAccessPassword").value;
 
-  if(accessEmail){
+  if(canAdmin() && accessEmail){
     const {data:existingAccess}=await supabase
       .from("admin_allowlist")
       .select("email")
@@ -309,7 +313,7 @@ async function saveProfessional(e){
         return;
       }
     }
-  }else{
+  }else if(canAdmin()){
     const {data:existingAccess}=await supabase
       .from("admin_allowlist")
       .select("email")
@@ -348,7 +352,7 @@ async function saveProfessional(e){
 async function init(){
   if(!await loadContext()) return;
 
-  $("newProfessionalBtn")?.classList.toggle("hidden",!canAdmin());
+  $("newProfessionalBtn")?.classList.toggle("hidden",!canManageTeam());
   document.querySelectorAll('.nav-item[data-section="equipe"]').forEach(btn=>btn.addEventListener("click",async()=>{
     await loadProfessionals();
     if(canAdmin()) await loadSystemAccess();
@@ -515,7 +519,7 @@ async function loadWorkingHours(){
     save.className="ghost-btn";
     save.type="button";
     save.textContent="SALVAR";
-    save.disabled=!canAdmin();
+    save.disabled=!canManageTeam();
 
     save.addEventListener("click",async()=>{
       if(!canAdmin()) return;
