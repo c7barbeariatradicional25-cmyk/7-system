@@ -12,6 +12,7 @@ let currentUser=null;
 let services=[];
 let products=[];
 let productDepartment="barbershop";
+let productAuditEntries=[];
 
 async function loadContext(){
   const {data:{session}}=await supabase.auth.getSession();
@@ -59,7 +60,12 @@ function renderServices(){
 
     const head=document.createElement("div");
     head.className="catalog-category-head";
-    head.innerHTML=`<div><span>CATEGORIA</span><h3>${category}</h3></div><strong>${items.length}</strong>`;
+    const headerText=document.createElement("div");
+    const eyebrow=document.createElement("span");eyebrow.textContent="CATEGORIA";
+    const categoryTitle=document.createElement("h3");categoryTitle.textContent=category;
+    headerText.append(eyebrow,categoryTitle);
+    const count=document.createElement("strong");count.textContent=String(items.length);
+    head.append(headerText,count);
 
     const body=document.createElement("div");
     body.className="catalog-category-body";
@@ -95,7 +101,12 @@ function renderServices(){
     const actions=document.createElement("div");
     actions.className="catalog-actions";
 
-    if(canAdmin()){
+    if(canAdmin() && p.deleted_at){
+      const restore=document.createElement("button");
+      restore.type="button";restore.textContent="RESTAURAR";
+      restore.addEventListener("click",()=>restoreProduct(p));
+      actions.appendChild(restore);
+    }else if(canAdmin()){
       const edit=document.createElement("button");
       edit.textContent="EDITAR";
       edit.addEventListener("click",()=>openService(s.id));
@@ -171,23 +182,24 @@ async function loadProducts(){
 
 function renderProducts(){
   const list=$("adminProductList");
-  const active=products.filter(p=>p.active);
-  const low=products.filter(p=>Number(p.stock_quantity)<=Number(p.min_stock));
+  const available=products.filter(p=>!p.deleted_at);
+  const active=available.filter(p=>p.active);
+  const low=available.filter(p=>p.active && Number(p.stock_quantity)<=Number(p.min_stock));
   $("adminProductActiveCount").textContent=active.length;
   $("adminProductLowStockCount").textContent=low.length;
-  $("adminProductStockTotal").textContent=products.reduce((sum,p)=>sum+Number(p.stock_quantity||0),0);
+  $("adminProductStockTotal").textContent=available.reduce((sum,p)=>sum+Number(p.stock_quantity||0),0);
 
   list.replaceChildren();
 
-  if(!products.length){
+  if(!products.some(p=>productDepartment==="deleted"?Boolean(p.deleted_at):!p.deleted_at&&(p.department||"barbershop")===productDepartment)){
     const empty=document.createElement("div");
     empty.className="agenda-empty";
-    empty.textContent="Nenhum produto cadastrado.";
+    empty.textContent=productDepartment==="deleted"?"Nenhum produto excluído.":"Nenhum produto nesta categoria.";
     list.appendChild(empty);
     return;
   }
 
-  const visibleProducts=products.filter(p=>(p.department||"barbershop")===productDepartment);
+  const visibleProducts=products.filter(p=>productDepartment==="deleted"?Boolean(p.deleted_at):!p.deleted_at&&(p.department||"barbershop")===productDepartment);
   const groups=groupByCategory(visibleProducts);
 
   Object.entries(groups).forEach(([category,items])=>{
@@ -227,7 +239,7 @@ function renderProducts(){
     const st=document.createElement("strong");
     const currentStock=Number(p.stock_quantity||0);
     const minStock=Number(p.min_stock||0);
-    st.textContent=!p.active
+    st.textContent=p.deleted_at?"EXCLUÍDO":!p.active
       ?"INATIVO"
       :currentStock<=0
         ?"SEM ESTOQUE"
@@ -260,7 +272,10 @@ function renderProducts(){
       toggle.textContent=p.active?"DESATIVAR":"ATIVAR";
       toggle.className="active-toggle"+(p.active?"":" off");
       toggle.addEventListener("click",()=>toggleProduct(p));
-      actions.append(edit,stockBtn,toggle);
+      const remove=document.createElement("button");
+      remove.type="button";remove.textContent="EXCLUIR";remove.className="c7-delete-product";
+      remove.addEventListener("click",()=>archiveProduct(p));
+      actions.append(edit,stockBtn,toggle,remove);
     }
 
       row.append(main,price,status,actions);
@@ -273,8 +288,26 @@ function renderProducts(){
 }
 
 async function toggleProduct(product){
-  await supabase.from("products").update({active:!product.active}).eq("id",product.id);
+  if(!canAdmin())return;
+  const {error}=await supabase.from("products").update({active:!product.active}).eq("id",product.id).is("deleted_at",null);
+  if(error){window.alert("Não foi possível alterar o status do produto.");return;}
   await loadProducts();
+}
+async function archiveProduct(product){
+  if(!canAdmin())return;
+  if(!window.confirm('Excluir "'+product.name+'"?\n\nO produto será removido do catálogo, mas o histórico de vendas e estoque será preservado. Você poderá restaurá-lo na aba Excluídos.'))return;
+  const {data,error}=await supabase.rpc("c7_archive_product",{p_product_id:product.id,p_restore:false});
+  if(error||data!==true){window.alert("Não foi possível excluir o produto. Verifique as permissões e tente novamente.");return;}
+  await loadProducts();
+  await loadProductAudit();
+}
+async function restoreProduct(product){
+  if(!canAdmin())return;
+  if(!window.confirm('Restaurar "'+product.name+'"?\n\nO produto voltará a ficar ativo no catálogo.'))return;
+  const {data,error}=await supabase.rpc("c7_archive_product",{p_product_id:product.id,p_restore:true});
+  if(error||data!==true){window.alert("Não foi possível restaurar o produto.");return;}
+  await loadProducts();
+  await loadProductAudit();
 }
 
 function openProduct(id=null){
@@ -323,6 +356,7 @@ async function saveProduct(e){
   }
   closeProduct();
   await loadProducts();
+  await loadProductAudit();
 }
 
 async function adjustStock(){
@@ -352,6 +386,8 @@ async function adjustStock(){
   $("stockAdjustmentQty").value="";
   $("stockAdjustmentNotes").value="";
   $("productAdminMessage").textContent="Estoque atualizado.";
+  await loadInventoryHistory();
+  await loadProductAudit();
 }
 
 async function init(){
@@ -365,6 +401,7 @@ async function init(){
     await loadProducts();
     await loadInventoryHistory();
   }));
+  document.querySelectorAll('.nav-item[data-section="historico-produtos"]').forEach(btn=>btn.addEventListener("click",loadProductAudit));
 
   $("newServiceBtn")?.addEventListener("click",()=>openService());
   $("serviceAdminForm")?.addEventListener("submit",saveService);
@@ -383,6 +420,9 @@ async function init(){
   $("productAdminForm")?.addEventListener("submit",saveProduct);
   $("applyStockAdjustmentBtn")?.addEventListener("click",adjustStock);
   $("refreshInventoryHistoryBtn")?.addEventListener("click",loadInventoryHistory);
+  $("refreshProductAuditBtn")?.addEventListener("click",loadProductAudit);
+  $("productAuditDepartment")?.addEventListener("change",renderProductAudit);
+  $("productAuditAction")?.addEventListener("change",renderProductAudit);
   document.querySelectorAll("[data-close-product-admin]").forEach(el=>el.addEventListener("click",closeProduct));
 }
 
@@ -430,4 +470,83 @@ async function loadInventoryHistory(){
       </div>
     `;
   }).join("");
+}
+
+/* Audit trail is read-only. Every record is written on the server by a database trigger. */
+const c7AuditLabels={
+ created:"CADASTRO",updated:"EDIÇÃO",stock:"ESTOQUE",
+ activated:"ATIVAÇÃO",deactivated:"DESATIVAÇÃO",
+ deleted:"EXCLUSÃO",restored:"RESTAURAÇÃO"
+};
+const c7FieldLabels={
+ name:"Nome",category:"Categoria",department:"Área",product_kind:"Tipo",
+ price:"Preço de venda",cost_price:"Custo",stock_quantity:"Quantidade em estoque",
+ min_stock:"Estoque mínimo",active:"Ativo",sort_order:"Ordem",deleted_at:"Exclusão"
+};
+function c7AuditValue(value,key){
+ if(value===null||value===undefined)return "—";
+ if(typeof value==="boolean")return value?"Sim":"Não";
+ if(key==="department")return value==="convenience"?"Bebidas & consumíveis":"Produtos de barbearia";
+ if(["price","cost_price"].includes(key))return money(value);
+ if(key==="deleted_at")return value?"Registrada":"Sem exclusão";
+ return String(value);
+}
+async function loadProductAudit(){
+ const target=$("productAuditList");
+ if(!target||!canAdmin())return;
+ target.textContent="Carregando histórico...";
+ const {data,error}=await supabase.from("product_change_history")
+   .select("id,product_id,product_name,department,action,changes,actor_name,occurred_at")
+   .order("occurred_at",{ascending:false}).limit(200);
+ if(error){
+   target.textContent="Não foi possível carregar o histórico. Confira o acesso administrativo.";
+   return;
+ }
+ productAuditEntries=data||[];
+ renderProductAudit();
+}
+function renderProductAudit(){
+ const target=$("productAuditList");
+ if(!target)return;
+ const dep=$("productAuditDepartment")?.value||"all";
+ const action=$("productAuditAction")?.value||"all";
+ const rows=productAuditEntries.filter(x=>(dep==="all"||x.department===dep)&&(action==="all"||x.action===action));
+ target.replaceChildren();
+ if(!rows.length){
+   const empty=document.createElement("div");empty.className="agenda-empty";
+   empty.textContent="Nenhuma alteração encontrada para este filtro.";
+   target.appendChild(empty);return;
+ }
+ for(const item of rows){
+   const row=document.createElement("article");row.className="c7-audit-row";
+   const summary=document.createElement("div");summary.className="c7-audit-main";
+   const title=document.createElement("strong");title.textContent=item.product_name||"Produto";
+   const stamp=document.createElement("span");
+   const when=new Date(item.occurred_at).toLocaleString("pt-BR",{
+     timeZone:"America/Sao_Paulo",day:"2-digit",month:"2-digit",year:"numeric",
+     hour:"2-digit",minute:"2-digit",second:"2-digit",hour12:false
+   });
+   stamp.textContent=when+" • "+(item.actor_name||"Sistema / automação");
+   summary.append(title,stamp);
+   const actionBadge=document.createElement("span");
+   actionBadge.className="c7-audit-badge c7-audit-"+item.action;
+   actionBadge.textContent=c7AuditLabels[item.action]||item.action;
+   row.append(summary,actionBadge);
+   const entries=Object.entries(item.changes||{}).filter(([key])=>Boolean(c7FieldLabels[key]));
+   if(entries.length){
+     const detail=document.createElement("details");detail.className="c7-audit-details";
+     const open=document.createElement("summary");open.textContent="Ver o que foi alterado";
+     detail.appendChild(open);
+     const changes=document.createElement("div");changes.className="c7-audit-changes";
+     for(const [key,values] of entries){
+       const line=document.createElement("div");
+       const field=document.createElement("strong");field.textContent=c7FieldLabels[key]+": ";
+       const description=document.createElement("span");
+       description.textContent=c7AuditValue(values?.before,key)+" → "+c7AuditValue(values?.after,key);
+       line.append(field,description);changes.appendChild(line);
+     }
+     detail.appendChild(changes);row.appendChild(detail);
+   }
+   target.appendChild(row);
+ }
 }
