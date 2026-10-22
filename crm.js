@@ -320,6 +320,8 @@ async function openCustomer(id=null){
 }
 
 function closeCustomer(){
+  $("customerForm").reset();
+  $("customerId").value="";
   $("customerModal").classList.add("hidden");
 }
 
