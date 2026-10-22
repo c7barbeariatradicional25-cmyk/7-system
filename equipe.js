@@ -604,7 +604,8 @@ async function loadSystemAccess(){
       await loadSystemAccess();
     });
 
-    row.append(main,role,edit,toggle);
+    const permissions=document.createElement("button");permissions.type="button";permissions.textContent="PERMISSÕES";permissions.addEventListener("click",()=>window.dispatchEvent(new CustomEvent("c7-edit-permissions",{detail:{email:item.email}})));
+    row.append(main,role,edit,permissions,toggle);
     target.appendChild(row);
   });
 }
