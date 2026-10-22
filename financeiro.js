@@ -8,17 +8,21 @@ const supabase=createClient(
 const $=id=>document.getElementById(id);
 const money=v=>new Intl.NumberFormat("pt-BR",{style:"currency",currency:"BRL"}).format(Number(v||0));
 let currentRole=null;
+let c7ModuleRights=null;
 
+function canAccessFinance(){return currentRole==="admin" || (c7ModuleRights?Boolean(c7ModuleRights["finance.view"]):currentRole==="reception");}
 async function loadContext(){
   const {data:{session}}=await supabase.auth.getSession();
   if(!session) return false;
   const {data}=await supabase.from("profiles").select("role").eq("user_id",session.user.id).single();
   currentRole=data?.role||null;
+  const {data:grant}=await supabase.from("staff_permissions").select("permissions").eq("email",session.user.email.toLowerCase()).maybeSingle();
+  c7ModuleRights=grant?.permissions||null;
   return true;
 }
 
 async function loadCommissions(){
-  if(!["admin","reception"].includes(currentRole)) return;
+  if(!canAccessFinance()) return;
   const {data,error}=await supabase
     .from("commission_entries")
     .select("id,commission_amount,commission_percent,base_amount,status,created_at,paid_at,professional:professionals(full_name)")
@@ -86,7 +90,7 @@ async function loadCommissions(){
 }
 
 async function loadCashHistory(){
-  if(!["admin","reception"].includes(currentRole)) return;
+  if(!canAccessFinance()) return;
 
   const {data,error}=await supabase
     .from("cash_sessions")
@@ -170,7 +174,7 @@ function currentWeekRange(){
 }
 
 async function loadEmployeeConsumptions(){
-  if(!["admin","reception"].includes(currentRole)) return;
+  if(!canAccessFinance()) return;
 
   const {data,error}=await supabase
     .from("employee_consumptions")
@@ -203,7 +207,7 @@ async function loadEmployeeConsumptions(){
 }
 
 async function loadWeeklySettlements(){
-  if(!["admin","reception"].includes(currentRole)) return;
+  if(!canAccessFinance()) return;
 
   const range=currentWeekRange();
 
@@ -291,7 +295,7 @@ async function loadWeeklySettlements(){
 
 
 async function loadSettlementHistory(){
-  if(!["admin","reception"].includes(currentRole)) return;
+  if(!canAccessFinance()) return;
 
   const {data,error}=await supabase
     .from("employee_settlements")
@@ -360,6 +364,7 @@ async function init(){
 
   $("settlementPaymentForm")?.addEventListener("submit",async e=>{
     e.preventDefault();
+    if(currentRole!=="admin")return;
 
     $("settlementPaymentMessage").textContent="Registrando pagamento...";
 
