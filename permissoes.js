@@ -24,7 +24,7 @@ const GROUPS=[
 const ALL=GROUPS.flatMap(g=>g.items.map(x=>x[0]));
 const BASE={
  reception:new Set(["clients.create","clients.read","clients.edit","clients.delete","clients.history","appointments.view","appointments.create","appointments.edit","appointments.cancel","cash.view","finance.view","products.view","products.manage","stock.manage","team.view","reports.view","services.manage","operations.view","promotions.manage","automations.manage"]),
- barber:new Set(["clients.read","appointments.view","appointments.edit","appointments.cancel","operations.view","barber.portal"])
+ barber:new Set(["appointments.view","appointments.edit","appointments.cancel","operations.view","barber.portal"])
 };
 let people=[],overrides={},selected="",rights={},timers={},saving={},versions={};
 const esc=s=>String(s||"").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;");
