@@ -5218,3 +5218,47 @@ body{
  #permissoes .staff-permission-group{padding:16px}
  #permissoes .staff-permission-group .staff-permission-toggle span{font-size:13px}
 }
+
+/* C7 • exclusão segura de produtos e trilha de auditoria */
+#produtos .catalog-actions{display:flex;gap:6px;align-items:center;flex-wrap:wrap;justify-content:flex-end}
+#produtos .catalog-actions button.c7-delete-product{
+ color:#a63730!important;background:#fff4f1!important;
+ border:1px solid #d6afa8!important;font-weight:700;
+}
+#produtos .catalog-actions button.c7-delete-product:hover{
+ background:#a63730!important;color:#fff!important;
+}
+#produtos .catalog-actions button{white-space:nowrap}
+#produtos .product-department-tabs{flex-wrap:wrap}
+#historico-produtos .c7-audit-filter-bar{display:flex;align-items:end;gap:14px;flex-wrap:wrap;margin:20px 0}
+#historico-produtos .c7-audit-filter-bar label{
+ display:grid;gap:7px;font-size:12px;font-weight:700;color:#62594f;min-width:210px
+}
+#historico-produtos .c7-audit-filter-bar select{
+ width:100%;height:44px;padding:0 12px;background:#fffdfb;
+ color:#24211d;border:1px solid #d7c9ba;border-radius:9px;font-size:13px
+}
+#historico-produtos .c7-audit-list{display:grid;gap:12px}
+#historico-produtos .c7-audit-row{
+ display:flex;align-items:center;gap:14px;flex-wrap:wrap;
+ padding:17px 20px;border:1px solid #e2d8ce;border-radius:12px;background:#fffdfb;
+ box-shadow:0 4px 14px rgba(28,20,14,.03);
+}
+#historico-produtos .c7-audit-main{flex:1 1 250px;min-width:0;display:grid;gap:7px}
+#historico-produtos .c7-audit-main strong{font-size:15px;color:#1d1b17;overflow-wrap:anywhere}
+#historico-produtos .c7-audit-main span{font-size:12px;color:#62584e;line-height:1.5}
+#historico-produtos .c7-audit-badge{
+ color:#64462b;background:#f4e8d7;padding:7px 10px;border-radius:20px;
+ letter-spacing:.06em;font-weight:700;font-size:10px;
+}
+#historico-produtos .c7-audit-deleted{color:#a32d28;background:#ffebe8}
+#historico-produtos .c7-audit-restored{color:#21663f;background:#e7f4e8}
+#historico-produtos .c7-audit-details{flex-basis:100%;border-top:1px solid #eee6dd;padding-top:10px}
+#historico-produtos .c7-audit-details summary{color:#7b5637;cursor:pointer;font-weight:700;font-size:12px}
+#historico-produtos .c7-audit-changes{display:grid;gap:5px;margin-top:11px}
+#historico-produtos .c7-audit-changes>div{color:#4d453e;font-size:12px;line-height:1.6}
+#historico-produtos .c7-audit-changes strong{color:#29231d}
+#historico-produtos .c7-audit-footnote{font-size:12px;color:#6a6259;margin:18px 2px}
+@media(max-width:600px){#historico-produtos .c7-audit-row{padding:14px}
+#historico-produtos .c7-audit-filter-bar{display:grid}
+#historico-produtos .c7-audit-filter-bar label{min-width:0}}
