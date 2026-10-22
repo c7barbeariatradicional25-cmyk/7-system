@@ -63,7 +63,7 @@ const statusLabels={
 let currentRole=null;
 let accountRole=null;
 let personalRights=null;
-const c7Sections={clientes:"clients.read",agenda:"appointments.view",caixa:"cash.view",financeiro:"finance.view",acertos:"finance.view",produtos:"products.view",servicos:"services.manage",equipe:"team.view",permissoes:"team.manage",relatorios:"reports.view",operacoes:"operations.view",promocoes:"promotions.manage",automacoes:"automations.manage",configuracoes:"settings.manage",desempenho:"barber.portal","meus-clientes":"barber.portal","meus-consumos":"barber.portal","minhas-comissoes":"barber.portal"};
+const c7Sections={clientes:"clients.read",agenda:"appointments.view",caixa:"cash.view",financeiro:"finance.view",acertos:"finance.view",produtos:"products.view",servicos:"services.manage",equipe:"team.view",permissoes:"team.manage","historico-produtos":"products.manage",relatorios:"reports.view",operacoes:"operations.view",promocoes:"promotions.manage",automacoes:"automations.manage",configuracoes:"settings.manage",desempenho:"barber.portal","meus-clientes":"barber.portal","meus-consumos":"barber.portal","minhas-comissoes":"barber.portal"};
 function c7Allowed(key){return accountRole==="admin" || (personalRights?Boolean(personalRights[key]):true);}
 function c7SectionAllowed(section){return section==="clientes"?(c7Allowed("clients.read")||c7Allowed("clients.create")):c7Allowed(c7Sections[section]);}
 async function refreshPersonalRights(){if(accountRole==="admin"){personalRights=null;return;}const {data:{session}}=await supabase.auth.getSession();if(!session)return; const {data}=await supabase.from("staff_permissions").select("permissions").eq("email",session.user.email.toLowerCase()).maybeSingle();personalRights=data?.permissions||null;}
@@ -180,7 +180,7 @@ async function loadProfile(userId){
       hide=section==="configuracoes";
     }
 
-    if(section==="permissoes")hide=data.role!=="admin";
+    if(section==="permissoes"||section==="historico-produtos")hide=data.role!=="admin";
     else if(personalRights && c7Sections[section])hide=!c7SectionAllowed(section);
     item.classList.toggle("hidden",hide);
   });
@@ -290,6 +290,7 @@ function setBarberPreview(enabled){
 }
 $("arthurPortalModeBtn")?.addEventListener("click",()=>setBarberPreview(!barberPreviewMode));
 function openSection(id){
+  if((id==="historico-produtos"||id==="permissoes")&&accountRole!=="admin")return;
   if(accountRole!=="admin" && personalRights && c7Sections[id] && !c7SectionAllowed(id))return;
   document.querySelectorAll(".section").forEach(el=>el.classList.toggle("active",el.id===id));
   document.querySelectorAll(".nav-item").forEach(el=>el.classList.toggle("active",el.dataset.section===id));
