@@ -8,12 +8,13 @@ const supabase=createClient(
 const $=id=>document.getElementById(id);
 const money=v=>new Intl.NumberFormat("pt-BR",{style:"currency",currency:"BRL"}).format(Number(v||0));
 let currentRole=null;
+let mayManagePromotions=false;
 let promotions=[];
 let coupons=[];
 let plans=[];
 let birthdayCampaign=null;
 
-function canAdmin(){return currentRole==="admin"}
+function canAdmin(){return mayManagePromotions}
 
 function discountLabel(type,value){
   return type==="percent"
@@ -33,6 +34,8 @@ async function loadContext(){
   if(!session) return false;
   const {data}=await supabase.from("profiles").select("role").eq("user_id",session.user.id).single();
   currentRole=data?.role||null;
+  const {data:grants}=await supabase.from("staff_permissions").select("permissions").eq("email",session.user.email.toLowerCase()).maybeSingle();
+  mayManagePromotions=currentRole==="admin" || Boolean(grants?.permissions?.["promotions.manage"]) || (currentRole==="reception" && !grants);
   return true;
 }
 
