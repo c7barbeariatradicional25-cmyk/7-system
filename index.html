@@ -810,7 +810,7 @@
         <div class="form-grid three">
           <label><span>Data</span><input id="appointmentDate" type="date" required></label>
           <label><span>Horário</span><input id="appointmentTime" type="time" required></label>
-          <label><span>Minutos extras</span><select id="appointmentExtraMinutes">
+          <label class="c7-extra-create"><span>⏱ Tempo extra para este cliente</span><select id="appointmentExtraMinutes">
             <option value="0">Sem acréscimo</option><option value="5">+5 minutos</option><option value="10">+10 minutos</option>
             <option value="15">+15 minutos</option><option value="20">+20 minutos</option><option value="30">+30 minutos</option>
             <option value="45">+45 minutos</option><option value="60">+60 minutos</option></select></label>
@@ -1613,6 +1613,17 @@
         <div><span>STATUS</span><strong id="detailStatus">—</strong></div>
       </div>
 
+      <div class="c7-extra-control" id="detailExtraControl">
+        <div><strong>Tempo extra do atendimento</strong><small>Acrescente tempo à reserva sem refazer o agendamento.</small></div>
+        <div class="c7-extra-actions">
+          <select id="detailExtraMinutes" aria-label="Minutos adicionais">
+            <option value="0">Sem adicional</option><option value="5">+5 min</option><option value="10">+10 min</option>
+            <option value="15">+15 min</option><option value="20">+20 min</option><option value="30">+30 min</option>
+            <option value="45">+45 min</option><option value="60">+60 min</option>
+          </select>
+          <button type="button" id="detailExtraSave" class="primary-btn">APLICAR TEMPO</button>
+        </div>
+      </div>
       <div class="appointment-detail-columns">
         <section class="detail-panel">
           <div class="detail-panel-head">
