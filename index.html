@@ -1763,6 +1763,8 @@ document.addEventListener("keydown",function(e){
    if(body.hidden){body.hidden=false;head.setAttribute("aria-expanded","true");}
  }
  nav.addEventListener("click",e=>{if(e.target.closest(".nav-item"))queueMicrotask(reveal);});
+ const observer=new MutationObserver(changes=>{if(changes.some(c=>c.attributeName==="class"&&c.target.classList?.contains("active")))reveal();});
+ nav.querySelectorAll(".nav-item").forEach(btn=>observer.observe(btn,{attributes:true,attributeFilter:["class"]}));
  const active=nav.querySelector(".nav-item.active");
  if(active)reveal();
  // A área de administração continua escondida de quem não tem permissão.
