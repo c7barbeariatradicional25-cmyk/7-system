@@ -1108,6 +1108,20 @@ function renderTimeline(){
   });
 
 
+  // Feedback discreto no lugar de caixas de diálogo que interrompem a agenda.
+  function c7AgendaToast(message,isError=false){
+    let el=document.getElementById("c7AgendaToast");
+    if(!el){
+      el=document.createElement("div");
+      el.id="c7AgendaToast";el.setAttribute("role","status");
+      document.body.appendChild(el);
+    }
+    el.textContent=message;
+    el.className="c7-agenda-toast"+(isError?" c7-agenda-toast-error":"");
+    el.classList.add("visible");
+    clearTimeout(window.c7ToastTimer);
+    window.c7ToastTimer=setTimeout(()=>el.classList.remove("visible"),isError?4500:2200);
+  }
   // Arraste via eventos na janela: o movimento continua mesmo fora do cartão.
   // Isso evita que o navegador solte o item antes de confirmar o reagendamento.
   agendaTimeline.querySelectorAll(".live-booking[data-open-appointment]").forEach(card=>{
@@ -1155,14 +1169,14 @@ function renderTimeline(){
       if(minute<0||minute>=1440||minute===currentMin)return;
       date.setHours(Math.floor(minute/60),minute%60,0,0);
       if(date<=new Date()){alert("Selecione um horário futuro.");return;}
-      const label=date.toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"});
-      if(!confirm("Mover atendimento para "+label+"?"))return;
+      c7AgendaToast("Atualizando horário...");
       const {error}=await supabase.rpc("c7_staff_move_appointment",{
         p_appointment_id:record.id,p_starts_at:date.toISOString(),
         p_extra_minutes:record.extra_minutes||0
       });
-      if(error){alert(error.message||"Não foi possível mover o atendimento.");return;}
+      if(error){c7AgendaToast(error.message||"Não foi possível alterar o horário.",true);return;}
       await loadAgenda();
+      c7AgendaToast("Horário atualizado.");
       window.dispatchEvent(new CustomEvent("c7-appointment-rescheduled",{detail:{appointmentId:record.id}}));
     }
     card.addEventListener("pointerdown",e=>{
