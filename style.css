@@ -5292,3 +5292,20 @@ button:focus-visible,.nav-item:focus-visible,select:focus-visible,input:focus-vi
 .agenda-actions .primary-btn{font-size:12px;letter-spacing:.03em}
 .modal-head h2{font-size:clamp(22px,2.4vw,28px)}
 @media(max-width:650px){.c7-unified-notice{bottom:88px}.agenda-actions{gap:6px}.agenda-actions .primary-btn{min-width:110px}.modal-card{padding:18px}}
+
+/* C7 • navegação curta por área; menus não alteram as permissões */
+.sidebar nav{overflow-y:auto;min-height:0;align-content:start;padding:0 0 12px;scrollbar-width:thin}
+.c7-nav-group{min-width:0;display:block;margin:3px 0 7px}
+.c7-nav-group-toggle{display:flex;justify-content:space-between;align-items:center;width:100%;padding:10px 12px;background:transparent;border:0;border-radius:9px;color:#a8a19b;text-align:left;font-family:inherit;font-size:10px;letter-spacing:.035em;font-weight:700;cursor:pointer}
+.c7-nav-group-toggle:hover{background:#24201d;color:#f9f4ed}
+.c7-nav-chevron{font-size:18px;line-height:1;transition:transform .15s}
+.c7-nav-group-toggle[aria-expanded="true"] .c7-nav-chevron{transform:rotate(180deg)}
+.c7-nav-group-items{display:grid;gap:2px;padding:1px 0 4px 5px}
+.c7-nav-group-items[hidden]{display:none!important}
+.c7-nav-group-items .nav-item{width:100%;min-height:38px;height:38px}
+@media(max-width:640px){
+ .sidebar nav{display:flex;overflow-x:auto;overflow-y:hidden;align-items:center;flex-wrap:nowrap;white-space:nowrap;padding:0}
+ .c7-nav-group,.c7-nav-group-items,.c7-nav-group-items[hidden]{display:contents!important}
+ .c7-nav-group-toggle{display:none!important}
+ .c7-nav-group-items .nav-item{min-width:max-content;width:auto;height:52px;padding:0 13px}
+}
