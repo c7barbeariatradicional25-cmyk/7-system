@@ -116,40 +116,53 @@ async function loadCashSummary(){
 }
 
 async function loadTransactions(){
-  const {data,error}=await supabase
-    .from("cash_transactions")
-    .select("id,transaction_type,direction,payment_method,description,net_amount,status,created_at")
+  const {data,error}=await supabase.from("cash_transactions")
+    .select("id,transaction_type,direction,payment_method,description,gross_amount,discount_amount,net_amount,status,created_at,appointment_id")
     .eq("session_id",openSession.id)
     .order("created_at",{ascending:false});
-
   const list=$("cashTransactionList");
-  if(error){
-    list.innerHTML='<div class="cash-empty">Não foi possível carregar as movimentações.</div>';
-    return;
-  }
+  if(error){list.innerHTML='<div class="cash-empty">Não foi possível carregar as movimentações.</div>';return;}
+  if(!data?.length){list.innerHTML='<div class="cash-empty">Nenhuma movimentação registrada.</div>';return;}
 
-  if(!data?.length){
-    list.innerHTML='<div class="cash-empty">Nenhuma movimentação registrada.</div>';
-    return;
+  const serviceIds=data.filter(t=>t.transaction_type==="service").map(t=>t.id);
+  let itemsByTransaction=new Map();
+  if(serviceIds.length){
+    const {data:items,error:itemError}=await supabase.from("cash_transaction_items")
+      .select("transaction_id,item_type,description,quantity,unit_price,total_amount")
+      .in("transaction_id",serviceIds);
+    if(itemError)console.warn("C7: detalhes do recebimento indisponíveis",itemError.message);
+    for(const item of items||[]){
+      if(!itemsByTransaction.has(item.transaction_id))itemsByTransaction.set(item.transaction_id,[]);
+      itemsByTransaction.get(item.transaction_id).push(item);
+    }
   }
-
-  list.innerHTML=data.map(item=>{
-    const time=new Date(item.created_at).toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"});
-    const sign=item.direction==="out"?"-":"+";
-    return `
-      <div class="cash-row">
-        <div class="cash-row-time"><strong>${time}</strong><small>${item.status==="cancelled"?"CANCELADO":"REGISTRADO"}</small></div>
-        <div class="cash-row-main">
-          <strong>${item.description}</strong>
-          <span>${item.transaction_type}</span>
-          ${item.payment_method?`<span class="cash-method">${item.payment_method}</span>`:""}
-        </div>
-        <div class="cash-row-value ${item.direction==="out"?"out":""}">${sign} ${money(item.net_amount)}</div>
+  const safe=value=>String(value??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+  const methods={cash:"Dinheiro",pix:"Pix",credit:"Crédito",debit:"Débito",other:"Outro"};
+  const titles={service:"Atendimento",product:"Venda de produto",withdrawal:"Retirada",deposit:"Entrada",expense:"Despesa"};
+  list.innerHTML=data.map(t=>{
+    const stamp=new Date(t.created_at).toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"});
+    const lines=itemsByTransaction.get(t.id)||[];
+    const overview=lines.length
+      ? lines.map(i=>safe(i.description)+(Number(i.quantity||1)>1?" (x"+Number(i.quantity)+")":"")).join(" • ")
+      : t.transaction_type==="service"?"Atendimento recebido":safe(t.description||titles[t.transaction_type]||"Movimentação");
+    const headline=t.transaction_type==="service"?overview:safe(t.description||titles[t.transaction_type]||"Movimentação");
+    const sign=t.direction==="out"?"−":"+";
+    const extras=t.transaction_type==="service"&&lines.length
+      ? `<details class="c7-cash-extract"><summary>Ver extrato</summary><div class="c7-cash-extract-lines">
+       ${lines.map(i=>`<div><span>${safe(i.description)}${Number(i.quantity||1)>1?" · "+Number(i.quantity)+" un.":""}</span><strong>${money(i.total_amount)}</strong></div>`).join("")}
+       ${Number(t.discount_amount||0)>0?`<div><span>Desconto</span><strong>− ${money(t.discount_amount)}</strong></div>`:""}
+       <div class="c7-cash-extract-total"><span>Total recebido</span><strong>${money(t.net_amount)}</strong></div>
+       </div></details>`:"";
+    return `<div class="cash-row">
+      <div class="cash-row-time"><strong>${stamp}</strong><small>${t.status==="cancelled"?"Cancelado":"Recebido"}</small></div>
+      <div class="cash-row-main"><strong>${headline}</strong>
+        <span>${safe(methods[t.payment_method]||t.payment_method||"Sem forma de pagamento")}</span>
+        ${extras}
       </div>
-    `;
+      <div class="cash-row-value ${t.direction==="out"?"out":""}">${sign} ${money(t.net_amount)}</div>
+    </div>`;
   }).join("");
 }
-
 
 async function loadPendingAppointments(){
   const start=new Date();
