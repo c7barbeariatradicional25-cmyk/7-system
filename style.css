@@ -5280,3 +5280,15 @@ body{
 .live-booking.c7-drag-ready{cursor:grab}
 .live-booking.c7-drag-ready:active{cursor:grabbing}
 .live-booking.c7-dragging{box-shadow:0 14px 30px #0004!important;border:2px solid #9b6336!important;opacity:.9}
+
+/* C7 · Experiência mais simples e consistente */
+.c7-unified-notice{position:fixed;bottom:25px;left:50%;transform:translate(-50%,12px);z-index:120000;max-width:min(520px,calc(100vw - 32px));padding:12px 17px;background:#28211b;color:#fff;border-radius:11px;box-shadow:0 12px 35px #0003;font-size:13px;font-weight:600;opacity:0;pointer-events:none;transition:opacity .18s,transform .18s;text-align:center}
+.c7-unified-notice.visible{opacity:1;transform:translate(-50%,0)}.c7-unified-notice.is-error{background:#843c31}
+.sidebar .nav-item{min-height:42px;border-radius:9px;transition:background .15s,color .15s}
+.sidebar .nav-item:not(.active):hover{background:#27221d;color:#f8f3ee}
+button:not(:disabled),.clickable-appointment{transition:background-color .15s,border-color .15s}
+button:focus-visible,.nav-item:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid #aa784d;outline-offset:2px}
+.form-message:empty{min-height:0;margin:0}
+.agenda-actions .primary-btn{font-size:12px;letter-spacing:.03em}
+.modal-head h2{font-size:clamp(22px,2.4vw,28px)}
+@media(max-width:650px){.c7-unified-notice{bottom:88px}.agenda-actions{gap:6px}.agenda-actions .primary-btn{min-width:110px}.modal-card{padding:18px}}
