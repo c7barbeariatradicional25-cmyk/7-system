@@ -1085,63 +1085,77 @@ function renderTimeline(){
   });
 
 
-  // Pressionar e segurar para arrastar; sem recriar cadastro nem trocar profissional.
-  const draggable=agendaTimeline.querySelectorAll(".live-booking[data-open-appointment]");
-  draggable.forEach(card=>{
+  // Arraste via eventos na janela: o movimento continua mesmo fora do cartão.
+  // Isso evita que o navegador solte o item antes de confirmar o reagendamento.
+  agendaTimeline.querySelectorAll(".live-booking[data-open-appointment]").forEach(card=>{
     const record=currentAppointments.find(a=>a.id===card.dataset.openAppointment);
     if(!record||!c7Allowed("appointments.edit")||
        (currentRole==="barber"&&record.professional_id!==currentProfessionalId)||
        !["scheduled","confirmed","waiting"].includes(record.status))return;
     card.classList.add("c7-drag-ready");
-    let hold=null,origin=null,dragging=false;
-    const cancel=()=>{
-      clearTimeout(hold);hold=null;dragging=false;origin=null;
+    card.draggable=false;
+    card.addEventListener("dragstart",e=>e.preventDefault());
+    let origin=null,active=false,timer=null;
+    function cleanup(){
+      clearTimeout(timer);
+      window.removeEventListener("pointermove",move,true);
+      window.removeEventListener("pointerup",release,true);
+      window.removeEventListener("pointercancel",abort,true);
+      window.removeEventListener("blur",abort,true);
       card.classList.remove("c7-dragging");
-      card.style.transform="";card.style.zIndex="";
-    };
-    card.addEventListener("pointerdown",e=>{
-      if(e.button!==0||e.target.closest("button"))return;
-      const target=e.currentTarget;
-      origin={x:e.clientX,y:e.clientY,pointerId:e.pointerId};
-      hold=setTimeout(()=>{
-        if(!origin)return;
-        dragging=true;
-        target.classList.add("c7-dragging");
-        target.style.zIndex="25";
-        target.setPointerCapture(e.pointerId);
-      },280);
-    });
-    card.addEventListener("pointermove",e=>{
-      if(!origin)return;
-      if(!dragging){
-        if(Math.hypot(e.clientX-origin.x,e.clientY-origin.y)>10)cancel();
+      card.style.transform="";
+      card.style.zIndex="";
+      origin=null;active=false;
+    }
+    function abort(){cleanup();}
+    function move(e){
+      if(!origin||e.pointerId!==origin.id)return;
+      if(!active){
+        if(Math.hypot(e.clientX-origin.x,e.clientY-origin.y)>12)cleanup();
         return;
       }
+      e.preventDefault();
       card.style.transform="translateY("+(e.clientY-origin.y)+"px)";
-    });
-    card.addEventListener("pointerup",async e=>{
-      if(!dragging){clearTimeout(hold);return;}
+    }
+    async function release(e){
+      if(!origin||e.pointerId!==origin.id)return;
+      const engaged=active;
+      const delta=e.clientY-origin.y;
+      cleanup();
+      if(!engaged)return;
       card.dataset.c7Dragged="true";
-      const dy=e.clientY-origin.y;
-      const rawMinutes=dy/pxPerMinute;
-      const targetDate=new Date(record.starts_at);
-      const oldMinute=targetDate.getHours()*60+targetDate.getMinutes();
-      const newMinute=Math.round((oldMinute+rawMinutes)/5)*5;
-      cancel();
-      e.preventDefault();e.stopPropagation();
-      if(newMinute<0||newMinute>=1440||newMinute===oldMinute)return;
-      targetDate.setHours(Math.floor(newMinute/60),newMinute%60,0,0);
-      if(targetDate<=new Date()){alert("Selecione um horário futuro.");return;}
-      if(!confirm("Mover o atendimento para "+targetDate.toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"})+"?"))return;
+      e.preventDefault();
+      e.stopPropagation();
+      const date=new Date(record.starts_at);
+      const currentMin=date.getHours()*60+date.getMinutes();
+      const minute=Math.round((currentMin+delta/pxPerMinute)/5)*5;
+      if(minute<0||minute>=1440||minute===currentMin)return;
+      date.setHours(Math.floor(minute/60),minute%60,0,0);
+      if(date<=new Date()){alert("Selecione um horário futuro.");return;}
+      const label=date.toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"});
+      if(!confirm("Mover atendimento para "+label+"?"))return;
       const {error}=await supabase.rpc("c7_staff_move_appointment",{
-        p_appointment_id:record.id,p_starts_at:targetDate.toISOString(),p_extra_minutes:record.extra_minutes||0
+        p_appointment_id:record.id,p_starts_at:date.toISOString(),
+        p_extra_minutes:record.extra_minutes||0
       });
-      if(error)alert(error.message||"Não foi possível mover o atendimento.");
+      if(error){alert(error.message||"Não foi possível mover o atendimento.");return;}
       await loadAgenda();
-      if(!error)window.dispatchEvent(new CustomEvent("c7-appointment-rescheduled",{detail:{appointmentId:record.id}}));
+      window.dispatchEvent(new CustomEvent("c7-appointment-rescheduled",{detail:{appointmentId:record.id}}));
+    }
+    card.addEventListener("pointerdown",e=>{
+      if(e.button!==0||e.target.closest("button")||origin)return;
+      origin={id:e.pointerId,x:e.clientX,y:e.clientY};
+      window.addEventListener("pointermove",move,{capture:true,passive:false});
+      window.addEventListener("pointerup",release,true);
+      window.addEventListener("pointercancel",abort,true);
+      window.addEventListener("blur",abort,true);
+      timer=setTimeout(()=>{
+        if(!origin)return;
+        active=true;
+        card.classList.add("c7-dragging");
+        card.style.zIndex="25";
+      },250);
     });
-    card.addEventListener("pointercancel",cancel);
-    card.addEventListener("lostpointercapture",()=>{if(dragging)cancel();});
   });
   function updateLiveLine(){
     const now=new Date();
