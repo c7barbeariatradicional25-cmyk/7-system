@@ -211,10 +211,11 @@ function renderPendingAppointments(){
 
   list.innerHTML=pendingAppointments.map(a=>{
     const time=new Date(a.starts_at).toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"});
-    const services=(a.appointment_services||[]).map(s=>s.service_name).join(" + ")||"Serviço";
+    const services=(a.appointment_services||[]).map(s=>s.service_name).join(" + ")||"Atendimento";
+    const statusNames={scheduled:"Agendado",confirmed:"Confirmado",waiting:"Aguardando",in_service:"Em atendimento",completed:"Finalizado"};
     return `
       <div class="pending-row">
-        <div class="pending-row-time"><strong>${time}</strong><small>${a.status}</small></div>
+        <div class="pending-row-time"><strong>${time}</strong><small>${statusNames[a.status]||a.status}</small></div>
         <div class="pending-row-main">
           <strong>${a.customer?.full_name||"Cliente"}</strong>
           <span>${services} • ${a.professional?.full_name||"Sem profissional"}</span>
@@ -514,6 +515,8 @@ $("receiveForm")?.addEventListener("submit",async e=>{
   }
 
   $("receiveMessage").textContent="Registrando recebimento...";
+  const checkoutButton=$("receiveForm")?.querySelector('button[type="submit"]');
+  if(checkoutButton)checkoutButton.disabled=true;
 
   const benefit=appliedCoupon||selectedBenefit();
 
@@ -528,6 +531,7 @@ $("receiveForm")?.addEventListener("submit",async e=>{
   });
 
   if(error){
+    if(checkoutButton)checkoutButton.disabled=false;
     const message=String(error.message||"");
     $("receiveMessage").textContent=
       message.includes("Caixa fechado")?"O Caixa está fechado. Peça à recepção para abrir o Caixa antes do checkout.":
@@ -537,7 +541,9 @@ $("receiveForm")?.addEventListener("submit",async e=>{
     return;
   }
 
+  if(checkoutButton)checkoutButton.disabled=false;
   closeModal("receiveModal");
+  window.C7UX?.notify("Atendimento finalizado e registrado no Caixa.");
   window.dispatchEvent(new CustomEvent("c7-checkout-complete",{detail:{appointmentId:appointment.id,transactionId:data}}));
 
   if(["admin","reception"].includes(currentRole)){
