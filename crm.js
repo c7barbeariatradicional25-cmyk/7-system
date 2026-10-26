@@ -298,6 +298,7 @@ async function openCustomer(id=null){
   $("customerMessage").textContent="";
   $("customerId").value=id||"";
   $("customerModalTitle").textContent=id?"Perfil do cliente":"Novo cliente";
+  $("deleteCustomerBtn")?.classList.toggle("hidden",!id||!can("clients.delete")||!can("clients.read"));
   $("customerHistory").classList.toggle("hidden",!id||!can("clients.history"));
   $("customerInsights")?.classList.toggle("hidden",!id||!can("clients.history"));
 
@@ -380,6 +381,29 @@ async function saveCustomer(event){
   await loadCustomers();
 }
 
+
+async function deleteCustomer(){
+ const id=$("customerId")?.value;
+ if(!id||!can("clients.delete")||!can("clients.read"))return;
+ const customer=customers.find(c=>c.id===id);
+ if(!customer)return;
+ const question='Excluir "'+(customer.full_name||"este cliente")+'" da lista?\n\nO histórico de atendimentos e pagamentos será preservado.';
+ if(!window.confirm(question))return;
+ const button=$("deleteCustomerBtn");
+ button.disabled=true;
+ $("customerMessage").textContent="Excluindo cliente...";
+ try{
+   const {data,error}=await supabase.rpc("c7_archive_customer",{p_customer_id:id});
+   if(error)throw error;
+   if(data!==true)throw Error("Esse cliente já foi excluído ou não está mais disponível.");
+   closeCustomer();
+   await loadCustomers();
+   window.C7UX?.notify("Cliente excluído da lista.");
+ }catch(error){
+   $("customerMessage").textContent=error.message||"Não foi possível excluir o cliente.";
+ }finally{button.disabled=false;}
+}
+
 async function initCRM(){
   if(!await loadContext()) return;
 
@@ -394,6 +418,7 @@ async function initCRM(){
   $("customerSearch")?.addEventListener("input",applySearch);
   $("newCustomerBtn")?.addEventListener("click",()=>openCustomer());
   $("customerForm")?.addEventListener("submit",saveCustomer);
+  $("deleteCustomerBtn")?.addEventListener("click",deleteCustomer);
 
   document.querySelectorAll("[data-close-customer]").forEach(el=>{
     el.addEventListener("click",closeCustomer);
