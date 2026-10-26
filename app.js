@@ -601,6 +601,12 @@ function renderAppointmentDetail(appointment){
   $("detailStatus").textContent=statusLabels[appointment.status]||appointment.status;
   $("detailServiceTotal").textContent=money(serviceTotal);
   $("detailProductTotal").textContent=money(productTotal);
+  const extraSelect=$("detailExtraMinutes");
+  if(extraSelect){
+    extraSelect.value=String(appointment.extra_minutes||0);
+    $("detailExtraControl").classList.toggle("hidden",!canManage||["cancelled","no_show"].includes(appointment.status));
+    $("detailExtraSave").disabled=!canManage||["cancelled","no_show"].includes(appointment.status);
+  }
   $("detailGrandTotal").textContent=money(serviceTotal+productTotal);
 
   $("detailServicesList").innerHTML=servicesRows.length
@@ -785,6 +791,23 @@ async function openStaffReschedule(appointmentId){
   $("staffRescheduleMessage").textContent="";
   $("staffRescheduleModal").classList.remove("hidden");
 }
+$("detailExtraSave")?.addEventListener("click",async()=>{
+  if(!detailAppointmentId||!c7Allowed("appointments.edit"))return;
+  const btn=$("detailExtraSave");
+  btn.disabled=true;
+  $("appointmentDetailMessage").textContent="Atualizando tempo adicional...";
+  try{
+    const extra=Number($("detailExtraMinutes").value||0);
+    const {error}=await supabase.rpc("c7_staff_set_extra_minutes",{
+      p_appointment_id:detailAppointmentId,p_extra_minutes:extra
+    });
+    if(error)throw error;
+    await Promise.all([refreshAppointmentDetail(),loadAgenda()]);
+    $("appointmentDetailMessage").textContent="Tempo extra atualizado com sucesso.";
+  }catch(error){
+    $("appointmentDetailMessage").textContent=error.message||"Não foi possível ajustar a duração.";
+  }finally{btn.disabled=false;}
+});
 $("detailRescheduleBtn")?.addEventListener("click",()=>{if(detailAppointmentId)openStaffReschedule(detailAppointmentId);});
 document.querySelectorAll("[data-close-staff-reschedule]").forEach(el=>el.addEventListener("click",()=>{$("staffRescheduleModal").classList.add("hidden");}));
 $("staffRescheduleForm")?.addEventListener("submit",async e=>{
