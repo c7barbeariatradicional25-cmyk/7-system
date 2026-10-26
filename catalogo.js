@@ -304,22 +304,21 @@ function renderProducts(){
 async function toggleProduct(product){
   if(!canProducts())return;
   const {error}=await supabase.from("products").update({active:!product.active}).eq("id",product.id).is("deleted_at",null);
-  if(error){window.alert("Não foi possível alterar o status do produto.");return;}
+  if(error){window.C7UX?.notify("Não foi possível atualizar o produto.","error");return;}
   await loadProducts();
 }
 async function archiveProduct(product){
   if(!canAdmin())return;
   if(!window.confirm('Excluir "'+product.name+'"?\n\nO produto será removido do catálogo, mas o histórico de vendas e estoque será preservado. Você poderá restaurá-lo na aba Excluídos.'))return;
   const {data,error}=await supabase.rpc("c7_archive_product",{p_product_id:product.id,p_restore:false});
-  if(error||data!==true){window.alert("Não foi possível excluir o produto. Verifique as permissões e tente novamente.");return;}
+  if(error||data!==true){window.C7UX?.notify("Não foi possível excluir o produto.","error");return;}
   await loadProducts();
   await loadProductAudit();
 }
 async function restoreProduct(product){
   if(!canAdmin())return;
-  if(!window.confirm('Restaurar "'+product.name+'"?\n\nO produto voltará a ficar ativo no catálogo.'))return;
   const {data,error}=await supabase.rpc("c7_archive_product",{p_product_id:product.id,p_restore:true});
-  if(error||data!==true){window.alert("Não foi possível restaurar o produto.");return;}
+  if(error||data!==true){window.C7UX?.notify("Não foi possível restaurar o produto.","error");return;}
   await loadProducts();
   await loadProductAudit();
 }
