@@ -305,7 +305,7 @@ function openSection(id){
   document.querySelectorAll(".nav-item").forEach(el=>el.classList.toggle("active",el.dataset.section===id));
   const btn=document.querySelector(`.nav-item[data-section="${id}"]`);
   pageTitle.textContent=btn?btn.textContent:"C7 System";
-  if(id==="agenda") loadAgenda();
+  if(id==="agenda" && !currentAppointments.length) loadAgenda();
   if(id==="dashboard") updateDashboard();
 }
 
@@ -524,7 +524,7 @@ function renderAgendaList(){
         if(window.C7Cash?.checkoutAppointment){
           await window.C7Cash.checkoutAppointment(select.dataset.appointmentStatus);
         }else{
-          alert("O checkout ainda não terminou de carregar. Tente novamente.");
+          window.C7UX?.notify("Não foi possível abrir o pagamento. Tente novamente.","error");
         }
         return;
       }
@@ -534,7 +534,7 @@ function renderAgendaList(){
         .eq("id",select.dataset.appointmentStatus);
 
       if(error){
-        alert("Não foi possível atualizar o status.");
+        window.C7UX?.notify("Não foi possível alterar o status.","error");
       }
       await loadAgenda();
     });
@@ -545,7 +545,7 @@ function renderAgendaList(){
       const lunch=btn.dataset.deleteBlock.startsWith("lunch:");
       if(!confirm(lunch?"Liberar almoço só nesta data?":"Remover este bloqueio?")) return;
       const {error}=lunch?await supabase.rpc("c7_toggle_lunch",{p_professional_id:btn.dataset.deleteBlock.slice(6),p_day:agendaDate.value,p_unlock:true}):await supabase.from("schedule_blocks").delete().eq("id",btn.dataset.deleteBlock);
-      if(error) alert("Não foi possível remover o bloqueio.");
+      if(error) window.C7UX?.notify("Não foi possível remover o bloqueio.","error");
       await loadAgenda();
     });
   });
@@ -779,7 +779,7 @@ let staffRescheduleAppointment=null;
 async function openStaffReschedule(appointmentId){
   const appointment=await fetchAppointmentDetail(appointmentId);
   if(!appointment||!["scheduled","confirmed","waiting"].includes(appointment.status)||new Date(appointment.starts_at)<=new Date()){
-    alert("Este agendamento não pode ser reagendado.");return;
+    window.C7UX?.notify("Este atendimento não pode ser reagendado.","error");return;
   }
   staffRescheduleAppointment=appointment;
   const local=new Date(appointment.starts_at);
@@ -1062,7 +1062,7 @@ function renderTimeline(){
       e.stopPropagation();
       if(!confirm("Liberar almoço somente nesta data?"))return;
       const {error}=await supabase.rpc("c7_toggle_lunch",{p_professional_id:btn.dataset.unlockLunch,p_day:agendaDate.value,p_unlock:true});
-      if(error)alert("Não foi possível liberar."); await loadAgenda();
+      if(error)window.C7UX?.notify("Não foi possível liberar o horário.","error"); await loadAgenda();
     });
   });
   agendaTimeline.querySelectorAll("[data-timeline-checkout]").forEach(btn=>{
@@ -1168,7 +1168,7 @@ function renderTimeline(){
       const minute=Math.round((currentMin+delta/pxPerMinute)/5)*5;
       if(minute<0||minute>=1440||minute===currentMin)return;
       date.setHours(Math.floor(minute/60),minute%60,0,0);
-      if(date<=new Date()){alert("Selecione um horário futuro.");return;}
+      if(date<=new Date()){window.C7UX?.notify("Escolha um horário futuro.","error");return;}
       c7AgendaToast("Atualizando horário...");
       const {error}=await supabase.rpc("c7_staff_move_appointment",{
         p_appointment_id:record.id,p_starts_at:date.toISOString(),
