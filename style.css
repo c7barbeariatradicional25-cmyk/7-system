@@ -5272,3 +5272,11 @@ body{
  transition:none!important;pointer-events:auto;
 }
 #appointmentExtraMinutes,#staffRescheduleExtra{min-height:42px}
+
+/* C7 | Interação simples, feedback sem popup bloqueante */
+.c7-agenda-toast{position:fixed;left:50%;bottom:28px;transform:translate(-50%,18px);background:#23201d;color:#fff;padding:12px 20px;border-radius:12px;font-size:13px;font-weight:600;letter-spacing:.01em;box-shadow:0 9px 28px #0003;z-index:99999;max-width:min(92vw,540px);text-align:center;opacity:0;pointer-events:none;transition:opacity .16s,transform .16s}
+.c7-agenda-toast.visible{opacity:1;transform:translate(-50%,0)}
+.c7-agenda-toast-error{background:#812e28}
+.live-booking.c7-drag-ready{cursor:grab}
+.live-booking.c7-drag-ready:active{cursor:grabbing}
+.live-booking.c7-dragging{box-shadow:0 14px 30px #0004!important;border:2px solid #9b6336!important;opacity:.9}
