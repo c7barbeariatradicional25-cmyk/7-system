@@ -1724,6 +1724,50 @@ document.addEventListener("keydown",function(e){
  if(close){e.preventDefault();close.click();}
 });
 </script>
+<script>
+/* Menu por tarefas: mantém páginas e permissões, reduz a lista permanente. */
+(function(){
+ const nav=document.querySelector(".sidebar nav");
+ if(!nav||nav.dataset.c7Grouped)return;
+ nav.dataset.c7Grouped="true";
+ const configs=[
+  {title:"Atendimento",key:"atendimento",sections:["dashboard","agenda","clientes","operacoes"]},
+  {title:"Meu trabalho",key:"meu-trabalho",sections:["desempenho","meus-clientes","meus-consumos","minhas-comissoes"]},
+  {title:"Caixa e catálogo",key:"operacao",sections:["caixa","acertos","servicos","produtos","historico-produtos"]},
+  {title:"Administração",key:"gestao",sections:["financeiro","equipe","permissoes","promocoes","automacoes","relatorios","configuracoes"]}
+ ];
+ const bySection=new Map([...nav.querySelectorAll(".nav-item[data-section]")].map(btn=>[btn.dataset.section,btn]));
+ nav.replaceChildren();
+ for(const cfg of configs){
+   const group=document.createElement("section");group.className="c7-nav-group";group.dataset.group=cfg.key;
+   const head=document.createElement("button");head.type="button";head.className="c7-nav-group-toggle";
+   head.setAttribute("aria-expanded",cfg.key==="atendimento"?"true":"false");
+   const label=document.createElement("span");label.textContent=cfg.title;
+   const symbol=document.createElement("span");symbol.className="c7-nav-chevron";symbol.textContent="⌄";
+   head.append(label,symbol);
+   const contents=document.createElement("div");contents.className="c7-nav-group-items";
+   contents.hidden=cfg.key!=="atendimento";
+   cfg.sections.forEach(name=>{const btn=bySection.get(name);if(btn)contents.appendChild(btn);});
+   group.append(head,contents);nav.appendChild(group);
+   head.addEventListener("click",()=>{
+     const open=contents.hidden;
+     contents.hidden=!open;head.setAttribute("aria-expanded",String(open));
+   });
+ }
+ function reveal(){
+   const current=nav.querySelector(".nav-item.active");
+   if(!current)return;
+   const group=current.closest(".c7-nav-group");
+   if(!group)return;
+   const body=group.querySelector(".c7-nav-group-items"),head=group.querySelector(".c7-nav-group-toggle");
+   if(body.hidden){body.hidden=false;head.setAttribute("aria-expanded","true");}
+ }
+ nav.addEventListener("click",e=>{if(e.target.closest(".nav-item"))queueMicrotask(reveal);});
+ const active=nav.querySelector(".nav-item.active");
+ if(active)reveal();
+ // A área de administração continua escondida de quem não tem permissão.
+})();
+</script>
 <script>document.querySelectorAll("[data-password-toggle]").forEach(function(btn){btn.addEventListener("click",function(){const input=document.getElementById(btn.dataset.passwordToggle);if(!input)return;const visible=input.type==="password";input.type=visible?"text":"password";btn.textContent=visible?"OCULTAR":"MOSTRAR";btn.setAttribute("aria-pressed",String(visible));btn.setAttribute("aria-label",visible?"Ocultar senha":"Mostrar senha");});});</script>
 </body>
 </html>
