@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { PAYMENT_LABELS, fetchPaymentSplits, paymentParts } from "./pagamentos.js";
 
 const supabase=createClient(
   "https://cjtgjqxkyvgjlhylrvas.supabase.co",
@@ -167,18 +168,18 @@ async function loadReport(){
         .join("")
     : '<div class="cash-empty">Sem dados no período.</div>';
 
-  const paymentLabels={cash:"Dinheiro",pix:"Pix",credit:"Crédito",debit:"Débito",other:"Outro"};
+  const incoming=tx.filter(t=>t.direction==="in");
+  const splits=await fetchPaymentSplits(supabase,incoming.map(t=>t.id));
   const byPayment=new Map();
 
-  tx.filter(t=>t.direction==="in").forEach(t=>{
-    const key=t.payment_method||"other";
-    byPayment.set(key,(byPayment.get(key)||0)+Number(t.net_amount||0));
-  });
+  incoming.forEach(t=>paymentParts(t,splits).forEach(part=>{
+    byPayment.set(part.method,(byPayment.get(part.method)||0)+part.amount);
+  }));
 
   $("paymentReportList").innerHTML=byPayment.size
     ? [...byPayment.entries()]
         .sort((a,b)=>b[1]-a[1])
-        .map(([key,total])=>row(paymentLabels[key]||key,"Recebido",money(total)))
+        .map(([key,total])=>row(PAYMENT_LABELS[key]||key,"Recebido",money(total)))
         .join("")
     : '<div class="cash-empty">Sem recebimentos no período.</div>';
 

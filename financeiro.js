@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { fetchPaymentSplits, paymentParts } from "./pagamentos.js";
 
 const supabase=createClient(
   "https://cjtgjqxkyvgjlhylrvas.supabase.co",
@@ -115,14 +116,18 @@ async function loadCashHistory(){
   for(const session of sessions){
     const {data:transactions}=await supabase
       .from("cash_transactions")
-      .select("direction,net_amount,status,payment_method,transaction_type")
+      .select("id,direction,net_amount,status,payment_method,transaction_type")
       .eq("session_id",session.id)
       .eq("status","posted");
 
     const tx=transactions||[];
     const totalIn=tx.filter(t=>t.direction==="in").reduce((s,t)=>s+Number(t.net_amount||0),0);
     const totalOut=tx.filter(t=>t.direction==="out").reduce((s,t)=>s+Number(t.net_amount||0),0);
-    const cashIn=tx.filter(t=>t.direction==="in"&&t.payment_method==="cash").reduce((s,t)=>s+Number(t.net_amount||0),0);
+    const splits=await fetchPaymentSplits(supabase,tx.filter(t=>t.direction==="in").map(t=>t.id));
+    const cashIn=tx.filter(t=>t.direction==="in")
+      .flatMap(t=>paymentParts(t,splits))
+      .filter(part=>part.method==="cash")
+      .reduce((s,part)=>s+part.amount,0);
     const cashOut=tx.filter(t=>t.direction==="out"&&(t.payment_method==="cash"||t.transaction_type==="withdrawal")).reduce((s,t)=>s+Number(t.net_amount||0),0);
     const expected=session.expected_closing_amount==null
       ? Number(session.opening_amount||0)+cashIn-cashOut

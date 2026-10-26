@@ -995,8 +995,14 @@
               <option value="debit">Débito</option>
               <option value="credit">Crédito</option>
               <option value="other">Outro</option>
+              <option value="split">Dividir pagamento</option>
             </select>
           </label>
+        </div>
+        <div id="receiveSplitBox" class="split-payment hidden">
+          <div class="split-payment-head"><strong>Pagamento</strong><span id="receiveSplitRemaining"></span></div>
+          <div id="receiveSplitRows"></div>
+          <button id="receiveSplitAdd" class="split-payment-add" type="button">+ Adicionar método de pagamento</button>
         </div>
         <div class="form-grid two" id="receiveCardFeeBox" style="display:none">
           <label><span>Taxa da maquininha (%)</span><input id="receiveCardFee" type="number" min="0" max="100" step="0.01" value="0" inputmode="decimal"></label>

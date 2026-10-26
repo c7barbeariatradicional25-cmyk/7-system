@@ -5376,3 +5376,16 @@ button.primary-btn{border-radius:10px}button.ghost-btn{border-radius:10px}
 .c7-cash-extract-lines strong{font-size:12px;white-space:nowrap;color:#2a241f}
 .c7-cash-extract-lines .c7-cash-extract-total{border-top:1px solid #e6dfd7;padding-top:9px;color:#2a241f;font-weight:750}
 .cash-row-main>strong{line-height:1.35;overflow-wrap:anywhere}
+/* Dividir pagamento no recebimento */
+.split-payment{display:grid;gap:10px;padding:14px;border:1px solid var(--c7-border);border-radius:12px;background:var(--c7-cream)}
+.split-payment.hidden{display:none}
+#receiveSplitRows{display:grid;gap:10px}
+.split-payment-head{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.split-payment-head strong{font-size:14px;color:var(--c7-ink)}
+.split-payment-head span{font-size:12px;font-weight:650;color:#3f7a4a}
+.split-payment-head span.is-pending{color:#b2452f}
+.split-payment-row{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.4fr) 36px;gap:10px;align-items:end}
+.split-payment-remove{height:44px;border:1px solid var(--c7-border);border-radius:8px;background:#fff;color:var(--c7-muted);font-size:18px;cursor:pointer}
+.split-payment-remove:disabled{opacity:.35;cursor:default}
+.split-payment-add{justify-self:start;border:0;background:none;padding:4px 0;color:var(--c7-accent);font-size:12px;font-weight:650;cursor:pointer}
+@media(max-width:700px){.split-payment-row{grid-template-columns:minmax(0,1fr) minmax(0,1.2fr) 36px}}

@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { PAYMENT_LABELS, fetchPaymentSplits, paymentParts, describePayment } from "./pagamentos.js";
 const db=createClient("https://cjtgjqxkyvgjlhylrvas.supabase.co","sb_publishable_q7Qoya_KF0yyjvVdC-ckBQ_Wv6VXaEE");
 const fmt=n=>new Intl.NumberFormat("pt-BR",{style:"currency",currency:"BRL"}).format(Number(n||0));
 const dt=d=>d?new Date(d).toLocaleString("pt-BR",{timeZone:"America/Sao_Paulo"}):"—";
@@ -36,13 +37,16 @@ async function load(session){
     const pro=new Map(professionals.map(x=>[String(x.id),x.full_name]));
     const prod=new Map(products.map(x=>[String(x.id),x.name]));
     const posted=transactions.filter(x=>x.status!=="cancelled");
+    const splits=await fetchPaymentSplits(db,posted.map(x=>x.id));
     const total=(arr)=>arr.reduce((n,x)=>n+Number(x.net_amount||0),0);
     const ins=posted.filter(x=>x.direction==="in"), outs=posted.filter(x=>x.direction==="out");
     const services=posted.filter(x=>x.transaction_type==="service");
     const productSales=posted.filter(x=>x.transaction_type==="product");
     const consumptionAmount=consumptions.filter(x=>x.status!=="cancelled").reduce((n,x)=>n+Number(x.total_amount||0),0);
     const expected=Number(session.opening_amount||0)+total(ins)-total(outs);
-    report={session,transactions,consumptions,items,pro,prod,expected};
+    const byMethod=new Map();
+    ins.forEach(x=>paymentParts(x,splits).forEach(part=>byMethod.set(part.method,(byMethod.get(part.method)||0)+part.amount)));
+    report={session,transactions,consumptions,items,pro,prod,expected,splits};
     const row=(label,value)=>'<div class="c7-report-line"><span>'+esc(label)+'</span><strong>'+fmt(value)+'</strong></div>';
     slot.innerHTML=`
     <div class="c7-report-header"><div><span>RESUMO DA SESSÃO</span><h3>Conferência do caixa</h3><small>${esc(dt(session.opened_at))} até ${esc(session.closed_at?dt(session.closed_at):"agora")}</small></div><b>${posted.length} lançamentos</b></div>
@@ -66,8 +70,11 @@ async function load(session){
         ${consumptions.length?consumptions.map(x=>row((pro.get(String(x.professional_id))||"Colaborador")+" · "+(prod.get(String(x.product_id))||"Produto")+" · "+x.quantity+" un. ("+x.status+")",x.total_amount)).join(""):'<p>Nenhum consumo registrado.</p>'}
         <small>Total consumido: ${fmt(consumptionAmount)}. Consumo não é receita automática do Caixa.</small>
       </section>
+      <section><h4>Recebido por forma de pagamento</h4>
+        ${byMethod.size?[...byMethod.entries()].sort((a,b)=>b[1]-a[1]).map(([method,value])=>row(PAYMENT_LABELS[method]||method,value)).join(""):'<p>Nenhum recebimento.</p>'}
+      </section>
       <section><h4>Movimentações e pagamentos</h4>
-        ${posted.length?posted.map(x=>row((x.direction==="out"?"− ":"+ ")+(x.description||x.transaction_type)+" · "+(x.payment_method||"sem método"),(x.direction==="out"?-1:1)*Number(x.net_amount||0))).join(""):'<p>Nenhum lançamento.</p>'}
+        ${posted.length?posted.map(x=>row((x.direction==="out"?"− ":"+ ")+(x.description||x.transaction_type)+" · "+describePayment(x,splits,fmt),(x.direction==="out"?-1:1)*Number(x.net_amount||0))).join(""):'<p>Nenhum lançamento.</p>'}
       </section>
     </div>
     <div class="c7-report-actions">
@@ -87,7 +94,7 @@ async function load(session){
 function csv(){
   if(!report)return;
   const rows=[["C7 BARBEARIA TRADICIONAL — RELATÓRIO DO CAIXA"],["Abertura",dt(report.session.opened_at)],["Fechamento",dt(report.session.closed_at)||"Em andamento"],["Saldo previsto",report.expected.toFixed(2)],[],["TIPO","DATA/HORA","DESCRIÇÃO","RESPONSÁVEL","QUANTIDADE","FORMA","VALOR (R$)","STATUS"]];
-  report.transactions.forEach(x=>rows.push(["CAIXA",dt(x.created_at),x.description||x.transaction_type,"","",x.payment_method||"",((x.direction==="out"?-1:1)*Number(x.net_amount||0)).toFixed(2),x.status]));
+  report.transactions.forEach(x=>rows.push(["CAIXA",dt(x.created_at),x.description||x.transaction_type,"","",x.payment_method?describePayment(x,report.splits,fmt):"",((x.direction==="out"?-1:1)*Number(x.net_amount||0)).toFixed(2),x.status]));
   report.items.forEach(x=>rows.push(["PRODUTO NO ATENDIMENTO","",x.product_name,"",x.quantity,"Incluído no atendimento",Number(x.total_amount||0).toFixed(2),"Informativo - não somar"]));
   report.consumptions.forEach(x=>rows.push(["CONSUMO EQUIPE",dt(x.created_at),report.prod.get(String(x.product_id))||"Produto",report.pro.get(String(x.professional_id))||"Colaborador",x.quantity,"Não é receita",Number(x.total_amount||0).toFixed(2),x.status]));
   const content="\ufeff"+rows.map(row=>row.map(v=>'"'+String(v??"").replace(/"/g,'""')+'"').join(";")).join("\r\n");

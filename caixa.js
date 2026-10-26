@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { PAYMENT_LABELS, CARD_METHODS, fetchPaymentSplits, describePayment } from "./pagamentos.js";
 
 const supabase = createClient(
   "https://cjtgjqxkyvgjlhylrvas.supabase.co",
@@ -20,6 +21,7 @@ let cashCustomers = [];
 let activeServiceLinks = [];
 let receiveBenefits = [];
 let appliedCoupon = null;
+let splitRows = [];
 
 function canAccessCash(){return currentRole==="admin" || (c7ModuleRights?Boolean(c7ModuleRights["cash.view"]):currentRole==="reception");}
 async function loadContext(){
@@ -136,8 +138,8 @@ async function loadTransactions(){
       itemsByTransaction.get(item.transaction_id).push(item);
     }
   }
+  const splits=await fetchPaymentSplits(supabase,data.map(t=>t.id));
   const safe=value=>String(value??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-  const methods={cash:"Dinheiro",pix:"Pix",credit:"Crédito",debit:"Débito",other:"Outro"};
   const titles={service:"Atendimento",product:"Venda de produto",withdrawal:"Retirada",deposit:"Entrada",expense:"Despesa"};
   list.innerHTML=data.map(t=>{
     const stamp=new Date(t.created_at).toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"});
@@ -156,7 +158,7 @@ async function loadTransactions(){
     return `<div class="cash-row">
       <div class="cash-row-time"><strong>${stamp}</strong><small>${t.status==="cancelled"?"Cancelado":"Recebido"}</small></div>
       <div class="cash-row-main"><strong>${headline}</strong>
-        <span>${safe(methods[t.payment_method]||t.payment_method||"Sem forma de pagamento")}</span>
+        <span>${safe(describePayment(t,splits,money))}</span>
         ${extras}
       </div>
       <div class="cash-row-value ${t.direction==="out"?"out":""}">${sign} ${money(t.net_amount)}</div>
@@ -295,14 +297,86 @@ function selectedBenefit(){
 }
 
 function cardFee(methodId,inputId,boxId){
-  const enabled=["credit","debit"].includes($(methodId)?.value);
+  const enabled=CARD_METHODS.includes($(methodId)?.value)||(methodId==="receiveMethod"&&splitCardAmount()>0);
   $(boxId).style.display=enabled?"":"none";
   return enabled?Math.min(100,Math.max(0,Number($(inputId)?.value||0))):0;
 }
-$("receiveMethod")?.addEventListener("change",updateReceivePreview);
+$("receiveMethod")?.addEventListener("change",()=>{
+  if(isSplitPayment()&&!splitRows.length){
+    splitRows=[{method:"cash",amount:receiveDue()},{method:"credit",amount:0}];
+    renderSplitRows();
+  }
+  updateReceivePreview();
+});
 $("receiveCardFee")?.addEventListener("input",updateReceivePreview);
 $("cashProductMethod")?.addEventListener("change",updateProductPreview);
 $("productCardFee")?.addEventListener("input",updateProductPreview);
+
+/* Dividir pagamento: várias formas de pagamento no mesmo recebimento. */
+const cents=value=>Math.round(Number(value||0)*100);
+function isSplitPayment(){return $("receiveMethod")?.value==="split";}
+function receiveDue(){
+  const gross=Number($("receiveGross").value||0);
+  return Math.max(0,gross-Math.min(Number($("receiveDiscount").value||0),gross));
+}
+function splitCardAmount(){
+  if(!isSplitPayment()) return 0;
+  return splitRows.filter(r=>CARD_METHODS.includes(r.method)).reduce((sum,r)=>sum+Number(r.amount||0),0);
+}
+function splitPayments(){
+  const byMethod=new Map();
+  splitRows.forEach(r=>{if(cents(r.amount)>0)byMethod.set(r.method,(byMethod.get(r.method)||0)+cents(r.amount));});
+  return [...byMethod.entries()].map(([method,total])=>({method,amount:total/100})).sort((a,b)=>b.amount-a.amount);
+}
+function renderSplitRows(){
+  const options=Object.entries(PAYMENT_LABELS);
+  $("receiveSplitRows").innerHTML=splitRows.map((row,i)=>`
+    <div class="split-payment-row">
+      <label><span>Quantia</span><input type="number" min="0" step="0.01" inputmode="decimal" placeholder="0,00" value="${cents(row.amount)?Number(row.amount).toFixed(2):""}" data-split-amount="${i}"></label>
+      <label><span>Método de pagamento</span><select data-split-method="${i}">${options.map(([value,label])=>`<option value="${value}" ${value===row.method?"selected":""}>${label}</option>`).join("")}</select></label>
+      <button type="button" class="split-payment-remove" data-split-remove="${i}" aria-label="Remover forma de pagamento" ${splitRows.length<=2?"disabled":""}>×</button>
+    </div>`).join("");
+  updateReceivePreview();
+}
+function updateSplitRemaining(){
+  const rest=cents(receiveDue())-splitRows.reduce((sum,r)=>sum+cents(r.amount),0);
+  const el=$("receiveSplitRemaining");
+  el.textContent=rest===0?"Valor completo":rest>0?`Restante ${money(rest/100)}`:`Excedente ${money(-rest/100)}`;
+  el.classList.toggle("is-pending",rest!==0);
+}
+
+$("receiveSplitRows")?.addEventListener("input",e=>{
+  const i=e.target.dataset.splitAmount;
+  if(i==null) return;
+  splitRows[i].amount=Math.max(0,Number(e.target.value||0));
+  // Com duas formas, a outra completa automaticamente o restante.
+  if(splitRows.length===2){
+    const other=i==="0"?1:0;
+    splitRows[other].amount=Math.max(0,cents(receiveDue())-cents(splitRows[i].amount))/100;
+    const input=document.querySelector(`[data-split-amount="${other}"]`);
+    if(input) input.value=splitRows[other].amount?splitRows[other].amount.toFixed(2):"";
+  }
+  updateReceivePreview();
+});
+$("receiveSplitRows")?.addEventListener("change",e=>{
+  const i=e.target.dataset.splitMethod;
+  if(i==null) return;
+  splitRows[i].method=e.target.value;
+  updateReceivePreview();
+});
+$("receiveSplitRows")?.addEventListener("click",e=>{
+  const i=e.target.closest("[data-split-remove]")?.dataset.splitRemove;
+  if(i==null||splitRows.length<=2) return;
+  splitRows.splice(Number(i),1);
+  renderSplitRows();
+});
+$("receiveSplitAdd")?.addEventListener("click",()=>{
+  const rest=Math.max(0,cents(receiveDue())-splitRows.reduce((sum,r)=>sum+cents(r.amount),0));
+  const used=new Set(splitRows.map(r=>r.method));
+  const method=Object.keys(PAYMENT_LABELS).find(m=>!used.has(m))||"other";
+  splitRows.push({method,amount:rest/100});
+  renderSplitRows();
+});
 
 function updateReceivePreview(){
   const item=pendingAppointments.find(a=>a.id===$("receiveAppointment").value);
@@ -310,8 +384,10 @@ function updateReceivePreview(){
   const discount=Math.min(Number($("receiveDiscount").value||0),gross);
   const benefit=selectedBenefit();
 
+  $("receiveSplitBox")?.classList.toggle("hidden",!isSplitPayment());
+  if(isSplitPayment()) updateSplitRemaining();
   const fee=cardFee("receiveMethod","receiveCardFee","receiveCardFeeBox");
-  const feeAmount=Math.round(Math.max(0,gross-discount)*fee)/100;
+  const feeAmount=Math.round((isSplitPayment()?splitCardAmount():Math.max(0,gross-discount))*fee)/100;
   $("receiveCardFeeValue").textContent=money(feeAmount);
   $("receiveNet").textContent=money(Math.max(0,gross-discount-feeAmount));
   $("receiveCustomer").textContent=item?.customer?.full_name||"—";
@@ -393,6 +469,7 @@ async function openReceiveModal(id=null){
   $("receiveDiscount").value="0";
   $("receiveCardFee").value="0";
   $("receiveMessage").textContent="";
+  splitRows=[];
   fillReceiveOptions();
 
   if(id) $("receiveAppointment").value=id;
@@ -514,6 +591,34 @@ $("receiveForm")?.addEventListener("submit",async e=>{
     return;
   }
 
+  let paymentMethod=$("receiveMethod").value;
+  let feePercent=cardFee("receiveMethod","receiveCardFee","receiveCardFeeBox");
+  let payments=null;
+
+  if(paymentMethod==="split"){
+    const parts=splitPayments();
+    if(parts.reduce((sum,p)=>sum+cents(p.amount),0)!==cents(net)){
+      $("receiveMessage").textContent="Selecione a forma de pagamento que deseja usar para cobrir o valor restante devido.";
+      return;
+    }
+    const fee=feePercent;
+    paymentMethod=parts[0]?.method||"other";
+    if(parts.length<2){
+      feePercent=CARD_METHODS.includes(paymentMethod)?fee:0;
+    }else{
+      // A taxa da maquininha incide só sobre a parte paga no cartão.
+      const cardAmount=parts.filter(p=>CARD_METHODS.includes(p.method)).reduce((sum,p)=>sum+p.amount,0);
+      feePercent=net>0?Math.round(fee*cardAmount/net*10000)/10000:0;
+      payments=parts.map(p=>({payment_method:p.method,amount:p.amount,card_fee_percent:CARD_METHODS.includes(p.method)?fee:0}));
+
+      const {error:splitTableError}=await supabase.from("cash_transaction_payments").select("id").limit(1);
+      if(splitTableError){
+        $("receiveMessage").textContent="A divisão de pagamento ainda não foi ativada no banco de dados.";
+        return;
+      }
+    }
+  }
+
   $("receiveMessage").textContent="Registrando recebimento...";
   const checkoutButton=$("receiveForm")?.querySelector('button[type="submit"]');
   if(checkoutButton)checkoutButton.disabled=true;
@@ -522,12 +627,12 @@ $("receiveForm")?.addEventListener("submit",async e=>{
 
   const {data,error}=await supabase.rpc("checkout_appointment_card",{
     p_appointment_id:appointment.id,
-    p_payment_method:$("receiveMethod").value,
+    p_payment_method:paymentMethod,
     p_discount_amount:discount,
     p_benefit_source:benefit?.source||null,
     p_benefit_label:benefit?.label||null,
     p_coupon_id:appliedCoupon?.id||null,
-    p_card_fee_percent:cardFee("receiveMethod","receiveCardFee","receiveCardFeeBox")
+    p_card_fee_percent:feePercent
   });
 
   if(error){
@@ -541,9 +646,30 @@ $("receiveForm")?.addEventListener("submit",async e=>{
     return;
   }
 
+  let splitWarning=null;
+  if(payments){
+    let transactionId=data&&typeof data==="object"?(data.id||data.transaction_id):data;
+    if(!transactionId){
+      const {data:posted}=await supabase.from("cash_transactions")
+        .select("id")
+        .eq("appointment_id",appointment.id)
+        .eq("transaction_type","service")
+        .eq("status","posted")
+        .order("created_at",{ascending:false})
+        .limit(1)
+        .maybeSingle();
+      transactionId=posted?.id;
+    }
+    const {error:splitError}=transactionId
+      ? await supabase.rpc("register_transaction_payments",{p_transaction_id:String(transactionId),p_payments:payments})
+      : {error:{message:"movimentação não encontrada"}};
+    if(splitError)splitWarning=`Atendimento recebido em ${PAYMENT_LABELS[paymentMethod]}, mas a divisão do pagamento não foi registrada: ${splitError.message}`;
+  }
+
   if(checkoutButton)checkoutButton.disabled=false;
   closeModal("receiveModal");
-  window.C7UX?.notify("Atendimento finalizado e registrado no Caixa.");
+  if(splitWarning)window.C7UX?.notify(splitWarning,"error");
+  else window.C7UX?.notify("Atendimento finalizado e registrado no Caixa.");
   window.dispatchEvent(new CustomEvent("c7-checkout-complete",{detail:{appointmentId:appointment.id,transactionId:data}}));
 
   if(["admin","reception"].includes(currentRole)){
