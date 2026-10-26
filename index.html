@@ -810,6 +810,10 @@
         <div class="form-grid three">
           <label><span>Data</span><input id="appointmentDate" type="date" required></label>
           <label><span>Horário</span><input id="appointmentTime" type="time" required></label>
+          <label><span>Minutos extras</span><select id="appointmentExtraMinutes">
+            <option value="0">Sem acréscimo</option><option value="5">+5 minutos</option><option value="10">+10 minutos</option>
+            <option value="15">+15 minutos</option><option value="20">+20 minutos</option><option value="30">+30 minutos</option>
+            <option value="45">+45 minutos</option><option value="60">+60 minutos</option></select></label>
           <label><span>Origem</span>
             <select id="appointmentSource">
               <option value="manual">Manual</option>
@@ -1658,12 +1662,18 @@
   <section class="modal-card modal-small">
     <div class="modal-head"><div><span>AGENDA</span><h2>Reagendar atendimento</h2></div><button type="button" class="modal-close" data-close-staff-reschedule>×</button></div>
     <form id="staffRescheduleForm" class="appointment-form">
-      <p id="staffRescheduleInfo"></p>
+      <p id="staffRescheduleInfo"></p><p class="form-hint">Arraste o atendimento na grade para trocar o horário ou use este formulário.</p>
       <div class="form-grid two">
         <label><span>Nova data</span><input id="staffRescheduleDate" type="date" required></label>
-        <label><span>Novo horário</span><input id="staffRescheduleTime" type="time" step="900" required></label>
+        <label><span>Novo horário</span><input id="staffRescheduleTime" type="time" step="300" required></label>
+        <label><span>Tempo adicional</span><select id="staffRescheduleExtra">
+          <option value="0">Sem acréscimo</option><option value="5">+5 min</option>
+          <option value="10">+10 min</option><option value="15">+15 min</option>
+          <option value="20">+20 min</option><option value="30">+30 min</option>
+          <option value="45">+45 min</option><option value="60">+60 min</option>
+        </select></label>
       </div>
-      <p class="form-hint">O profissional e os serviços permanecem os mesmos. Verificaremos expediente, almoço e horários ocupados.</p>
+      <p class="form-hint">O profissional e os serviços permanecem os mesmos. A equipe pode reagendar fora do expediente normal. Conflitos e almoço bloqueado continuam protegidos.</p>
       <p id="staffRescheduleMessage" class="form-message"></p>
       <div class="modal-actions"><button type="button" class="ghost-btn" data-close-staff-reschedule>VOLTAR</button><button class="primary-btn" type="submit">CONFIRMAR REAGENDAMENTO</button></div>
     </form>
