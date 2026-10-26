@@ -5309,3 +5309,59 @@ button:focus-visible,.nav-item:focus-visible,select:focus-visible,input:focus-vi
  .c7-nav-group-toggle{display:none!important}
  .c7-nav-group-items .nav-item{min-width:max-content;width:auto;height:52px;padding:0 13px}
 }
+
+/* C7 - DESIGN SYSTEM 2026: limpo, ágil e legível */
+:root{--c7-ink:#282621;--c7-muted:#807c75;--c7-cream:#f7f6f4;--c7-card:#fff;--c7-border:#e9e5df;--c7-accent:#b38d63}
+body,.app-shell,.main-panel,.section,.modal-card,.sidebar,.nav-item,button,input,select,textarea{
+ font-family:"DM Sans",Manrope,Arial,sans-serif!important;
+}
+body{font-size:14px;-webkit-font-smoothing:antialiased}
+.main-panel{background:var(--c7-cream);padding:24px 30px}
+.topbar{padding-bottom:19px;border-bottom:1px solid #e8e2d9}
+.topbar>div:first-child>span{font:700 10px "DM Sans",sans-serif!important;letter-spacing:1.1px;color:#9c8066}
+.topbar h1,.section h2,.catalog-toolbar h2{font-family:"DM Sans",sans-serif!important;font-size:clamp(25px,2.4vw,33px)!important;font-weight:750!important;letter-spacing:-1px!important;line-height:1.22!important;text-transform:none}
+.sidebar{background:#131313;border-right:1px solid #242424;padding:23px 15px}
+.sidebar nav{display:flex!important;flex-direction:column!important;align-items:stretch!important;gap:12px!important;overflow-y:auto;overflow-x:hidden;min-height:0;padding:8px 0 12px}
+.c7-primary-nav{display:grid;gap:3px;padding-bottom:13px;border-bottom:1px solid #303030}
+.c7-primary-nav .nav-item{min-height:43px;height:43px;font-size:13px;font-weight:600}
+.sidebar .nav-item{font-size:12px;font-weight:500;border-radius:9px;padding:0 14px;color:#c4c0bb;letter-spacing:0;text-transform:none}
+.sidebar .nav-item:hover{background:#252525;color:#fff}
+.sidebar .nav-item.active{background:#f4f0eb;color:#241e18;font-weight:700;border-radius:9px;box-shadow:none}
+.c7-nav-group{margin:0!important;padding:0!important}
+.c7-nav-group-toggle{font:600 11px "DM Sans",sans-serif!important;letter-spacing:.01em!important;color:#a5a09b;padding:10px 13px;min-height:36px}
+.c7-nav-group-toggle:hover{color:#fff;background:#202020}
+.c7-nav-group-items{padding-left:4px}
+.c7-nav-group-items .nav-item{height:38px;min-height:38px}
+.c7-nav-group-items[hidden]{display:none!important}
+.c7-nav-group-toggle[aria-expanded="true"] .c7-nav-chevron{transform:rotate(180deg)}
+.brand{padding-bottom:17px;border-bottom:1px solid #303030}.brand strong{font:700 15px "DM Sans",sans-serif!important;letter-spacing:-.2px!important}
+.brand small{font:500 10px "DM Sans",sans-serif!important;color:#b4aaa1}
+#dashboard .stats{gap:12px}
+#dashboard .stats article{min-height:126px!important;padding:19px 20px!important;border:1px solid var(--c7-border)!important;border-radius:14px!important;background:#fff!important;box-shadow:0 3px 13px rgba(40,30,20,.035)!important}
+#dashboard .stats article:before{display:none!important}
+#dashboard .stats span{color:#77716c!important;font-size:12px!important;font-family:"DM Sans",sans-serif!important;font-weight:600!important;letter-spacing:0!important;text-transform:none!important}
+#dashboard .stats strong{font:750 clamp(23px,2.7vw,34px) "DM Sans",sans-serif!important;letter-spacing:-1.25px!important;color:#24211e!important;margin-top:15px!important;line-height:1.1!important}
+#dashboard .stats small{font:500 11px "DM Sans",sans-serif!important;color:#918a83!important;margin-top:10px!important}
+#dashboard .dashboard-grid{gap:12px;margin-top:14px}
+#dashboard .dashboard-grid .panel{min-height:165px!important;padding:20px 22px!important;border:1px solid var(--c7-border)!important;border-radius:14px!important;background:#fff!important;box-shadow:0 3px 13px rgba(40,30,20,.035)!important}
+#dashboard .dashboard-grid .panel>span{font:700 11px "DM Sans",sans-serif!important;color:#91877a!important;letter-spacing:.25px!important;text-transform:none!important}
+#dashboard .dashboard-grid .panel h2{font:750 clamp(19px,2.2vw,26px) "DM Sans",sans-serif!important;letter-spacing:-.5px!important;margin-top:14px!important;line-height:1.24!important;color:#25211e!important}
+#dashboard .dashboard-grid .panel p{margin-top:17px!important;font-size:12px!important;line-height:1.5;color:#837c75!important}
+#dashboard .dashboard-alerts{font-size:12px!important}
+button.primary-btn,button.ghost-btn,.agenda-actions button,.catalog-actions button,.modal-actions button{
+ font-family:"DM Sans",sans-serif!important;font-size:12px!important;font-weight:650!important;letter-spacing:0!important;text-transform:none;
+}
+button.primary-btn{border-radius:10px}button.ghost-btn{border-radius:10px}
+.modal-head h2{font-family:"DM Sans",sans-serif!important;font-weight:750!important;letter-spacing:-.5px!important}
+.appointment-preview strong,.amount-badge,.appointment-time strong{font-family:"DM Sans",sans-serif!important;letter-spacing:-.4px!important}
+@media(max-width:900px){.main-panel{padding:20px 18px}}
+@media(max-width:640px){
+ .main-panel{padding:18px 14px 90px}
+ .sidebar nav{display:flex!important;flex-direction:row!important;align-items:center!important;gap:4px!important;overflow-x:auto!important;overflow-y:hidden!important;padding:0!important}
+ .c7-primary-nav{display:contents!important}
+ .c7-nav-group,.c7-nav-group-items,.c7-nav-group-items[hidden]{display:contents!important}
+ .c7-nav-group-toggle{display:none!important}
+ .sidebar .nav-item{flex:0 0 auto;min-width:max-content;width:auto;height:50px;padding:0 12px;font-size:11px}
+ #dashboard .stats article{min-height:112px!important;padding:15px!important}
+ #dashboard .dashboard-grid .panel{min-height:145px!important;padding:16px!important}
+}
