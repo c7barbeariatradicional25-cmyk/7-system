@@ -874,6 +874,10 @@ function renderTimeline(){
   let minMinute=Math.min(...startCandidates);
   let maxMinute=Math.max(...endCandidates);
 
+  if(c7Allowed("appointments.edit")){
+    minMinute=Math.min(minMinute,6*60);
+    maxMinute=Math.max(maxMinute,23*60);
+  }
   minMinute=Math.max(0,Math.floor(minMinute/30)*30);
   maxMinute=Math.min(24*60,Math.ceil(maxMinute/30)*30);
 
@@ -1018,6 +1022,7 @@ function renderTimeline(){
   agendaTimeline.querySelectorAll("[data-open-appointment]").forEach(card=>{
     const open=()=>openAppointmentDetail(card.dataset.openAppointment);
     card.addEventListener("click",e=>{
+      if(card.dataset.c7Dragged==="true"){card.dataset.c7Dragged="";e.preventDefault();return;}
       if(e.target.closest("button")) return;
       open();
     });
@@ -1116,6 +1121,7 @@ function renderTimeline(){
     });
     card.addEventListener("pointerup",async e=>{
       if(!dragging){clearTimeout(hold);return;}
+      card.dataset.c7Dragged="true";
       const dy=e.clientY-origin.y;
       const rawMinutes=dy/pxPerMinute;
       const targetDate=new Date(record.starts_at);
