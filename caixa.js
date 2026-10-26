@@ -728,7 +728,7 @@ $("closeCashForm")?.addEventListener("submit",async e=>{
 
 async function checkoutAppointment(appointmentId){
   if(!canAccessCash()){
-    alert("Seu perfil não possui permissão para registrar pagamentos.");
+    window.C7UX?.notify("Você não tem acesso a pagamentos.","error");
     return false;
   }
 
@@ -736,7 +736,7 @@ async function checkoutAppointment(appointmentId){
     await loadCash();
 
     if(!openSession){
-      alert("O Caixa está fechado. Abra o Caixa antes de finalizar o atendimento.");
+      window.C7UX?.notify("Abra o caixa antes de receber pagamentos.","error");
       return false;
     }
 
@@ -749,12 +749,12 @@ async function checkoutAppointment(appointmentId){
       .maybeSingle();
 
     if(error||!appointment){
-      alert("Atendimento não encontrado.");
+      window.C7UX?.notify("Atendimento não encontrado.","error");
       return false;
     }
 
     if(appointment.professional_id!==currentProfessionalId){
-      alert("Você só pode realizar checkout dos seus próprios atendimentos.");
+      window.C7UX?.notify("Você só pode receber seus atendimentos.","error");
       return false;
     }
 
@@ -763,7 +763,7 @@ async function checkoutAppointment(appointmentId){
 
   const appointment=pendingAppointments.find(a=>String(a.id)===String(appointmentId));
   if(!appointment){
-    alert("Este atendimento já foi recebido ou não está disponível para checkout.");
+    window.C7UX?.notify("Este atendimento não está disponível para receber.","error");
     return false;
   }
 
