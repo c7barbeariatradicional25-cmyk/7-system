@@ -59,12 +59,12 @@
       </div>
 
       <nav>
-        <button class="nav-item active" data-section="dashboard">Dashboard</button>
+        <button class="nav-item active" data-section="dashboard">Início</button>
         <button class="nav-item" data-section="agenda">Agenda</button>
-        <button class="nav-item barber-only hidden" data-section="desempenho">Portal do Barbeiro</button>
-        <button class="nav-item barber-only hidden" data-section="meus-clientes">Meus Clientes</button>
-        <button class="nav-item barber-only hidden" data-section="meus-consumos">Meus Consumos</button>
-        <button class="nav-item barber-only hidden" data-section="minhas-comissoes">Minhas Comissões</button>
+        <button class="nav-item barber-only hidden" data-section="desempenho">Meu painel</button>
+        <button class="nav-item barber-only hidden" data-section="meus-clientes">Meus clientes</button>
+        <button class="nav-item barber-only hidden" data-section="meus-consumos">Meus consumos</button>
+        <button class="nav-item barber-only hidden" data-section="minhas-comissoes">Minhas comissões</button>
         <button class="nav-item" data-section="clientes">Clientes</button>
         <button class="nav-item" data-section="caixa">Caixa</button>
         <button class="nav-item" data-section="financeiro">Financeiro</button>
@@ -72,7 +72,7 @@
         <button class="nav-item" data-section="operacoes">Operações</button>
         <button class="nav-item" data-section="servicos">Serviços</button>
         <button class="nav-item" data-section="produtos">Produtos</button>
-        <button class="nav-item hidden" data-section="historico-produtos">Histórico de alterações</button>
+        <button class="nav-item hidden" data-section="historico-produtos">Histórico de produtos</button>
         <button class="nav-item" data-section="equipe">Equipe</button>
         <button class="nav-item hidden" data-section="permissoes">Permissões</button>
         <button class="nav-item" data-section="promocoes">Promoções</button>
@@ -197,8 +197,8 @@
             </select>
             <button id="listViewBtn" class="ghost-btn active-view" type="button">LISTA</button>
             <button id="timelineViewBtn" class="ghost-btn" type="button">GRADE</button>
-            <button id="blockTimeBtn" class="ghost-btn" type="button">BLOQUEAR HORÁRIO</button>
-            <button id="newAppointmentBtn" class="primary-btn" type="button">+ NOVO AGENDAMENTO</button>
+            <button id="blockTimeBtn" class="ghost-btn" type="button">Bloquear horário</button>
+            <button id="newAppointmentBtn" class="primary-btn" type="button">+ Agendar</button>
           </div>
         </div>
 
@@ -837,8 +837,8 @@
 
         <div class="modal-actions appointment-save-actions">
           <button type="button" class="ghost-btn" data-close-modal>CANCELAR</button>
-          <button id="saveAndNewAppointmentBtn" type="button" class="ghost-btn">SALVAR E ADICIONAR OUTRO</button>
-          <button type="submit" class="primary-btn">SALVAR AGENDAMENTO</button>
+          <button id="saveAndNewAppointmentBtn" type="button" class="ghost-btn">Salvar e continuar</button>
+          <button type="submit" class="primary-btn">Salvar agendamento</button>
         </div>
       </form>
     </section>
@@ -1686,7 +1686,7 @@
       </div>
       <p class="form-hint">O profissional e os serviços permanecem os mesmos. A equipe pode reagendar fora do expediente normal. Conflitos e almoço bloqueado continuam protegidos.</p>
       <p id="staffRescheduleMessage" class="form-message"></p>
-      <div class="modal-actions"><button type="button" class="ghost-btn" data-close-staff-reschedule>VOLTAR</button><button class="primary-btn" type="submit">CONFIRMAR REAGENDAMENTO</button></div>
+      <div class="modal-actions"><button type="button" class="ghost-btn" data-close-staff-reschedule>VOLTAR</button><button class="primary-btn" type="submit">Salvar horário</button></div>
     </form>
   </section>
 </div>
@@ -1700,6 +1700,30 @@
   <script type="module" src="automacoes.js"></script>
   <script type="module" src="barbeiro.js"></script>
   <div id="c7AlertToast" class="c7-alert-toast hidden" role="status" aria-live="assertive"></div>
+<script>
+/* Mensagens leves em toda a área interna; mantém confirmação para ações destrutivas. */
+window.C7UX=window.C7UX||{};
+window.C7UX.notify=function(message,type="info"){
+ let el=document.getElementById("c7UnifiedNotice");
+ if(!el){el=document.createElement("div");el.id="c7UnifiedNotice";el.setAttribute("role","status");el.setAttribute("aria-live","polite");document.body.appendChild(el);}
+ el.textContent=String(message||"");
+ el.className="c7-unified-notice visible"+(type==="error"?" is-error":"");
+ clearTimeout(window.__c7NoticeTimeout);
+ window.__c7NoticeTimeout=setTimeout(()=>el.classList.remove("visible"),type==="error"?4600:2400);
+};
+window.C7UX.view=function(section){
+ const nav=document.querySelector('.nav-item[data-section="'+section+'"]:not(.hidden)');
+ nav?.click();
+};
+document.addEventListener("keydown",function(e){
+ if(e.key!=="Escape")return;
+ const modal=[...document.querySelectorAll(".modal:not(.hidden)")].at(-1);
+ if(!modal)return;
+ // Fechar somente pelos controles existentes; não interferir em confirmações de pagamento.
+ const close=modal.querySelector("[data-close-modal],[data-close-appointment-detail],[data-close-staff-reschedule],[data-close-product],[data-close-customer],[data-close-block]");
+ if(close){e.preventDefault();close.click();}
+});
+</script>
 <script>document.querySelectorAll("[data-password-toggle]").forEach(function(btn){btn.addEventListener("click",function(){const input=document.getElementById(btn.dataset.passwordToggle);if(!input)return;const visible=input.type==="password";input.type=visible?"text":"password";btn.textContent=visible?"OCULTAR":"MOSTRAR";btn.setAttribute("aria-pressed",String(visible));btn.setAttribute("aria-label",visible?"Ocultar senha":"Mostrar senha");});});</script>
 </body>
 </html>
