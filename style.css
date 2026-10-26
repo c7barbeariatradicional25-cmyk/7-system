@@ -5262,3 +5262,13 @@ body{
 @media(max-width:600px){#historico-produtos .c7-audit-row{padding:14px}
 #historico-produtos .c7-audit-filter-bar{display:grid}
 #historico-produtos .c7-audit-filter-bar label{min-width:0}}
+
+/* C7 - movimentação por pressionar e arrastar na grade da agenda */
+.live-booking.c7-drag-ready{cursor:grab;touch-action:pan-y;}
+.live-booking.c7-dragging{
+ cursor:grabbing;touch-action:none!important;
+ box-shadow:0 14px 34px rgba(0,0,0,.25);
+ outline:2px solid #b68b4d;opacity:.88;
+ transition:none!important;pointer-events:auto;
+}
+#appointmentExtraMinutes,#staffRescheduleExtra{min-height:42px}
