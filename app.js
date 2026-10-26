@@ -383,7 +383,7 @@ async function loadAgenda(){
   const CLIENT_SELECT=c7Allowed("clients.read")?"customer:customers(id,full_name,phone)":"customer_id";
   let appointmentQuery=supabase
     .from("appointments")
-    .select(`id,professional_id,starts_at,ends_at,status,source,total_amount,notes,${CLIENT_SELECT},professional:professionals(id,full_name),appointment_services(id,service_name,duration_minutes,price)`)
+    .select(`id,professional_id,starts_at,ends_at,extra_minutes,status,source,total_amount,notes,${CLIENT_SELECT},professional:professionals(id,full_name),appointment_services(id,service_name,duration_minutes,price)`)
     .gte("starts_at",start.toISOString())
     .lte("starts_at",end.toISOString())
     .order("starts_at",{ascending:true});
@@ -556,7 +556,7 @@ async function fetchAppointmentDetail(appointmentId){
   const CLIENT_SELECT=c7Allowed("clients.read")?"customer:customers(id,full_name,phone)":"customer_id";
   const [{data:appointment,error},{data:extras},{data:productCatalog}]=await Promise.all([
     supabase.from("appointments")
-      .select(`id,customer_id,professional_id,starts_at,ends_at,status,source,total_amount,notes${c7Allowed("clients.read")?",customer:customers(id,full_name,phone)":""},professional:professionals(id,full_name),appointment_services(id,service_id,service_name,duration_minutes,price,sort_order)`)
+      .select(`id,customer_id,professional_id,starts_at,ends_at,extra_minutes,status,source,total_amount,notes${c7Allowed("clients.read")?",customer:customers(id,full_name,phone)":""},professional:professionals(id,full_name),appointment_services(id,service_id,service_name,duration_minutes,price,sort_order)`)
       .eq("id",appointmentId)
       .maybeSingle(),
     supabase.from("appointment_products")
@@ -780,6 +780,7 @@ async function openStaffReschedule(appointmentId){
   $("staffRescheduleDate").value=localDateInput(local);
   $("staffRescheduleDate").min=localDateInput();
   $("staffRescheduleTime").value=local.toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit",hour12:false});
+  $("staffRescheduleExtra").value=String(appointment.extra_minutes||0);
   $("staffRescheduleInfo").textContent=(appointment.customer?.full_name||"Cliente")+" • "+(appointment.professional?.full_name||"Barbeiro");
   $("staffRescheduleMessage").textContent="";
   $("staffRescheduleModal").classList.remove("hidden");
@@ -794,7 +795,7 @@ $("staffRescheduleForm")?.addEventListener("submit",async e=>{
   const startsAt=new Date(date+"T"+time+":00");
   if(Number.isNaN(startsAt.getTime()))return;
   $("staffRescheduleMessage").textContent="Verificando disponibilidade...";
-  const {error}=await supabase.rpc("c7_staff_reschedule",{p_appointment_id:staffRescheduleAppointment.id,p_starts_at:startsAt.toISOString()});
+  const {error}=await supabase.rpc("c7_staff_move_appointment",{p_appointment_id:staffRescheduleAppointment.id,p_starts_at:startsAt.toISOString(),p_extra_minutes:Number($("staffRescheduleExtra").value||0)});
   if(error){$("staffRescheduleMessage").textContent=error.message||"Não foi possível reagendar.";return;}
   $("staffRescheduleModal").classList.add("hidden");
   if(detailAppointmentId===staffRescheduleAppointment.id)closeAppointmentDetail();
@@ -1287,7 +1288,7 @@ function updateAppointmentPreview(){
   const selected=selectedServices();
   const date=$("appointmentDate").value;
   const time=$("appointmentTime").value;
-  const totalMinutes=selected.reduce((sum,s)=>sum+durationToMinutes(s.duration),0);
+  const totalMinutes=selected.reduce((sum,s)=>sum+durationToMinutes(s.duration),0)+Number($("appointmentExtraMinutes")?.value||0);
   const totalPrice=selected.reduce((sum,s)=>sum+Number(s.price||0),0);
 
   appointmentServiceCount.textContent=selected.length
@@ -1334,6 +1335,7 @@ newAppointmentBtn.addEventListener("click",openAppointmentModal);
 document.querySelectorAll("[data-close-modal]").forEach(el=>el.addEventListener("click",closeAppointmentModal));
 $("appointmentDate").addEventListener("change",updateAppointmentPreview);
 $("appointmentTime").addEventListener("input",updateAppointmentPreview);
+$("appointmentExtraMinutes")?.addEventListener("change",updateAppointmentPreview);
 
 async function saveAppointment({keepOpen=false}={}){
   if(!c7Allowed("appointments.create")||!c7Allowed("clients.create")){
@@ -1353,7 +1355,8 @@ async function saveAppointment({keepOpen=false}={}){
     return false;
   }
 
-  const durationMinutes=selected.reduce((sum,s)=>sum+durationToMinutes(s.duration),0);
+  const extraMinutes=Number($("appointmentExtraMinutes")?.value||0);
+  const durationMinutes=selected.reduce((sum,s)=>sum+durationToMinutes(s.duration),0)+extraMinutes;
   const totalAmount=selected.reduce((sum,s)=>sum+Number(s.price||0),0);
   const start=new Date(`${date}T${time}:00`);
   const end=new Date(start.getTime()+durationMinutes*60000);
@@ -1368,20 +1371,16 @@ async function saveAppointment({keepOpen=false}={}){
     .eq("active",true)
     .maybeSingle();
 
-  if(!hours){
-    appointmentMessage.textContent="Esse profissional não possui expediente configurado para este dia.";
-    return false;
-  }
-
+  // Somente o sistema interno permite exceções ao expediente; o banco verifica autorização.
   const startMinutes=start.getHours()*60+start.getMinutes();
   const endMinutes=end.getHours()*60+end.getMinutes();
-
-  if(startMinutes<minutesFromHHMM(hours.starts_at)||endMinutes>minutesFromHHMM(hours.ends_at)){
-    appointmentMessage.textContent="O horário está fora do expediente desse profissional.";
-    return false;
+  if(start.toDateString()!==end.toDateString()){
+    appointmentMessage.textContent="O atendimento não pode passar da meia-noite.";return false;
   }
-
-  const [{data:conflicts},{data:blocks}] = await Promise.all([
+  if(!hours && !c7Allowed("appointments.create")){
+    appointmentMessage.textContent="Sem expediente configurado.";return false;
+  }
+    const [{data:conflicts},{data:blocks}] = await Promise.all([
     supabase.from("appointments")
       .select("id")
       .eq("professional_id",professionalId)
@@ -1453,6 +1452,7 @@ async function saveAppointment({keepOpen=false}={}){
       source:$("appointmentSource").value,
       notes:$("appointmentNotes").value.trim()||null,
       total_amount:totalAmount,
+      extra_minutes:extraMinutes,
       created_by:currentUser
     })
     .select("id")
