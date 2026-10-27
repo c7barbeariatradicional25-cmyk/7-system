@@ -5523,3 +5523,34 @@ button.primary-btn{border-radius:10px}button.ghost-btn{border-radius:10px}
   .split-payment-labels,.split-payment-row{grid-template-columns:minmax(0,1fr) minmax(0,1.2fr) 36px}
   .c7-extra-control{flex-direction:column;align-items:stretch}
 }
+
+/* ==========================================================
+   C7 — Layout compacto: mais espaço para o que importa
+   ========================================================== */
+.main-panel{padding:14px 24px 18px!important}
+.topbar{min-height:0!important;padding-top:0!important;padding-bottom:10px!important;margin-bottom:0!important;align-items:center!important}
+.main-panel>.section{padding-top:12px!important}
+.topbar>div:first-child>span{font-size:9px!important}
+.topbar h1{font-size:24px!important;margin-top:2px!important}
+.topbar-actions .ghost-btn,.notification-btn{min-height:38px!important;height:38px!important}
+.user-chip{padding:5px 10px!important;min-height:44px!important}
+.user-avatar{width:32px!important;height:32px!important;font-size:11px!important}
+
+/* Agenda: barra de ferramentas e resumo numa faixa fina */
+#agenda .agenda-toolbar{gap:8px!important;margin-bottom:10px!important}
+#agenda .agenda-toolbar button,#agenda .agenda-toolbar select,#agenda .agenda-toolbar input{height:40px!important;min-height:40px!important}
+#agenda .agenda-summary{display:flex!important;flex-wrap:wrap;gap:8px!important;margin:0 0 10px!important}
+#agenda .agenda-summary>div{display:flex!important;align-items:baseline;gap:8px;min-height:0!important;padding:8px 14px!important;border-radius:10px!important;box-shadow:none!important}
+#agenda .agenda-summary span{font-size:11px!important;letter-spacing:.3px!important}
+#agenda .agenda-summary strong{margin:0!important;font-size:16px!important}
+#agenda .agenda-summary>div:first-child{flex:1 1 auto}
+
+/* Grade ocupa a altura da tela */
+#agenda .agenda-timeline{margin-top:0!important}
+#agenda .live-timeline-scroll{max-height:none!important;height:calc(100vh - 200px)!important;min-height:420px}
+
+@media(max-width:700px){
+  .main-panel{padding:10px 12px 90px!important}
+  #agenda .agenda-summary>div{padding:7px 10px!important}
+  #agenda .live-timeline-scroll{height:calc(100vh - 300px)!important;min-height:380px}
+}

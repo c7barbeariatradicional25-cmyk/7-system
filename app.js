@@ -1240,14 +1240,20 @@ function renderTimeline(){
   updateLiveLine();
   timelineClock=setInterval(updateLiveLine,1000);
 
-  requestAnimationFrame(()=>{
-    const scroller=agendaTimeline.querySelector(".live-timeline-scroll");
-    if(!scroller||selected!==localDateInput()) return;
-    const now=new Date();
-    const nowMinutes=now.getHours()*60+now.getMinutes();
-    const target=Math.max(0,timelineTopPadding+(nowMinutes-minMinute)*pxPerMinute-180);
-    scroller.scrollTop=target;
-  });
+  // Abre a grade no horário que importa: agora (se dentro do expediente) ou o início do dia de trabalho.
+  {
+    const firstWork=Math.min(...(starts.length?starts:[9*60]),...(appointmentStarts.length?appointmentStarts:[24*60]));
+    const lastWork=Math.max(...(ends.length?ends:[20*60]),...appointmentEnds);
+    let focus=firstWork;
+    if(isToday&&nowMinute>firstWork&&nowMinute<lastWork) focus=nowMinute-60;
+    agendaTimeline.dataset.focusTop=String(Math.max(0,timelineTopPadding+(focus-minMinute)*pxPerMinute-12));
+  }
+  requestAnimationFrame(focusTimeline);
+}
+
+function focusTimeline(){
+  const scroller=agendaTimeline.querySelector(".live-timeline-scroll");
+  if(scroller&&!agendaTimeline.classList.contains("hidden")) scroller.scrollTop=Number(agendaTimeline.dataset.focusTop||0);
 }
 async function updateDashboard(){
   const today=localDateInput();
@@ -1370,6 +1376,7 @@ function setAgendaView(view){
   agendaTimeline.classList.toggle("hidden",list);
   listViewBtn.classList.toggle("active-view",list);
   timelineViewBtn.classList.toggle("active-view",!list);
+  if(!list) requestAnimationFrame(focusTimeline);
 }
 
 listViewBtn.addEventListener("click",()=>setAgendaView("list"));
