@@ -213,7 +213,7 @@ function renderPackages(){
       <div class="package-row-main">
         <strong>${escHtml(p.name)}</strong>
         <small>${items}</small>
-        <small class="muted">${expiresLabel(p.expires_days)}${p.note?` · ${escHtml(p.note)}`:""}</small>
+        <small class="muted">${expiresLabel(p.expires_days)} · ${Number(p.commission_percent||0)>0?`comissão ${Number(p.commission_percent)}% para quem vende`:"sem comissão"}${p.note?` · ${escHtml(p.note)}`:""}</small>
       </div>
       <span class="package-vis ${vis.cls}">${vis.icon} ${vis.label}</span>
       <div class="package-row-price"><strong>${money(p.price)}</strong>${save>0?`<small>economia ${money(save)}</small>`:""}</div>
@@ -311,6 +311,7 @@ function openPackage(id=null){
     $("packageExpires").append(new Option(`${pkg.expires_days} dias`,String(pkg.expires_days),true,true));
   }
   $("packageNote").value=pkg?.note||"";
+  $("packageCommission").value=pkg?.commission_percent??0;
   document.querySelectorAll('[name="packageVisibility"]').forEach(r=>{r.checked=r.value===(pkg?.visibility||"internal");});
   const rows=$("packageItemRows");
   rows.replaceChildren(...(pkg?.items||[]).map(packageItemRow));
@@ -336,6 +337,7 @@ async function savePackage(e){
     expires_days:$("packageExpires").value?Number($("packageExpires").value):null,
     visibility:document.querySelector('[name="packageVisibility"]:checked')?.value||"internal",
     note:$("packageNote").value.trim()||null,
+    commission_percent:Math.min(100,Math.max(0,Number($("packageCommission").value||0))),
     updated_at:new Date().toISOString()
   };
   $("packageMessage").textContent="Salvando...";

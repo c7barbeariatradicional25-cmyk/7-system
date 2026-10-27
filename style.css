@@ -6079,3 +6079,4 @@ button.primary-btn{border-radius:10px}button.ghost-btn{border-radius:10px}
   .package-item-row{grid-template-columns:1fr auto 30px}
   .package-unit{grid-column:1/2}
 }
+.field-hint{display:block;margin-top:4px;font-size:11px;line-height:1.35;color:var(--c7-muted)}

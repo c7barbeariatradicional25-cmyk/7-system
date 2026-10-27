@@ -70,7 +70,7 @@ async function loadCash(){
       .order("starts_at",{ascending:true})
   ]);
   const packageResult=await supabase.from("packages")
-    .select("id,name,price,expires_days,visibility,items:package_items(quantity,service:services(name))")
+    .select("id,name,price,expires_days,visibility,commission_percent,items:package_items(quantity,service:services(name))")
     .neq("visibility","off").order("sort_order").order("name");
   cashPackages=packageResult.error?[]:(packageResult.data||[]).filter(p=>p.visibility!=="off"&&(p.items||[]).length);
   $("posPackagesCat")?.classList.toggle("hidden",!cashPackages.length);
@@ -1086,7 +1086,7 @@ function posProduct(id){return products.find(p=>String(p.id)===String(id));}
 function posPackage(id){return cashPackages.find(p=>String(p.id)===String(id));}
 function posLine(line){
   const item=line.pkg?posPackage(line.pkg):posProduct(line.id);
-  return {name:item?.name||(line.pkg?"Pacote":"Produto"),price:Number(item?.price||0),max:line.pkg?1:Number(item?.stock_quantity||0)};
+  return {name:item?.name||(line.pkg?"Pacote":"Produto"),price:Number(item?.price||0),max:line.pkg?1:Number(item?.stock_quantity||0),commission:line.pkg?Number(item?.commission_percent||0):0};
 }
 function renderPos(){
   if(!$("cashPosView")) return;
@@ -1134,7 +1134,7 @@ function renderPosCart(){
   box.innerHTML=pos.cart.length?pos.cart.map((i,idx)=>{
     const p=posLine(i);
     return `<div class="pos-cart-row">
-      <div><strong>${i.pkg?"📦 ":""}${p.name}</strong><small>${i.pkg?"pacote · precisa do cliente":`${money(p.price)} cada`}</small></div>
+      <div><strong>${i.pkg?"📦 ":""}${p.name}</strong><small>${i.pkg?`pacote · precisa do cliente${p.commission>0?` · comissão ${p.commission}% para quem vende`:""}`:`${money(p.price)} cada`}</small></div>
       <div class="pos-qty"><button type="button" data-pos-dec="${idx}">−</button><span>${i.qty}</span><button type="button" data-pos-inc="${idx}">+</button></div>
       <b>${money(p.price*i.qty)}</b>
       <button type="button" class="pos-remove" data-pos-remove="${idx}" aria-label="Remover">×</button>

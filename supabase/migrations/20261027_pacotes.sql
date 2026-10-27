@@ -3,6 +3,8 @@
 --   'internal' = só a equipe vende no caixa
 --   'off'      = desligado (não aparece nem é vendido)
 -- Venda no caixa, saldo por cliente e uso automático no recebimento.
+-- Comissão: quem vende o pacote ganha a % do pacote no dia da venda (0% = sem comissão).
+-- O atendimento feito pelo pacote não gera comissão.
 -- Rodar no Supabase (SQL Editor) depois de 20261027_comissao_produtos_reabrir.sql. Pode ser executado de novo.
 
 do $$
@@ -74,6 +76,9 @@ begin
     )
   $sql$, v_service, v_appointment);
 end $$;
+
+alter table public.packages add column if not exists commission_percent numeric(5,2) not null default 0
+  check (commission_percent >= 0 and commission_percent <= 100);
 
 create index if not exists customer_packages_customer_idx on public.customer_packages(customer_id);
 create index if not exists customer_package_uses_package_idx on public.customer_package_uses(customer_package_id);
@@ -188,6 +193,16 @@ begin
   select v_cp, i.service_id, s.name, i.quantity, i.unit_price
     from public.package_items i join public.services s on s.id=i.service_id
    where i.package_id=p_package_id;
+
+  -- Comissão de quem vendeu, sobre o preço do pacote.
+  if p_professional_id is not null and v_pkg.commission_percent > 0 and v_pkg.price > 0 then
+    insert into public.commission_entries(
+      transaction_id, professional_id, base_amount, commission_percent, commission_amount, status
+    ) values (
+      v_tx, p_professional_id, v_pkg.price, v_pkg.commission_percent,
+      round(v_pkg.price * v_pkg.commission_percent / 100, 2), 'pending'
+    );
+  end if;
 
   perform private.c7_record_card_fee(v_tx,p_card_fee_percent);
   return v_cp;
