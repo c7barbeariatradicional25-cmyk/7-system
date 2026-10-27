@@ -209,11 +209,14 @@ async function loadPerformance(){
               <strong>Cliente</strong>
               <span>${services}</span>
             </div>
-            <span class="performance-status status-${a.status}">${({
+            <span class="c7-status" data-status="${a.status}">${({
               scheduled:"Agendado",
               confirmed:"Confirmado",
               waiting:"Aguardando",
-              in_service:"Em Atendimento"
+              in_service:"Em atendimento",
+              completed:"Finalizado",
+              no_show:"Faltou",
+              cancelled:"Cancelado"
             })[a.status]||a.status}</span>
           </div>
         `;

@@ -5664,3 +5664,17 @@ button.primary-btn{border-radius:10px}button.ghost-btn{border-radius:10px}
   .customer-row .customer-cell:nth-child(3),.customer-row .customer-cell:nth-child(5){display:none}
 }
 #clientes #customerList{margin-top:0!important}
+
+/* Catálogo e Equipe: grupos leves, status em etiqueta */
+.catalog-category{border-radius:14px!important;overflow:hidden}
+.catalog-category-head{padding:10px 18px!important;min-height:0!important;background:#f6f1ec!important;color:var(--c7-ink)!important;border-bottom:1px solid var(--c7-border)}
+.catalog-category-head span{display:none!important}
+.catalog-category-head h3{margin:0!important;font-size:15px!important;color:var(--c7-ink)!important}
+.catalog-category-head strong{width:auto!important;height:auto!important;padding:2px 9px!important;border-radius:999px!important;background:#fff!important;color:#8a7e73!important;font-size:12px!important}
+.catalog-row{padding:10px 18px!important;min-height:0!important}
+.catalog-row .catalog-meta strong{font-size:15px!important}
+.catalog-row .catalog-meta small{display:none}
+.catalog-actions button{height:34px!important;min-height:34px!important;padding:0 12px!important;font-size:11px!important}
+#equipe .catalog-meta strong{font-size:13px!important;font-weight:650!important;color:#5f5953!important}
+#workingHoursProfessional{height:40px;padding:0 12px;border:1px solid var(--c7-border);border-radius:9px;background:#fff;font-size:14px;color:var(--c7-ink)}
+.team-hours-toolbar label,#equipe label:has(#workingHoursProfessional){display:flex;align-items:center;gap:10px;font-size:12px;font-weight:700;color:#78675b}

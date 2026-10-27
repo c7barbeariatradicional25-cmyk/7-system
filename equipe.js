@@ -79,18 +79,16 @@ function renderProfessionals(){
     const commission=document.createElement("div");
     commission.className="catalog-meta";
     const cv=document.createElement("strong");
-    cv.textContent=p.commission_percent==null?"—":Number(p.commission_percent).toLocaleString("pt-BR")+"%";
-    const cl=document.createElement("small");
-    cl.textContent="COMISSÃO";
-    commission.append(cv,cl);
+    cv.textContent=p.commission_percent==null?"Sem comissão":Number(p.commission_percent).toLocaleString("pt-BR")+"% de comissão";
+    commission.append(cv);
 
     const status=document.createElement("div");
     status.className="catalog-meta";
-    const sv=document.createElement("strong");
-    sv.textContent=p.active?"ATIVO":"INATIVO";
-    const sl=document.createElement("small");
-    sl.textContent="AGENDA";
-    status.append(sv,sl);
+    const sv=document.createElement("span");
+    sv.className="c7-status";
+    sv.dataset.status=p.active?"completed":"cancelled";
+    sv.textContent=p.active?"Atende na agenda":"Fora da agenda";
+    status.append(sv);
 
     const actions=document.createElement("div");
     actions.className="catalog-actions";

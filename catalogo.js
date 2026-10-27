@@ -40,6 +40,15 @@ async function loadServices(){
   renderServices();
 }
 
+function durationToMinutes(value){
+  const text=String(value||"").trim();
+  if(/^\d+$/.test(text)) return Number(text);
+  const hhmm=text.match(/^(\d{1,2}):(\d{2})/);
+  if(hhmm) return Number(hhmm[1])*60+Number(hhmm[2]);
+  const h=text.match(/(\d+)\s*h\s*(\d+)?/i),m=text.match(/(\d+)\s*min/i);
+  return (h?Number(h[1])*60+Number(h[2]||0):0)+(!h&&m?Number(m[1]):0)||null;
+}
+
 function groupByCategory(items){
   return items.reduce((acc,item)=>{
     const key=(item.category||"Sem categoria").trim()||"Sem categoria";
@@ -87,7 +96,9 @@ function renderServices(){
     const name=document.createElement("strong");
     name.textContent=s.name;
     const meta=document.createElement("span");
-    meta.textContent=(s.category||"Sem categoria")+" • "+(s.duration||"Sem duração");
+    // A categoria já está no cabeçalho do grupo; aqui só a duração.
+    const minutes=durationToMinutes(s.duration);
+    meta.textContent=minutes?`${minutes} min`:(s.duration||"Sem duração");
     main.append(name,meta);
 
     const price=document.createElement("div");
@@ -100,11 +111,11 @@ function renderServices(){
 
     const status=document.createElement("div");
     status.className="catalog-meta";
-    const st=document.createElement("strong");
-    st.textContent=s.active?"ATIVO":"INATIVO";
-    const sts=document.createElement("small");
-    sts.textContent="LINK PÚBLICO";
-    status.append(st,sts);
+    const st=document.createElement("span");
+    st.className="c7-status";
+    st.dataset.status=s.active?"completed":"cancelled";
+    st.textContent=s.active?"No link público":"Oculto";
+    status.append(st);
 
     const actions=document.createElement("div");
     actions.className="catalog-actions";
@@ -240,20 +251,19 @@ function renderProducts(){
 
     const status=document.createElement("div");
     status.className="catalog-meta";
-    const st=document.createElement("strong");
+    const st=document.createElement("span");
     const currentStock=Number(p.stock_quantity||0);
     const minStock=Number(p.min_stock||0);
-    st.textContent=p.deleted_at?"EXCLUÍDO":!p.active
-      ?"INATIVO"
+    st.textContent=p.deleted_at?"Excluído":!p.active
+      ?"Inativo"
       :currentStock<=0
-        ?"SEM ESTOQUE"
+        ?"Sem estoque"
         :currentStock<=minStock
-          ?"ESTOQUE BAIXO"
-          :"OK";
-    st.className=currentStock<=minStock?"stock-low":"";
-    const sl=document.createElement("small");
-    sl.textContent="STATUS";
-    status.append(st,sl);
+          ?"Estoque baixo"
+          :"Em estoque";
+    st.className="c7-status";
+    st.dataset.status=p.deleted_at||!p.active?"cancelled":currentStock<=0?"no_show":currentStock<=minStock?"waiting":"completed";
+    status.append(st);
 
     const actions=document.createElement("div");
     actions.className="catalog-actions";
