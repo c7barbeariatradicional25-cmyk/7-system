@@ -211,6 +211,9 @@ async function loadEmployeeConsumptions(){
     : '<div class="cash-empty">Nenhum consumo pendente.</div>';
 }
 
+const esc=value=>String(value??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+
+/* Acerto da semana: um cartão por barbeiro com Comissão − Consumo = A pagar. */
 async function loadWeeklySettlements(){
   if(!canAccessFinance()) return;
 
@@ -224,9 +227,10 @@ async function loadWeeklySettlements(){
       .gte("created_at",range.start.toISOString())
       .lte("created_at",range.end.toISOString()),
     supabase.from("employee_consumptions")
-      .select("id,professional_id,total_amount,amount_settled,status,created_at")
+      .select("id,professional_id,quantity,total_amount,amount_settled,status,created_at,product:products(name)")
       .eq("status","pending")
       .lte("created_at",range.end.toISOString())
+      .order("created_at",{ascending:false})
   ]);
 
   const professionals=proResult.data||[];
@@ -236,65 +240,59 @@ async function loadWeeklySettlements(){
   if(!target) return;
 
   if(!professionals.length){
-    target.innerHTML='<div class="cash-empty">Nenhum colaborador ativo.</div>';
+    target.innerHTML='<div class="cash-empty">Nenhum barbeiro ativo.</div>';
     return;
   }
 
-  target.replaceChildren();
-
-  professionals.forEach(pro=>{
+  const cards=professionals.map(pro=>{
     const commission=commissions
       .filter(x=>x.professional_id===pro.id)
       .reduce((sum,x)=>sum+Number(x.commission_amount||0),0);
-
-    const consumption=consumptions
-      .filter(x=>x.professional_id===pro.id)
-      .reduce((sum,x)=>sum+Math.max(Number(x.total_amount||0)-Number(x.amount_settled||0),0),0);
-
+    const items=consumptions.filter(x=>x.professional_id===pro.id);
+    const open=item=>Math.max(Number(item.total_amount||0)-Number(item.amount_settled||0),0);
+    const consumption=items.reduce((sum,x)=>sum+open(x),0);
     const consumptionApplied=Math.min(commission,consumption);
     const residualDebt=Math.max(consumption-commission,0);
     const net=Math.max(commission-consumptionApplied,0);
+    const empty=commission<=0&&consumption<=0;
 
-    const row=document.createElement("div");
-    row.className="finance-row";
+    return {pro,commission,consumption,consumptionApplied,net,empty,html:`
+      <article class="settle-card${empty?" is-empty":""}">
+        <div class="settle-name">${esc(pro.full_name)}</div>
+        <div class="settle-math">
+          <div><span>Comissão</span><strong class="in">${money(commission)}</strong></div>
+          <b>−</b>
+          <div><span>Consumo</span><strong class="out">${money(consumptionApplied)}</strong></div>
+          <b>=</b>
+          <div class="settle-net"><span>A pagar</span><strong>${money(net)}</strong></div>
+        </div>
+        ${currentRole==="admin"&&!empty?`<button type="button" class="settle-pay" data-settle="${esc(pro.id)}">${net>0?"PAGAR":"ACERTAR"}</button>`:""}
+        ${residualDebt>0?`<p class="settle-note">Consumo maior que a comissão: ${money(residualDebt)} fica para a próxima semana.</p>`:""}
+        ${items.length?`<details class="settle-items"><summary>Ver consumos (${items.length})</summary>
+          ${items.map(x=>`<div><span>${esc(x.product?.name||"Produto")} · ${Number(x.quantity||0)} un. · ${new Date(x.created_at).toLocaleDateString("pt-BR")}</span><strong>${money(open(x))}</strong></div>`).join("")}
+        </details>`:""}
+      </article>`};
+  });
 
-    const main=document.createElement("div");
-    const title=document.createElement("strong");
-    title.textContent=pro.full_name;
-    const sub=document.createElement("span");
-    sub.textContent=`Comissão: ${money(commission)} • Consumo pendente: ${money(consumption)} • ${range.start.toLocaleDateString("pt-BR")} a ${range.end.toLocaleDateString("pt-BR")}${residualDebt>0?` • Saldo que continuará pendente: ${money(residualDebt)}`:""}`;
-    main.append(title,sub);
+  // Quem tem valor aparece primeiro; quem não tem nada fica no fim, apagado.
+  cards.sort((a,b)=>Number(a.empty)-Number(b.empty)||b.net-a.net);
+  target.innerHTML=cards.map(c=>c.html).join("");
 
-    const actions=document.createElement("div");
-    actions.className="finance-actions";
-
-    const value=document.createElement("div");
-    value.className="finance-value";
-    value.textContent=money(net);
-    actions.appendChild(value);
-
-    if(currentRole==="admin"&&(commission>0||consumption>0)){
-      const btn=document.createElement("button");
-      btn.type="button";
-      btn.textContent="REGISTRAR PAGAMENTO";
-      btn.addEventListener("click",()=>{
-        $("settlementProfessionalId").value=pro.id;
-        $("settlementPeriodStart").value=range.startValue;
-        $("settlementPeriodEnd").value=range.endValue;
-        $("settlementProfessionalName").value=pro.full_name;
-        $("settlementGrossCommission").textContent=money(commission);
-        $("settlementConsumption").textContent=money(consumptionApplied);
-        $("settlementNetPayable").textContent=money(net);
-        $("settlementPaymentMethod").value="pix";
-        $("settlementPaymentNotes").value="";
-        $("settlementPaymentMessage").textContent="";
-        $("settlementPaymentModal").classList.remove("hidden");
-      });
-      actions.appendChild(btn);
-    }
-
-    row.append(main,actions);
-    target.appendChild(row);
+  target.querySelectorAll("[data-settle]").forEach(btn=>{
+    const c=cards.find(x=>String(x.pro.id)===btn.dataset.settle);
+    btn.addEventListener("click",()=>{
+      $("settlementProfessionalId").value=c.pro.id;
+      $("settlementPeriodStart").value=range.startValue;
+      $("settlementPeriodEnd").value=range.endValue;
+      $("settlementProfessionalName").value=c.pro.full_name;
+      $("settlementGrossCommission").textContent=money(c.commission);
+      $("settlementConsumption").textContent=money(c.consumptionApplied);
+      $("settlementNetPayable").textContent=money(c.net);
+      $("settlementPaymentMethod").value="pix";
+      $("settlementPaymentNotes").value="";
+      $("settlementPaymentMessage").textContent="";
+      $("settlementPaymentModal").classList.remove("hidden");
+    });
   });
 }
 

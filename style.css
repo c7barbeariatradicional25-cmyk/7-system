@@ -5600,3 +5600,37 @@ button.primary-btn{border-radius:10px}button.ghost-btn{border-radius:10px}
 #dashboard .stats article:nth-child(4) strong{color:#241f1b!important}
 #dashboard .stats article.is-alert{border-color:#f0c2b6!important;background:#fff6f3!important}
 #dashboard .stats article.is-alert strong{color:var(--c7-out)!important}
+
+/* Acertos: um cartão por barbeiro */
+.settle-period{display:flex;align-items:baseline;flex-wrap:wrap;gap:6px 10px;margin-bottom:12px;padding:10px 14px;border:1px solid var(--c7-border);border-radius:12px;background:#fff}
+.settle-period span{font-size:11px;font-weight:700;color:#78675b;text-transform:uppercase;letter-spacing:.4px}
+.settle-period strong{font-size:16px;color:var(--c7-ink)}
+.settle-period small{margin-left:auto;font-size:12px;color:var(--c7-muted)}
+.settle-list{display:grid;gap:10px;margin-bottom:14px}
+.settle-card{display:grid;grid-template-columns:minmax(140px,1fr) auto auto;align-items:center;gap:10px 18px;padding:14px 18px;border:1px solid var(--c7-border);border-radius:14px;background:#fff}
+.settle-card.is-empty{opacity:.55}
+.settle-name{font-size:16px;font-weight:750;color:var(--c7-ink)}
+.settle-math{display:flex;align-items:center;gap:12px}
+.settle-math>b{font-size:18px;color:#b9ada0}
+.settle-math span{display:block;font-size:11px;font-weight:700;color:#8a7e73}
+.settle-math strong{display:block;margin-top:2px;font-size:17px}
+.settle-math strong.in{color:var(--c7-in)}
+.settle-math strong.out{color:var(--c7-out)}
+.settle-net{padding:6px 12px;border-radius:10px;background:#211d19}
+.settle-net span{color:#cdbba6!important}
+.settle-net strong{color:#fff;font-size:20px!important}
+.settle-pay{height:40px;padding:0 18px;border:0;border-radius:10px;background:var(--c7-in);color:#fff;font-weight:750;cursor:pointer}
+.settle-pay:hover{background:#256942}
+.settle-card:not(:has(.settle-pay)){grid-template-columns:minmax(140px,1fr) auto}
+.settle-note{grid-column:1/-1;margin:0;padding:7px 10px;border-radius:8px;background:#fff4e6;color:#a8670f;font-size:12px}
+.settle-items{grid-column:1/-1;font-size:12px}
+.settle-items summary{cursor:pointer;color:#8a6a45;font-weight:700}
+.settle-items>div{display:flex;justify-content:space-between;gap:10px;padding:6px 0;border-bottom:1px solid #f0ebe5;color:#5f5953}
+.settle-items strong{color:var(--c7-out)}
+.settle-history{grid-template-columns:1fr!important}
+@media(max-width:760px){
+  .settle-card,.settle-card:not(:has(.settle-pay)){grid-template-columns:1fr}
+  .settle-math{flex-wrap:wrap;gap:8px}
+  .settle-period small{margin-left:0}
+  .settle-pay{width:100%}
+}

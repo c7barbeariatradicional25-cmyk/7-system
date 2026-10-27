@@ -320,42 +320,18 @@
       <section id="acertos" class="section">
         <div class="catalog-toolbar">
           <div>
-            <span class="eyebrow">EQUIPE + FINANCEIRO</span>
-            <h2>Acerto Semanal</h2>
-            <p>Comissões, consumos internos e valor líquido de cada colaborador.</p>
+            <p>Quanto pagar a cada barbeiro nesta semana.</p>
           </div>
           <button id="employeeConsumptionBtnAcertos" class="primary-btn" type="button">+ CONSUMO COLABORADOR</button>
         </div>
 
-        <div class="settlement-highlight">
-          <div>
-            <span>PERÍODO ATUAL</span>
-            <strong id="settlementPeriodLabel">Domingo a Sábado</strong>
-          </div>
-          <p>O valor líquido considera comissão pendente menos consumos internos do período.</p>
+        <div class="settle-period"><span>Semana</span><strong id="settlementPeriodLabel">—</strong><small>Comissão da semana menos o que o barbeiro consumiu = valor a pagar.</small></div>
+
+        <div id="weeklySettlementList" class="settle-list">
+          <div class="agenda-empty">Carregando acertos...</div>
         </div>
 
-        <div class="finance-grid">
-          <article class="cash-panel">
-            <div class="cash-panel-head">
-              <div><span>ACERTO SEMANAL</span><h3>Comissão − Consumo</h3></div>
-              <button id="refreshSettlementsBtn" class="ghost-btn" type="button">ATUALIZAR</button>
-            </div>
-            <div id="weeklySettlementList" class="finance-list">
-              <div class="agenda-empty">Carregando acertos...</div>
-            </div>
-          </article>
-
-          <article class="cash-panel">
-            <div class="cash-panel-head">
-              <div><span>CONSUMO INTERNO</span><h3>Débitos dos Colaboradores</h3></div>
-              <button id="refreshEmployeeConsumptionBtn" class="ghost-btn" type="button">ATUALIZAR</button>
-            </div>
-            <div id="employeeConsumptionList" class="finance-list">
-              <div class="agenda-empty">Nenhum consumo pendente.</div>
-            </div>
-          </article>
-
+        <div class="finance-grid settle-history">
           <article class="cash-panel settlement-history-panel">
             <div class="cash-panel-head">
               <div><span>HISTÓRICO</span><h3>Acertos Pagos</h3></div>
