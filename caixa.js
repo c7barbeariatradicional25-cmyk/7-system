@@ -1,5 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { PAYMENT_LABELS, CARD_METHODS, fetchPaymentSplits, describePayment } from "./pagamentos.js";
+import { PAYMENT_LABELS, CARD_METHODS, fetchPaymentSplits } from "./pagamentos.js";
 
 const supabase = createClient(
   "https://cjtgjqxkyvgjlhylrvas.supabase.co",
@@ -81,6 +81,12 @@ async function loadCash(){
   }
 }
 
+function paymentChips(transaction,splits){
+  const parts=splits.get(String(transaction.id));
+  if(!parts?.length) return `<b class="pay-chip" data-method="${transaction.payment_method||"other"}">${PAYMENT_LABELS[transaction.payment_method]||"Sem forma de pagamento"}</b>`;
+  return parts.map(p=>`<b class="pay-chip" data-method="${p.payment_method}">${PAYMENT_LABELS[p.payment_method]||p.payment_method} ${money(p.amount)}</b>`).join("");
+}
+
 function renderCashState(){
   const isOpen=Boolean(openSession);
 
@@ -159,7 +165,7 @@ async function loadTransactions(){
     return `<div class="cash-row">
       <div class="cash-row-time"><strong>${stamp}</strong><small>${t.status==="cancelled"?"Cancelado":"Recebido"}</small></div>
       <div class="cash-row-main"><strong>${headline}</strong>
-        <span>${safe(describePayment(t,splits,money))}</span>
+        <span class="pay-chips">${paymentChips(t,splits)}</span>
         ${extras}
       </div>
       <div class="cash-row-value ${t.direction==="out"?"out":""}">${sign} ${money(t.net_amount)}</div>
@@ -215,10 +221,10 @@ function renderPendingAppointments(){
   list.innerHTML=pendingAppointments.map(a=>{
     const time=new Date(a.starts_at).toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"});
     const services=(a.appointment_services||[]).map(s=>s.service_name).join(" + ")||"Atendimento";
-    const statusNames={scheduled:"Agendado",confirmed:"Confirmado",waiting:"Aguardando",in_service:"Em atendimento",completed:"Finalizado"};
+    const statusNames={scheduled:"Agendado",confirmed:"Confirmado",waiting:"Aguardando",in_service:"Em atendimento",completed:"Finalizado",no_show:"Faltou",cancelled:"Cancelado"};
     return `
       <div class="pending-row">
-        <div class="pending-row-time"><strong>${time}</strong><small>${statusNames[a.status]||a.status}</small></div>
+        <div class="pending-row-time"><strong>${time}</strong><small class="c7-status" data-status="${a.status}">${statusNames[a.status]||a.status}</small></div>
         <div class="pending-row-main">
           <strong>${a.customer?.full_name||"Cliente"}</strong>
           <span>${services} • ${a.professional?.full_name||"Sem profissional"}</span>
@@ -338,7 +344,7 @@ function splitPayments(){
 function renderSplitRows(){
   const options=Object.entries(PAYMENT_LABELS);
   $("receiveSplitRows").innerHTML=splitRows.map((row,i)=>`
-    <div class="split-payment-row">
+    <div class="split-payment-row" data-method="${row.method}">
       <label><span>Quantia</span><input type="number" min="0" step="0.01" inputmode="decimal" placeholder="0,00" value="${cents(row.amount)?Number(row.amount).toFixed(2):""}" data-split-amount="${i}"></label>
       <label><span>Método de pagamento</span><select data-split-method="${i}">${options.map(([value,label])=>`<option value="${value}" ${value===row.method?"selected":""}>${label}</option>`).join("")}</select></label>
       <button type="button" class="split-payment-remove" data-split-remove="${i}" aria-label="Remover forma de pagamento" ${splitRows.length<=2?"disabled":""}>×</button>
@@ -350,6 +356,10 @@ function updateSplitRemaining(){
   const el=$("receiveSplitRemaining");
   el.textContent=rest===0?"Valor completo":rest>0?`Restante ${money(rest/100)}`:`Excedente ${money(-rest/100)}`;
   el.classList.toggle("is-pending",rest!==0);
+  const due=cents(receiveDue());
+  const bar=$("receiveSplitProgress");
+  bar.style.width=(due?Math.min(100,Math.max(0,(due-rest)/due*100)):100)+"%";
+  bar.classList.toggle("is-over",rest<0);
 }
 
 $("receiveMethodTiles")?.addEventListener("click",e=>{
@@ -376,6 +386,7 @@ $("receiveSplitRows")?.addEventListener("change",e=>{
   const i=e.target.dataset.splitMethod;
   if(i==null) return;
   splitRows[i].method=e.target.value;
+  e.target.closest(".split-payment-row").dataset.method=e.target.value;
   updateReceivePreview();
 });
 $("receiveSplitRows")?.addEventListener("click",e=>{
@@ -405,6 +416,8 @@ function updateReceivePreview(){
   const feeAmount=Math.round((isSplitPayment()?splitCardAmount():Math.max(0,gross-discount))*fee)/100;
   $("receiveCardFeeValue").textContent=money(feeAmount);
   $("receiveNet").textContent=money(Math.max(0,gross-discount-feeAmount));
+  $("receiveDueTotal").textContent=money(Math.max(0,gross-discount));
+  $("receiveDueInfo").textContent=item?[item.customer?.full_name,item.professional?.full_name].filter(Boolean).join(" • ")+(discount>0?` • desconto de ${money(discount)}`:""):"Selecione o atendimento";
   $("receiveCustomer").textContent=item?.customer?.full_name||"—";
   $("receiveBenefitPreview").textContent=appliedCoupon
     ? `Cupom ${appliedCoupon.code}`

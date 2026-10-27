@@ -454,7 +454,7 @@ function renderAgendaList(){
     return {
       start:new Date(a.starts_at),
       html:`
-        <article class="appointment-card clickable-appointment" data-open-appointment="${a.id}" role="button" tabindex="0">
+        <article class="appointment-card clickable-appointment" data-status="${a.status}" data-open-appointment="${a.id}" role="button" tabindex="0">
           <div class="appointment-time">
             <strong>${formatTime(a.starts_at)}</strong>
             <small>até ${formatTime(a.ends_at)}</small>
@@ -466,7 +466,7 @@ function renderAgendaList(){
           <div class="appointment-meta">
             <span class="source-badge">${escapeHtml(a.source)}</span>
             <strong class="amount-badge">${money(a.total_amount)}</strong>
-            <select class="status-select" data-appointment-status="${a.id}" ${disabled}>
+            <select class="status-select" data-status="${a.status}" data-appointment-status="${a.id}" ${disabled}>
               ${Object.entries(statusLabels).filter(([value])=>!["waiting","in_service"].includes(value)||a.status===value).map(([value,label])=>`<option value="${value}" ${a.status===value?"selected":""}>${label}</option>`).join("")}
             </select>
           </div>
@@ -601,6 +601,9 @@ function renderAppointmentDetail(appointment){
   $("detailProfessional").textContent=appointment.professional?.full_name||"—";
   $("detailTime").textContent=`${formatTime(appointment.starts_at)}–${formatTime(appointment.ends_at)}`;
   $("detailStatus").textContent=statusLabels[appointment.status]||appointment.status;
+  $("detailStatus").className="c7-status";
+  $("detailStatus").dataset.status=appointment.status;
+  document.querySelector(".appointment-detail-modal").dataset.status=appointment.status;
   $("detailServiceTotal").textContent=money(serviceTotal);
   $("detailProductTotal").textContent=money(productTotal);
   const extraSelect=$("detailExtraMinutes");

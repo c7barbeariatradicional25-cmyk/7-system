@@ -5376,23 +5376,150 @@ button.primary-btn{border-radius:10px}button.ghost-btn{border-radius:10px}
 .c7-cash-extract-lines strong{font-size:12px;white-space:nowrap;color:#2a241f}
 .c7-cash-extract-lines .c7-cash-extract-total{border-top:1px solid #e6dfd7;padding-top:9px;color:#2a241f;font-weight:750}
 .cash-row-main>strong{line-height:1.35;overflow-wrap:anywhere}
-/* Dividir pagamento no recebimento */
-.split-payment{display:grid;gap:10px;padding:14px;border:1px solid var(--c7-border);border-radius:12px;background:var(--c7-cream)}
-.split-payment.hidden{display:none}
-#receiveSplitRows{display:grid;gap:10px}
-.split-payment-head{display:flex;justify-content:space-between;align-items:center;gap:10px}
-.split-payment-head strong{font-size:14px;color:var(--c7-ink)}
-.split-payment-head span{font-size:12px;font-weight:650;color:#3f7a4a}
-.split-payment-head span.is-pending{color:#b2452f}
-.split-payment-row{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.4fr) 36px;gap:10px;align-items:end}
-.split-payment-remove{height:44px;border:1px solid var(--c7-border);border-radius:8px;background:#fff;color:var(--c7-muted);font-size:18px;cursor:pointer}
-.split-payment-remove:disabled{opacity:.35;cursor:default}
-.split-payment-add{justify-self:start;border:0;background:none;padding:4px 0;color:var(--c7-accent);font-size:12px;font-weight:650;cursor:pointer}
-@media(max-width:700px){.split-payment-row{grid-template-columns:minmax(0,1fr) minmax(0,1.2fr) 36px}}
-/* Formas de pagamento em botões, como no Booksy */
-.pay-methods{display:grid;gap:7px}
+
+/* ==========================================================
+   C7 — Cores de destaque (status, pagamentos e valores)
+   ========================================================== */
+:root{
+  --st-scheduled:#2f6fb0;--st-scheduled-bg:#e9f1fb;
+  --st-confirmed:#167a6e;--st-confirmed-bg:#e2f4f1;
+  --st-waiting:#a8670f;--st-waiting-bg:#fcf0da;
+  --st-in_service:#6b4bb3;--st-in_service-bg:#efe9fb;
+  --st-completed:#2e7d4f;--st-completed-bg:#e4f3e9;
+  --st-no_show:#c2541f;--st-no_show-bg:#fdeadf;
+  --st-cancelled:#7d7670;--st-cancelled-bg:#efedea;
+  --pm-pix:#0e8a7d;--pm-cash:#2e7d4f;--pm-debit:#2f6fb0;--pm-credit:#7b4fb8;--pm-other:#7d7670;--pm-split:#b38d63;
+  --c7-in:#2e7d4f;--c7-out:#b8412c;
+}
+
+/* Status: etiqueta colorida reutilizável */
+.c7-status{display:inline-flex;align-items:center;gap:6px;width:max-content;padding:4px 10px;border-radius:999px;font-size:12px!important;font-weight:700!important;letter-spacing:0!important;text-transform:none!important;background:var(--st-bg,#efedea);color:var(--st-fg,#5f5953)!important}
+.c7-status::before{content:"";width:7px;height:7px;border-radius:50%;background:currentColor}
+[data-status="scheduled"]{--st-fg:var(--st-scheduled);--st-bg:var(--st-scheduled-bg)}
+[data-status="confirmed"]{--st-fg:var(--st-confirmed);--st-bg:var(--st-confirmed-bg)}
+[data-status="waiting"]{--st-fg:var(--st-waiting);--st-bg:var(--st-waiting-bg)}
+[data-status="in_service"]{--st-fg:var(--st-in_service);--st-bg:var(--st-in_service-bg)}
+[data-status="completed"]{--st-fg:var(--st-completed);--st-bg:var(--st-completed-bg)}
+[data-status="no_show"]{--st-fg:var(--st-no_show);--st-bg:var(--st-no_show-bg)}
+[data-status="cancelled"]{--st-fg:var(--st-cancelled);--st-bg:var(--st-cancelled-bg)}
+
+/* Agenda em lista: faixa de cor por status */
+#agenda .appointment-card[data-status]{border-left:5px solid var(--st-fg)!important}
+#agenda .appointment-card[data-status="cancelled"],#agenda .appointment-card[data-status="no_show"]{opacity:.78}
+#agenda .appointment-card[data-status="cancelled"] .appointment-info strong{text-decoration:line-through;text-decoration-color:rgba(0,0,0,.35)}
+#agenda .status-select[data-status]{background-color:var(--st-bg)!important;color:var(--st-fg)!important;border-color:transparent!important;font-weight:700}
+#agenda .amount-badge{color:var(--c7-in)!important}
+#agenda .agenda-summary>div:last-child strong{color:var(--c7-in)}
+
+/* Detalhe do atendimento */
+.appointment-detail-modal[data-status]{border-top:6px solid var(--st-fg)!important}
+#appointmentDetailModal .appointment-detail-summary>div:last-child{background:var(--st-bg,#f7f6f4)}
+#appointmentDetailModal .c7-status{margin-top:4px}
+.c7-extra-control{display:flex;align-items:center;justify-content:space-between;gap:14px;margin:12px 0;padding:10px 14px;border:1px dashed #e0d6ca;border-radius:12px;background:#fbf9f6}
+.c7-extra-control>div:first-child{display:grid;gap:2px}
+.c7-extra-control>div:first-child strong{font-size:13px;color:var(--c7-ink)}
+.c7-extra-control small{font-size:11px;color:var(--c7-muted)}
+.c7-extra-actions{display:flex;gap:8px;align-items:center}
+.c7-extra-actions select{height:38px;padding:0 10px;border:1px solid var(--c7-border);border-radius:9px;background:#fff;color:var(--c7-ink);font-size:13px}
+.c7-extra-actions .primary-btn{height:38px!important;padding:0 14px!important;border-radius:9px!important;font-size:11px!important}
+#appointmentDetailModal .appointment-detail-total{background:#211d19!important;border:0!important;color:#fff}
+#appointmentDetailModal .appointment-detail-total span{color:#cdbba6!important}
+#appointmentDetailModal .appointment-detail-total strong{color:#fff!important;font-size:28px!important}
+#appointmentDetailModal .appointment-detail-total small{color:#a99d91!important;font-size:10px!important}
+#appointmentDetailModal .appointment-detail-actions .ghost-btn,#appointmentDetailModal .appointment-detail-actions .primary-btn{height:42px!important;padding:0 16px!important;font-size:11px!important;border-radius:10px!important}
+#detailNoShowBtn{color:var(--st-no_show)!important;border-color:#efc3ad!important;background:var(--st-no_show-bg)!important}
+#detailCancelBtn{background:#fff!important}
+#detailCheckoutBtn{background:var(--c7-in)!important;border-color:var(--c7-in)!important;color:#fff!important}
+#detailCheckoutBtn:hover{background:#256942!important}
+
+/* Receber atendimento */
+.receive-due{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;padding:16px 18px;border-radius:14px;background:#211d19;color:#fff}
+.receive-due span{display:block;font-size:11px;font-weight:700;letter-spacing:.4px;color:#cdbba6;text-transform:uppercase}
+.receive-due strong{display:block;margin-top:4px;font-size:30px;font-weight:800;letter-spacing:-.8px;line-height:1}
+.receive-due small{max-width:55%;text-align:right;font-size:12px;color:#d8cfc6}
+.pay-methods{display:grid;gap:8px}
 .pay-methods>span{font-size:11px;font-weight:700;color:#78675b}
 .pay-tiles{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
-.pay-tiles button{min-height:46px;padding:8px;border:1px solid var(--c7-border);border-radius:10px;background:#fff;color:var(--c7-ink);font-size:13px;font-weight:600;cursor:pointer}
-.pay-tiles button:hover{border-color:var(--c7-accent)}
-.pay-tiles button.active{border:2px solid var(--c7-ink);background:var(--c7-cream);font-weight:750}
+.pay-tiles button{display:flex;align-items:center;justify-content:center;gap:8px;min-height:48px;padding:8px;border:1px solid var(--c7-border);border-radius:11px;background:#fff;color:var(--c7-ink);font-size:13px;font-weight:650;cursor:pointer;transition:border-color .12s,background .12s}
+.pay-tiles button::before{content:"";width:9px;height:9px;border-radius:50%;background:var(--pm,var(--pm-other))}
+.pay-tiles button:hover{border-color:var(--pm,var(--pm-other))}
+.pay-tiles button.active{border:2px solid var(--pm,var(--pm-other));background:color-mix(in srgb,var(--pm,var(--pm-other)) 10%,#fff);color:var(--pm,var(--pm-other));font-weight:800}
+[data-pay-method="pix"],[data-method="pix"]{--pm:var(--pm-pix)}
+[data-pay-method="cash"],[data-method="cash"]{--pm:var(--pm-cash)}
+[data-pay-method="debit"],[data-method="debit"]{--pm:var(--pm-debit)}
+[data-pay-method="credit"],[data-method="credit"]{--pm:var(--pm-credit)}
+[data-pay-method="other"],[data-method="other"]{--pm:var(--pm-other)}
+[data-pay-method="split"]{--pm:var(--pm-split)}
+.split-payment{display:grid;gap:10px;padding:14px 16px;border:2px solid #e6d5c1;border-radius:14px;background:#fffaf3}
+.split-payment.hidden{display:none}
+.split-payment-head{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.split-payment-head strong{font-size:14px;color:var(--c7-ink)}
+.split-payment-head span{padding:4px 11px;border-radius:999px;font-size:12px;font-weight:750;background:var(--st-completed-bg);color:var(--c7-in)}
+.split-payment-head span.is-pending{background:#fde6e1;color:var(--c7-out)}
+.split-payment-bar{height:6px;border-radius:999px;background:#eee4d8;overflow:hidden}
+.split-payment-bar i{display:block;height:100%;width:0;border-radius:inherit;background:var(--c7-in);transition:width .2s}
+.split-payment-bar i.is-over{background:var(--c7-out)}
+.split-payment-labels{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.4fr) 38px;gap:10px;font-size:11px;font-weight:700;color:#78675b}
+#receiveSplitRows{display:grid;gap:8px}
+.split-payment-row{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.4fr) 38px;gap:10px;align-items:center;padding:8px 8px 8px 12px;border-radius:11px;background:#fff;border:1px solid var(--c7-border);border-left:5px solid var(--pm,var(--pm-other))}
+.split-payment-row label>span{display:none}
+.split-payment-row input{font-weight:750;font-size:15px!important}
+.split-payment-row select{color:var(--pm,var(--pm-other))!important;font-weight:700}
+.split-payment-remove{height:38px;border:1px solid var(--c7-border);border-radius:9px;background:#fff;color:var(--c7-muted);font-size:18px;cursor:pointer}
+.split-payment-remove:not(:disabled):hover{color:var(--c7-out);border-color:var(--c7-out)}
+.split-payment-remove:disabled{opacity:.3;cursor:default}
+.split-payment-add{justify-self:start;border:1px dashed #d2b896;border-radius:9px;background:none;padding:8px 12px;color:#8a6a45;font-size:12px;font-weight:700;cursor:pointer}
+.split-payment-add:hover{background:#fff}
+#receiveModal .appointment-preview>div:first-child{background:var(--st-completed-bg)!important;border-color:transparent!important}
+#receiveModal .appointment-preview>div:first-child strong{color:var(--c7-in)!important}
+#receiveCardFeeValue{color:var(--c7-out)}
+#receiveModal button[type="submit"]{background:var(--c7-in)!important;border-color:var(--c7-in)!important;color:#fff!important}
+
+/* Caixa: entradas em verde, saídas em vermelho, saldo em destaque */
+.pay-chips{display:flex!important;flex-wrap:wrap;gap:5px;margin-top:5px}
+.pay-chip{display:inline-flex;align-items:center;padding:3px 9px;border-radius:999px;font-size:11px;font-weight:700;color:var(--pm,var(--pm-other));background:color-mix(in srgb,var(--pm,var(--pm-other)) 11%,#fff)}
+#caixa .cash-stats article:nth-child(2) strong{color:var(--c7-in)!important}
+#caixa .cash-stats article:nth-child(3) strong{color:var(--c7-out)!important}
+#caixa .cash-stats article:nth-child(4){background:#211d19!important;border-color:#211d19!important}
+#caixa .cash-stats article:nth-child(4) span{color:#cdbba6!important}
+#caixa .cash-stats article:nth-child(4) strong{color:#fff!important}
+#caixa .cash-stats article:nth-child(2)::before{background:var(--c7-in)!important}
+#caixa .cash-stats article:nth-child(3)::before{background:var(--c7-out)!important}
+.cash-row-value{color:var(--c7-in)!important;font-weight:800!important}
+.cash-row-value.out{color:var(--c7-out)!important}
+.pending-row-time .c7-status{margin-top:4px;font-size:10px!important;padding:2px 8px}
+.pending-receive{background:var(--c7-in)!important;border-color:var(--c7-in)!important;color:#fff!important;font-weight:750!important}
+.pending-receive:hover{background:#256942!important}
+
+/* Início: valores importantes coloridos */
+#dashboard .stats article:nth-child(2) strong{color:var(--c7-in)!important}
+#dashboard .stats article:nth-child(3) strong{color:var(--st-waiting)!important}
+#dashboard .stats article:nth-child(4) strong{color:var(--c7-out)!important}
+
+/* Grade da agenda: mesmas cores de status */
+.live-booking.status-scheduled{background:var(--st-scheduled-bg)!important;border-left-color:var(--st-scheduled)!important;color:#241f1b!important}
+.live-booking.status-scheduled small{color:var(--st-scheduled)!important;font-weight:800}
+.live-booking.status-confirmed{background:var(--st-confirmed-bg)!important;border-left-color:var(--st-confirmed)!important;color:#241f1b!important}
+.live-booking.status-confirmed small{color:var(--st-confirmed)!important;font-weight:800}
+.live-booking.status-waiting{background:var(--st-waiting-bg)!important;border-left-color:var(--st-waiting)!important;color:#241f1b!important}
+.live-booking.status-waiting small{color:var(--st-waiting)!important;font-weight:800}
+.live-booking.status-in_service{background:var(--st-in_service-bg)!important;border-left-color:var(--st-in_service)!important;color:#241f1b!important}
+.live-booking.status-in_service small{color:var(--st-in_service)!important;font-weight:800}
+.live-booking.status-completed{background:var(--st-completed-bg)!important;border-left-color:var(--st-completed)!important;color:#241f1b!important}
+.live-booking.status-completed small{color:var(--st-completed)!important;font-weight:800}
+.live-booking.status-no_show{background:var(--st-no_show-bg)!important;border-left-color:var(--st-no_show)!important;color:#241f1b!important}
+.live-booking.status-no_show small{color:var(--st-no_show)!important;font-weight:800}
+.live-booking.status-cancelled{background:var(--st-cancelled-bg)!important;border-left-color:var(--st-cancelled)!important;color:#241f1b!important}
+.live-booking.status-cancelled small{color:var(--st-cancelled)!important;font-weight:800}
+.live-booking.status-cancelled strong{text-decoration:line-through}
+.live-block{background:repeating-linear-gradient(135deg,#f1efec 0 8px,#e9e6e2 8px 16px)!important;border-left-color:#9b948d!important;color:#4d4741!important}
+.live-block span,.live-block small{color:#6f6861!important}
+.live-checkout{background:var(--c7-in)!important;color:#fff!important;border-color:var(--c7-in)!important}
+
+@media(max-width:700px){
+  .receive-due{flex-direction:column;align-items:flex-start}
+  .receive-due small{max-width:none;text-align:left}
+  .pay-tiles{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .split-payment-labels,.split-payment-row{grid-template-columns:minmax(0,1fr) minmax(0,1.2fr) 36px}
+  .c7-extra-control{flex-direction:column;align-items:stretch}
+}

@@ -985,6 +985,10 @@
       </div>
       <form id="receiveForm" class="appointment-form">
         <label><span>Atendimento</span><select id="receiveAppointment" required></select></label>
+        <div class="receive-due">
+          <div><span>Total a receber</span><strong id="receiveDueTotal">R$ 0,00</strong></div>
+          <small id="receiveDueInfo"></small>
+        </div>
         <div class="form-grid two">
           <label><span>Valor</span><input id="receiveGross" type="number" readonly min="0" step="0.01" required></label>
           <label><span>Desconto</span><input id="receiveDiscount" type="number" min="0" step="0.01" value="0"></label>
@@ -1011,7 +1015,9 @@
           </label>
         </div>
         <div id="receiveSplitBox" class="split-payment hidden">
-          <div class="split-payment-head"><strong>Pagamento</strong><span id="receiveSplitRemaining"></span></div>
+          <div class="split-payment-head"><strong>Dividir pagamento</strong><span id="receiveSplitRemaining"></span></div>
+          <div class="split-payment-bar"><i id="receiveSplitProgress"></i></div>
+          <div class="split-payment-labels"><span>Quantia</span><span>Método de pagamento</span></div>
           <div id="receiveSplitRows"></div>
           <button id="receiveSplitAdd" class="split-payment-add" type="button">+ Adicionar método de pagamento</button>
         </div>
