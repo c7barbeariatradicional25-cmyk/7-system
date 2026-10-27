@@ -58,7 +58,7 @@ async function loadCash(){
 
   const [{data:sessionData},{data:productData},{data:professionalData},{data:customerData},{data:serviceData}] = await Promise.all([
     supabase.from("cash_sessions").select("*").eq("status","open").maybeSingle(),
-    supabase.from("products").select("id,name,price,stock_quantity,product_kind,department").eq("active",true).order("sort_order"),
+    supabase.from("products").select("id,name,price,stock_quantity,product_kind,department,category").eq("active",true).order("sort_order"),
     supabase.from("professionals").select("id,full_name").eq("active",true).order("full_name"),
     supabase.from("customers").select("id,full_name,phone").eq("active",true).order("full_name").limit(500),
     supabase.from("appointments")
@@ -76,6 +76,8 @@ async function loadCash(){
   activeServiceLinks=serviceData||[];
 
   renderCashState();
+  fillPosSelects();
+  renderPos();
 
   if(openSession){
     await Promise.all([loadCashSummary(),loadTransactions(),loadPendingAppointments()]);
@@ -213,6 +215,7 @@ async function loadPendingAppointments(){
 }
 
 function renderPendingAppointments(){
+  renderPos();
   const list=$("pendingAppointmentList");
 
   if(!pendingAppointments.length){
@@ -411,7 +414,7 @@ function updateReceivePreview(){
   const discount=Math.min(Number($("receiveDiscount").value||0),gross);
   const benefit=selectedBenefit();
 
-  document.querySelectorAll("[data-pay-method]").forEach(btn=>btn.classList.toggle("active",btn.dataset.payMethod===$("receiveMethod").value));
+  document.querySelectorAll("#receiveMethodTiles [data-pay-method]").forEach(btn=>btn.classList.toggle("active",btn.dataset.payMethod===$("receiveMethod").value));
   $("receiveSplitBox")?.classList.toggle("hidden",!isSplitPayment());
   if(isSplitPayment()) updateSplitRemaining();
   const fee=cardFee("receiveMethod","receiveCardFee","receiveCardFeeBox");
@@ -1030,6 +1033,126 @@ async function checkoutAppointment(appointmentId){
   await openReceiveModal(appointmentId);
   return true;
 }
+/* Nova venda no estilo Booksy: itens em cartões, carrinho com cliente, vendedor e pagamento. */
+const pos={cat:"pending",cart:[],method:"pix"};
+function posProduct(id){return products.find(p=>String(p.id)===String(id));}
+function renderPos(){
+  if(!$("cashPosView")) return;
+  const status=$("posCashStatus");
+  status.innerHTML=openSession?'<span class="c7-status" data-status="completed">Caixa aberto</span>':'<span class="c7-status" data-status="no_show">Caixa fechado</span> <button type="button" id="posOpenCash" class="ghost-btn">Abrir caixa</button>';
+  $("posOpenCash")?.addEventListener("click",()=>$("openCashBtn").click());
+  $("posPendingCount").textContent=openSession?pendingAppointments.length:"–";
+  const term=($("posSearch").value||"").trim().toLowerCase();
+  const grid=$("posGrid");
+  if(pos.cat==="pending"){
+    const rows=pendingAppointments.filter(a=>!term||String(a.customer?.full_name||"").toLowerCase().includes(term));
+    grid.innerHTML=!openSession?'<div class="agenda-empty">Abra o caixa para cobrar os atendimentos do dia.</div>'
+      :rows.length?rows.map(a=>{
+        const services=(a.appointment_services||[]).map(x=>x.service_name).join(" + ")||"Atendimento";
+        return `<button type="button" class="pos-tile pos-tile-appt" data-status="${a.status}" data-pos-appt="${a.id}">
+          <small>${new Date(a.starts_at).toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"})} · ${a.professional?.full_name||""}</small>
+          <strong>${a.customer?.full_name||"Cliente"}</strong>
+          <span>${services}</span>
+          <b>${money(appointmentCheckoutGross(a))}</b>
+        </button>`;}).join("")
+      :'<div class="agenda-empty">Nenhum atendimento para cobrar hoje.</div>';
+  }else{
+    const rows=products.filter(p=>(p.department||"barbershop")===pos.cat&&(!term||p.name.toLowerCase().includes(term)));
+    grid.innerHTML=rows.length?rows.map(p=>{
+      const stock=Number(p.stock_quantity||0);
+      return `<button type="button" class="pos-tile" data-pos-product="${p.id}" ${stock<=0?"disabled":""}>
+        <strong>${p.name}</strong>
+        <span>${stock>0?`${stock} em estoque`:"Sem estoque"}</span>
+        <b>${money(p.price)}</b>
+      </button>`;}).join(""):'<div class="agenda-empty">Nenhum item nesta categoria.</div>';
+  }
+  renderPosCart();
+}
+function renderPosCart(){
+  const box=$("posCartItems");
+  const total=pos.cart.reduce((sum,i)=>sum+Number(posProduct(i.id)?.price||0)*i.qty,0);
+  box.innerHTML=pos.cart.length?pos.cart.map((i,idx)=>{
+    const p=posProduct(i.id);
+    return `<div class="pos-cart-row">
+      <div><strong>${p?.name||"Produto"}</strong><small>${money(p?.price)} cada</small></div>
+      <div class="pos-qty"><button type="button" data-pos-dec="${idx}">−</button><span>${i.qty}</span><button type="button" data-pos-inc="${idx}">+</button></div>
+      <b>${money(Number(p?.price||0)*i.qty)}</b>
+      <button type="button" class="pos-remove" data-pos-remove="${idx}" aria-label="Remover">×</button>
+    </div>`;}).join(""):'<div class="pos-cart-empty"><strong>O carrinho está vazio</strong><span>Toque nos produtos para adicionar. Para cobrar um atendimento, use "Para ser cobrado".</span></div>';
+  $("posTotal").textContent=money(total);
+  $("posCheckout").disabled=!pos.cart.length;
+  const card=CARD_METHODS.includes(pos.method);
+  $("posFeeBox").classList.toggle("hidden",!card);
+  document.querySelectorAll("[data-pos-method]").forEach(b=>b.classList.toggle("active",b.dataset.posMethod===pos.method));
+}
+function fillPosSelects(){
+  const customer=$("posCustomer").value,seller=$("posSeller").value;
+  $("posCustomer").innerHTML='<option value="">Venda avulsa (sem cliente)</option>'+cashCustomers.map(c=>`<option value="${c.id}">${c.full_name}${c.phone?" · "+c.phone:""}</option>`).join("");
+  $("posSeller").innerHTML='<option value="">Ninguém / venda da casa</option>'+cashProfessionals.map(p=>`<option value="${p.id}">${p.full_name}</option>`).join("");
+  $("posCustomer").value=customer;$("posSeller").value=seller;
+}
+document.querySelectorAll("[data-cash-tab]").forEach(btn=>btn.addEventListener("click",()=>{
+  document.querySelectorAll("[data-cash-tab]").forEach(b=>b.classList.toggle("active",b===btn));
+  $("cashPosView").classList.toggle("hidden",btn.dataset.cashTab!=="pos");
+  $("cashDayView").classList.toggle("hidden",btn.dataset.cashTab!=="day");
+}));
+document.querySelectorAll("[data-pos-cat]").forEach(btn=>btn.addEventListener("click",()=>{
+  pos.cat=btn.dataset.posCat;
+  document.querySelectorAll("[data-pos-cat]").forEach(b=>b.classList.toggle("active",b===btn));
+  renderPos();
+}));
+$("posSearch")?.addEventListener("input",renderPos);
+$("posGrid")?.addEventListener("click",e=>{
+  const appt=e.target.closest("[data-pos-appt]");
+  if(appt){checkoutAppointment(appt.dataset.posAppt);return;}
+  const tile=e.target.closest("[data-pos-product]");
+  if(!tile) return;
+  const p=posProduct(tile.dataset.posProduct);
+  const line=pos.cart.find(i=>String(i.id)===String(p.id));
+  if(line){if(line.qty<Number(p.stock_quantity||0)) line.qty++;}
+  else pos.cart.push({id:p.id,qty:1});
+  renderPosCart();
+});
+$("posCartItems")?.addEventListener("click",e=>{
+  const t=e.target.closest("[data-pos-inc],[data-pos-dec],[data-pos-remove]");
+  if(!t) return;
+  const idx=Number(t.dataset.posInc??t.dataset.posDec??t.dataset.posRemove);
+  const line=pos.cart[idx];
+  if(t.dataset.posInc!=null){if(line.qty<Number(posProduct(line.id)?.stock_quantity||0)) line.qty++;}
+  else if(t.dataset.posDec!=null){line.qty--;if(line.qty<=0) pos.cart.splice(idx,1);}
+  else pos.cart.splice(idx,1);
+  renderPosCart();
+});
+$("posMethods")?.addEventListener("click",e=>{
+  const m=e.target.closest("[data-pos-method]")?.dataset.posMethod;
+  if(m){pos.method=m;renderPosCart();}
+});
+$("posClear")?.addEventListener("click",()=>{pos.cart=[];$("posMessage").textContent="";renderPosCart();});
+$("posCheckout")?.addEventListener("click",async()=>{
+  if(!pos.cart.length) return;
+  if(!openSession){$("posMessage").textContent="Abra o caixa antes de vender.";return;}
+  const btn=$("posCheckout");btn.disabled=true;
+  $("posMessage").textContent="Registrando venda...";
+  const fee=CARD_METHODS.includes(pos.method)?Math.min(100,Math.max(0,Number($("posFee").value||0))):0;
+  const seller=$("posSeller").value||null;
+  const sold=[];
+  for(const line of [...pos.cart]){
+    const args={p_product_id:Number(line.id),p_quantity:line.qty,p_payment_method:pos.method,p_customer_id:$("posCustomer").value||null,p_appointment_id:null,p_card_fee_percent:fee};
+    let {error}=await supabase.rpc("sell_product_card",seller?{...args,p_professional_id:seller}:args);
+    if(error&&seller&&/function|p_professional_id/i.test(String(error.message||""))) ({error}=await supabase.rpc("sell_product_card",args));
+    if(error){
+      $("posMessage").textContent=`${posProduct(line.id)?.name||"Produto"}: ${String(error.message||"").includes("Estoque insuficiente")?"estoque insuficiente":"não foi possível vender"}.${sold.length?" Os itens anteriores foram vendidos.":""}`;
+      pos.cart=pos.cart.filter(i=>!sold.includes(i));
+      btn.disabled=false;await loadCash();return;
+    }
+    sold.push(line);
+  }
+  pos.cart=[];$("posMessage").textContent="";$("posFee").value="0";
+  window.C7UX?.notify("Venda registrada no Caixa.");
+  window.dispatchEvent(new Event("c7-customer-consumption-updated"));
+  await loadCash();
+});
+
 window.C7Cash={
   checkoutAppointment,
   refresh:loadCash

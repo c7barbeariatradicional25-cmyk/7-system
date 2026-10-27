@@ -275,6 +275,47 @@
         </div>
       </section>
       <section id="caixa" class="section">
+        <div class="cash-tabs">
+          <button type="button" class="active" data-cash-tab="pos">Nova venda</button>
+          <button type="button" data-cash-tab="day">Caixa do dia</button>
+          <span id="posCashStatus" class="pos-cash-status"></span>
+        </div>
+
+        <div id="cashPosView" class="pos">
+          <nav class="pos-menu" aria-label="Categorias">
+            <button type="button" class="active" data-pos-cat="pending">Para ser cobrado <b id="posPendingCount">0</b></button>
+            <button type="button" data-pos-cat="barbershop">Produtos</button>
+            <button type="button" data-pos-cat="convenience">Bebidas & consumíveis</button>
+          </nav>
+          <div class="pos-items">
+            <input id="posSearch" class="pos-search" type="search" placeholder="Buscar item..." autocomplete="off">
+            <div id="posGrid" class="pos-grid"></div>
+          </div>
+          <aside class="pos-cart">
+            <label class="pos-client"><span>Cliente</span><select id="posCustomer"><option value="">Venda avulsa (sem cliente)</option></select></label>
+            <label class="pos-client"><span>Vendido por (comissão)</span><select id="posSeller"><option value="">Ninguém / venda da casa</option></select></label>
+            <div id="posCartItems" class="pos-cart-items"></div>
+            <div class="pos-pay">
+              <span>Forma de pagamento</span>
+              <div id="posMethods" class="pay-tiles">
+                <button type="button" data-pos-method="pix" data-pay-method="pix" class="active">Pix</button>
+                <button type="button" data-pos-method="cash" data-pay-method="cash">Dinheiro</button>
+                <button type="button" data-pos-method="debit" data-pay-method="debit">Débito</button>
+                <button type="button" data-pos-method="credit" data-pay-method="credit">Crédito</button>
+                <button type="button" data-pos-method="other" data-pay-method="other">Outro</button>
+              </div>
+              <label id="posFeeBox" class="pos-fee hidden"><span>Taxa da maquininha (%)</span><input id="posFee" type="number" min="0" max="100" step="0.01" value="0"></label>
+            </div>
+            <div class="pos-total"><span>Total</span><strong id="posTotal">R$ 0,00</strong></div>
+            <p id="posMessage" class="form-message"></p>
+            <div class="pos-cart-actions">
+              <button id="posClear" type="button" class="ghost-btn" aria-label="Limpar carrinho" title="Limpar carrinho">🗑</button>
+              <button id="posCheckout" type="button" class="primary-btn" disabled>FINALIZAR VENDA</button>
+            </div>
+          </aside>
+        </div>
+
+        <div id="cashDayView" class="hidden">
         <div class="cash-toolbar">
           <div>
             <span class="eyebrow">CAIXA DO DIA</span>
@@ -329,6 +370,7 @@
               <div class="agenda-empty">Carregando histórico...</div>
             </div>
           </article>
+        </div>
         </div>
       </section>
       <section id="financeiro" class="section">
