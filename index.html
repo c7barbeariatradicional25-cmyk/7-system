@@ -243,24 +243,35 @@
         <button id="newAppointmentBtn" class="agenda-fab" type="button" aria-label="Novo agendamento" title="Novo agendamento">+</button>
       </section>
       <section id="clientes" class="section">
-        <div class="crm-toolbar">
-          <div class="crm-search-wrap">
-            <input id="customerSearch" type="search" placeholder="Buscar cliente por nome ou telefone...">
+        <div class="crm-split">
+          <div class="crm-list-pane">
+            <div class="crm-list-head">
+              <strong>Clientes <small id="crmListCount"></small></strong>
+              <button id="newCustomerBtn" class="primary-btn" type="button">+ NOVO</button>
+            </div>
+            <div class="crm-toolbar">
+              <div class="crm-search-wrap">
+                <input id="customerSearch" type="search" placeholder="Pesquisar cliente...">
+              </div>
+            </div>
+            <div class="crm-filters">
+              <button type="button" class="active" data-crm-filter="all">Todos <b id="crmTotalCustomers">0</b></button>
+              <button type="button" data-crm-filter="scheduled">Agendados <b id="crmScheduledCustomers">0</b></button>
+              <button type="button" data-crm-filter="recurring">Recorrentes <b id="crmRecurringCustomers">0</b></button>
+              <button type="button" data-crm-filter="dormant">Sem retorno <b id="crmDormantCustomers">0</b></button>
+              <select id="crmLevelFilter" class="hidden" aria-label="Filtrar por nível"></select>
+            </div>
+            <div id="customerList" class="customer-list">
+              <div class="agenda-empty">Carregando clientes...</div>
+            </div>
           </div>
-          <button id="newCustomerBtn" class="primary-btn" type="button">+ NOVO CLIENTE</button>
-        </div>
 
-        <div class="crm-filters">
-          <button type="button" class="active" data-crm-filter="all">Todos <b id="crmTotalCustomers">0</b></button>
-          <button type="button" data-crm-filter="scheduled">Com horário marcado <b id="crmScheduledCustomers">0</b></button>
-          <button type="button" data-crm-filter="recurring">Recorrentes <b id="crmRecurringCustomers">0</b></button>
-          <button type="button" data-crm-filter="dormant">Sem retorno <b id="crmDormantCustomers">0</b></button>
-          <select id="crmLevelFilter" class="hidden" aria-label="Filtrar por nível"></select>
-        </div>
-        <div class="customer-list-head"><span>Cliente</span><span>Situação</span><span>Visitas</span><span>Total gasto</span><span>Última visita</span></div>
-
-        <div id="customerList" class="customer-list">
-          <div class="agenda-empty">Carregando clientes...</div>
+          <div id="customerProfile" class="crm-profile">
+            <div class="crm-profile-empty">
+              <strong>Selecione um cliente</strong>
+              <span>Clique em um nome da lista para ver agendamentos, compras e pagamentos.</span>
+            </div>
+          </div>
         </div>
       </section>
       <section id="caixa" class="section">

@@ -1681,6 +1681,12 @@ $("clientPicked")?.addEventListener("click",e=>{
   $("clientName").focus();
 });
 
+// "+ Agendar" no perfil do cliente: abre o agendamento com o cliente já escolhido.
+window.addEventListener("c7-book-customer",e=>{
+  openAppointmentModal();
+  if(e.detail?.id) pickClient(e.detail);
+});
+
 function openAppointmentModal(){
   appointmentForm.reset();
   clearPickedClient();

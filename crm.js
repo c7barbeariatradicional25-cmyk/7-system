@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { paymentLabel } from "./pagamentos.js";
 import { fetchLevels, fetchCustomerLevelMap, fetchMonthUses, benefitsWithBalance, levelBadge, benefitText, nextLevelHint } from "./niveis.js";
 
 const supabase = createClient(
@@ -115,10 +116,16 @@ function renderCustomers(items){
     return;
   }
 
+  $("crmListCount").textContent=`(${active.length})`;
+  let letter="";
   active.forEach(customer=>{
+    const first=(customer.full_name||"#").trim().charAt(0).toUpperCase();
+    if(first!==letter){letter=first;list.appendChild(makeEl("div","customer-letter",letter));}
     const row=makeEl("button","customer-row");
     row.type="button";
-    row.addEventListener("click",()=>openCustomer(customer.id));
+    row.dataset.customerId=customer.id;
+    row.classList.toggle("is-selected",String(customer.id)===String(profileCustomerId));
+    row.addEventListener("click",()=>openCustomerProfile(customer.id));
 
     const identity=makeEl("div","customer-identity");
     identity.appendChild(makeEl("div","customer-avatar",(customer.full_name||"C").slice(0,1).toUpperCase()));
@@ -128,25 +135,120 @@ function renderCustomers(items){
     if(level&&level.sort_order>1) nameLine.insertAdjacentHTML("beforeend"," "+levelBadge(level));
     identityText.appendChild(nameLine);
     identityText.appendChild(makeEl("span","customer-phone",customer.phone||"Sem telefone"));
-    (customer.tags||[]).forEach(tag=>identityText.appendChild(makeEl("span","tag-pill",tag)));
     identity.appendChild(identityText);
 
     const situation=customerSituation(customer);
     const pill=makeEl("span","c7-status",situation.text);
     pill.dataset.status=situation.status;
-    if(customer.next_visit_at) pill.title=new Date(customer.next_visit_at).toLocaleString("pt-BR",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"});
-    const situationCell=makeEl("div","customer-cell");
-    situationCell.appendChild(pill);
 
-    row.append(
-      identity,
-      situationCell,
-      makeEl("div","customer-cell customer-num",String(customer.completed_visits||0)),
-      makeEl("div","customer-cell customer-money",money(customer.total_spent)),
-      makeEl("div","customer-cell",customer.last_visit_at?new Date(customer.last_visit_at).toLocaleDateString("pt-BR"):"—")
-    );
+    row.append(identity,pill);
     list.appendChild(row);
   });
+}
+
+/* Perfil do cliente à direita, como no Booksy: números, ações e abas. */
+let profileCustomerId=null;
+let profileTab="appointments";
+async function openCustomerProfile(id){
+  profileCustomerId=id;
+  document.querySelectorAll(".customer-row").forEach(r=>r.classList.toggle("is-selected",r.dataset.customerId===String(id)));
+  document.querySelector(".crm-split")?.classList.add("has-profile");
+  const customer=customers.find(c=>String(c.id)===String(id));
+  const target=$("customerProfile");
+  if(!customer){target.innerHTML='<div class="crm-profile-empty"><strong>Cliente não encontrado</strong></div>';return;}
+  const level=levelOf(id);
+  const digits=String(customer.phone||"").replace(/\D/g,"");
+  const wa=digits?`https://wa.me/${digits.length<=11?"55":""}${digits}`:"";
+  target.innerHTML=`
+    <button type="button" class="crm-profile-back">‹ Clientes</button>
+    <div class="crm-profile-head">
+      <div class="crm-profile-avatar">${esc((customer.full_name||"C").slice(0,1).toUpperCase())}</div>
+      <h2>${esc(customer.full_name||"Cliente")}</h2>
+      <span>${esc(customer.phone||"Sem telefone")}${customer.email?` · ${esc(customer.email)}`:""}</span>
+      <div class="crm-profile-tags">${level?levelBadge(level):""}${(customer.tags||[]).map(t=>`<span class="tag-pill">${esc(t)}</span>`).join("")}</div>
+      <div class="crm-profile-actions">
+        ${wa?`<a href="${wa}" target="_blank" rel="noopener" title="WhatsApp">WhatsApp</a>`:""}
+        ${digits?`<a href="tel:${digits}" title="Ligar">Ligar</a>`:""}
+        ${customer.email?`<a href="mailto:${esc(customer.email)}" title="E-mail">E-mail</a>`:""}
+        ${can("clients.edit")?'<button type="button" data-profile-edit>Editar</button>':""}
+        <button type="button" class="is-primary" data-profile-book>+ Agendar</button>
+      </div>
+    </div>
+    <div class="crm-profile-stats" id="crmProfileStats"><div class="agenda-empty">Carregando...</div></div>
+    <div class="crm-profile-tabs">
+      <button type="button" data-profile-tab="appointments">Agendamentos</button>
+      <button type="button" data-profile-tab="products">Produtos</button>
+      <button type="button" data-profile-tab="payments">Pagamentos</button>
+      <button type="button" data-profile-tab="about">Sobre</button>
+    </div>
+    <div id="crmProfileTab" class="crm-profile-tab"></div>`;
+  target.querySelector(".crm-profile-back").addEventListener("click",()=>{document.querySelector(".crm-split")?.classList.remove("has-profile");});
+  target.querySelector("[data-profile-edit]")?.addEventListener("click",()=>openCustomer(id));
+  target.querySelector("[data-profile-book]").addEventListener("click",()=>{
+    window.C7UX?.view("agenda");
+    setTimeout(()=>window.dispatchEvent(new CustomEvent("c7-book-customer",{detail:{id:customer.id,full_name:customer.full_name,phone:customer.phone}})),300);
+  });
+  target.querySelectorAll("[data-profile-tab]").forEach(btn=>btn.addEventListener("click",()=>{profileTab=btn.dataset.profileTab;renderProfileTab();}));
+
+  const history=can("clients.history");
+  const [apptResult,txResult]=await Promise.all([
+    history?supabase.from("appointments").select("id,starts_at,status,total_amount,professional:professionals(full_name),appointment_services(service_name)").eq("customer_id",id).order("starts_at",{ascending:false}).limit(200):{data:[]},
+    history?supabase.from("cash_transactions").select("id,created_at,net_amount,payment_method,transaction_type,status,cash_transaction_items(item_type,description,quantity,total_amount)").eq("customer_id",id).eq("status","posted").order("created_at",{ascending:false}).limit(100):{data:[]}
+  ]);
+  if(profileCustomerId!==id) return;
+  profileData={appointments:apptResult.data||[],transactions:txResult.data||[],customer};
+  const appts=profileData.appointments;
+  const count=st=>appts.filter(a=>a.status===st).length;
+  $("crmProfileStats").innerHTML=[
+    ["Agendamentos",appts.length],
+    ["Não compareceu",count("no_show")],
+    ["Cancelamentos",count("cancelled")],
+    ["Última visita",customer.last_visit_at?new Date(customer.last_visit_at).toLocaleDateString("pt-BR",{day:"2-digit",month:"short",year:"numeric"}):"—"],
+    ["Receita total",money(customer.total_spent)],
+    ["Visitas finalizadas",customer.completed_visits||0]
+  ].map(([label,value])=>`<div><span>${label}</span><strong>${value}</strong></div>`).join("");
+  renderProfileTab();
+}
+
+let profileData={appointments:[],transactions:[],customer:null};
+let profileApptView="upcoming";
+function renderProfileTab(){
+  const box=$("crmProfileTab");
+  if(!box) return;
+  document.querySelectorAll("[data-profile-tab]").forEach(b=>b.classList.toggle("active",b.dataset.profileTab===profileTab));
+  if(!can("clients.history")&&profileTab!=="about"){box.innerHTML='<div class="agenda-empty">Seu acesso não inclui o histórico do cliente.</div>';return;}
+  const now=new Date();
+  if(profileTab==="appointments"){
+    const upcoming=profileData.appointments.filter(a=>new Date(a.starts_at)>=now&&!["cancelled","no_show","completed"].includes(a.status)).reverse();
+    const past=profileData.appointments.filter(a=>!upcoming.includes(a));
+    const rows=profileApptView==="upcoming"?upcoming:past;
+    box.innerHTML=`
+      <div class="crm-segment"><button type="button" data-appt-view="upcoming" class="${profileApptView==="upcoming"?"active":""}">Próximos (${upcoming.length})</button><button type="button" data-appt-view="past" class="${profileApptView==="past"?"active":""}">Anteriores (${past.length})</button></div>
+      ${rows.length?rows.map(a=>`
+        <div class="crm-appt" data-status="${a.status}">
+          <div><strong>${new Date(a.starts_at).toLocaleDateString("pt-BR",{day:"2-digit",month:"short",year:"numeric"})}</strong><small>${new Date(a.starts_at).toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"})}</small></div>
+          <div><strong>${esc((a.appointment_services||[]).map(x=>x.service_name).join(" + ")||"Serviço")}</strong><small>${esc(a.professional?.full_name||"Sem profissional")}</small></div>
+          <span class="c7-status" data-status="${a.status}">${esc(statusLabels[a.status]||a.status)}</span>
+          <b>${money(a.total_amount)}</b>
+        </div>`).join(""):'<div class="agenda-empty">Nenhum agendamento.</div>'}`;
+    box.querySelectorAll("[data-appt-view]").forEach(b=>b.addEventListener("click",()=>{profileApptView=b.dataset.apptView;renderProfileTab();}));
+  }else if(profileTab==="products"){
+    const map=new Map();
+    profileData.transactions.forEach(t=>(t.cash_transaction_items||[]).filter(i=>i.item_type==="product").forEach(i=>{
+      const cur=map.get(i.description)||{qty:0,total:0};cur.qty+=Number(i.quantity||0);cur.total+=Number(i.total_amount||0);map.set(i.description,cur);
+    }));
+    box.innerHTML=map.size?[...map.entries()].sort((a,b)=>b[1].qty-a[1].qty).map(([name,v])=>`<div class="crm-line"><span>${esc(name)}</span><small>${v.qty} un.</small><b>${money(v.total)}</b></div>`).join(""):'<div class="agenda-empty">Nenhum produto comprado.</div>';
+  }else if(profileTab==="payments"){
+    box.innerHTML=profileData.transactions.length?profileData.transactions.map(t=>`<div class="crm-line"><span>${new Date(t.created_at).toLocaleDateString("pt-BR")} · ${t.transaction_type==="product"?"Produto":"Atendimento"}</span><small class="pay-chip" data-method="${t.payment_method}">${esc(paymentLabel(t.payment_method))}</small><b>${money(t.net_amount)}</b></div>`).join(""):'<div class="agenda-empty">Nenhum pagamento registrado.</div>';
+  }else{
+    const c=profileData.customer||{};
+    box.innerHTML=`<div class="crm-about">
+      <div><span>Aniversário</span><strong>${c.birth_date?new Date(c.birth_date+"T12:00:00").toLocaleDateString("pt-BR"):"—"}</strong></div>
+      <div><span>E-mail</span><strong>${esc(c.email||"—")}</strong></div>
+      <div><span>Recebe comunicações</span><strong>${c.marketing_opt_in?"Sim":"Não"}</strong></div>
+      <div class="full"><span>Observações</span><strong>${esc(c.notes||"—")}</strong></div>
+    </div>`;
+  }
 }
 
 function applySearch(){
@@ -408,6 +510,7 @@ async function saveCustomer(event){
 
   closeCustomer();
   await loadCustomers();
+  if(profileCustomerId) openCustomerProfile(profileCustomerId);
 }
 
 
@@ -426,6 +529,8 @@ async function deleteCustomer(){
    if(error)throw error;
    if(data!==true)throw Error("Esse cliente já foi excluído ou não está mais disponível.");
    closeCustomer();
+   profileCustomerId=null;
+   $("customerProfile").innerHTML='<div class="crm-profile-empty"><strong>Selecione um cliente</strong></div>';
    await loadCustomers();
    window.C7UX?.notify("Cliente excluído da lista.");
  }catch(error){
