@@ -329,6 +329,8 @@
 
         <div class="settle-period"><span>Semana</span><strong id="settlementPeriodLabel">—</strong><small>Comissão da semana menos o que o barbeiro consumiu = valor a pagar.</small></div>
 
+        <div id="goalPanel" class="goal-panel hidden"></div>
+
         <div id="weeklySettlementList" class="settle-list">
           <div class="agenda-empty">Carregando acertos...</div>
         </div>
@@ -771,9 +773,12 @@
 
       <form id="appointmentForm" class="appointment-form">
         <div class="form-grid two">
-          <label><span>Cliente</span><input id="clientName" type="text" required placeholder="Nome do cliente"></label>
-          <label><span>WhatsApp / telefone</span><input id="clientPhone" type="tel" required placeholder="(62) 99999-9999"></label>
+          <label><span>Cliente</span><input id="clientName" type="text" required placeholder="Buscar ou digitar o nome" autocomplete="off"></label>
+          <label><span>WhatsApp / telefone</span><input id="clientPhone" type="tel" required placeholder="(62) 99999-9999" autocomplete="off"></label>
         </div>
+        <input id="clientId" type="hidden">
+        <div id="clientPicked" class="client-picked hidden"></div>
+        <div id="clientSuggestions" class="client-suggest hidden"></div>
 
         <label><span>Profissional</span><select id="appointmentProfessional" required></select></label>
 
@@ -1587,6 +1592,31 @@
         <label class="check-row"><input id="levelActive" type="checkbox" checked><span>Nível ativo</span></label>
         <p id="levelMessage" class="form-message"></p>
         <div class="modal-actions"><button type="button" class="ghost-btn" data-close-level>CANCELAR</button><button type="submit" class="primary-btn">SALVAR</button></div>
+      </form>
+    </section>
+  </div>
+
+  <div id="goalModal" class="modal hidden" role="dialog" aria-modal="true">
+    <div class="modal-backdrop" data-close-goal></div>
+    <section class="modal-card modal-small">
+      <div class="modal-head"><div><span>COMISSÃO</span><h2>Meta de produtos</h2></div><button type="button" class="modal-close" data-close-goal>×</button></div>
+      <form id="goalForm" class="appointment-form">
+        <input id="goalId" type="hidden">
+        <label><span>Para quem</span><select id="goalProfessional"></select></label>
+        <div class="form-grid two">
+          <label><span>Meta do mês em produtos (R$)</span><input id="goalTarget" type="number" min="1" step="0.01" required placeholder="Ex.: 1000"></label>
+          <label><span>Comissão extra ao bater (%)</span><input id="goalBonus" type="number" min="0.01" max="100" step="0.01" required placeholder="Ex.: 5"></label>
+        </div>
+        <label><span>O extra conta sobre</span>
+          <select id="goalMode">
+            <option value="month">Tudo o que vendeu no mês (inclusive antes de bater)</option>
+            <option value="above">Só o que passar da meta</option>
+          </select>
+        </label>
+        <small class="form-hint">Conta só produtos que têm comissão (% maior que zero no cadastro do produto).</small>
+        <label class="check-row"><input id="goalActive" type="checkbox" checked><span>Meta ativa</span></label>
+        <p id="goalMessage" class="form-message"></p>
+        <div class="modal-actions"><button type="button" id="goalDeleteBtn" class="ghost-btn hidden">REMOVER</button><button type="button" class="ghost-btn" data-close-goal>CANCELAR</button><button type="submit" class="primary-btn">SALVAR</button></div>
       </form>
     </section>
   </div>

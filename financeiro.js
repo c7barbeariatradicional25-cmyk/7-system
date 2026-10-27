@@ -213,9 +213,95 @@ async function loadEmployeeConsumptions(){
 
 const esc=value=>String(value??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 
+/* Meta de produtos: o Arthur define meta mensal e comissão extra; cada cartão mostra o andamento. */
+let goals=[];
+let goalProgress=new Map();
+let goalProfessionals=[];
+const goalModeText={month:"sobre tudo o que vendeu no mês",above:"só sobre o que passar da meta"};
+
+async function loadGoals(){
+  const panel=$("goalPanel");
+  if(!panel) return;
+  const [goalResult,progressResult,proResult]=await Promise.all([
+    supabase.from("commission_goals").select("*").order("professional_id",{nullsFirst:true}),
+    supabase.rpc("c7_product_goal_progress"),
+    supabase.from("professionals").select("id,full_name").eq("active",true).order("full_name")
+  ]);
+  // Sem o SQL da meta aplicado, o painel fica escondido.
+  if(goalResult.error){panel.classList.add("hidden");goals=[];goalProgress=new Map();return;}
+  goals=goalResult.data||[];
+  goalProfessionals=proResult.data||[];
+  goalProgress=new Map((progressResult.data||[]).map(r=>[String(r.professional_id),r]));
+  const name=id=>id?goalProfessionals.find(p=>String(p.id)===String(id))?.full_name||"Barbeiro":"Todos os barbeiros";
+  panel.innerHTML=`
+    <div class="goal-panel-head"><div><strong>Meta de produtos do mês</strong><small>Comissão extra para quem bater a meta de vendas de produtos.</small></div>
+      ${currentRole==="admin"?'<button type="button" class="ghost-btn" data-new-goal>+ META</button>':""}</div>
+    ${goals.length?goals.map(g=>`
+      <div class="goal-row${g.active?"":" is-off"}">
+        <span><b>${esc(name(g.professional_id))}</b> · meta ${money(g.monthly_target)} → <b class="in">+${Number(g.bonus_percent).toLocaleString("pt-BR")}%</b> ${goalModeText[g.bonus_mode]||""}${g.active?"":" · inativa"}</span>
+        ${currentRole==="admin"?`<button type="button" class="ghost-btn" data-edit-goal="${g.id}">EDITAR</button>`:""}
+      </div>`).join(""):'<p class="goal-empty">Nenhuma meta definida.</p>'}`;
+  panel.classList.remove("hidden");
+  panel.querySelector("[data-new-goal]")?.addEventListener("click",()=>openGoal());
+  panel.querySelectorAll("[data-edit-goal]").forEach(btn=>btn.addEventListener("click",()=>openGoal(btn.dataset.editGoal)));
+}
+
+function openGoal(id=null){
+  const goal=goals.find(g=>String(g.id)===String(id));
+  $("goalForm").reset();
+  $("goalId").value=goal?.id||"";
+  $("goalProfessional").innerHTML='<option value="">Todos os barbeiros</option>'+goalProfessionals.map(p=>`<option value="${p.id}">${esc(p.full_name)}</option>`).join("");
+  $("goalProfessional").value=goal?.professional_id||"";
+  $("goalTarget").value=goal?.monthly_target??"";
+  $("goalBonus").value=goal?.bonus_percent??"";
+  $("goalMode").value=goal?.bonus_mode||"month";
+  $("goalActive").checked=goal?goal.active:true;
+  $("goalDeleteBtn").classList.toggle("hidden",!goal);
+  $("goalMessage").textContent="";
+  $("goalModal").classList.remove("hidden");
+}
+
+async function saveGoal(e){
+  e.preventDefault();
+  const id=$("goalId").value;
+  const payload={
+    professional_id:$("goalProfessional").value||null,
+    monthly_target:Number($("goalTarget").value),
+    bonus_percent:Number($("goalBonus").value),
+    bonus_mode:$("goalMode").value,
+    active:$("goalActive").checked,
+    updated_at:new Date().toISOString()
+  };
+  const result=id
+    ? await supabase.from("commission_goals").update(payload).eq("id",id)
+    : await supabase.from("commission_goals").insert(payload);
+  if(result.error){
+    $("goalMessage").textContent=/duplicate|unique/i.test(result.error.message||"")
+      ?"Já existe uma meta para esse barbeiro (ou para todos). Edite a existente."
+      :"Não foi possível salvar a meta.";
+    return;
+  }
+  $("goalModal").classList.add("hidden");
+  await loadWeeklySettlements();
+}
+
+function goalLine(proId){
+  const g=goalProgress.get(String(proId));
+  if(!g) return "";
+  const sold=Number(g.sold||0),target=Number(g.monthly_target||0);
+  const pct=target?Math.min(100,sold/target*100):0;
+  const done=sold>=target;
+  return `<div class="settle-goal${done?" is-done":""}">
+    <div class="settle-goal-text"><span>Produtos no mês: <b>${money(sold)}</b> de ${money(target)}</span>
+      <span>${done?`Meta batida! Extra: <b>${money(g.bonus_earned)}</b>`:`Falta ${money(target-sold)} para +${Number(g.bonus_percent).toLocaleString("pt-BR")}%`}</span></div>
+    <div class="settle-goal-bar"><i style="width:${pct}%"></i></div>
+  </div>`;
+}
+
 /* Acerto da semana: um cartão por barbeiro com Comissão − Consumo = A pagar. */
 async function loadWeeklySettlements(){
   if(!canAccessFinance()) return;
+  await loadGoals();
 
   const range=currentWeekRange();
 
@@ -267,6 +353,7 @@ async function loadWeeklySettlements(){
           <div class="settle-net"><span>A pagar</span><strong>${money(net)}</strong></div>
         </div>
         ${currentRole==="admin"&&!empty?`<button type="button" class="settle-pay" data-settle="${esc(pro.id)}">${net>0?"PAGAR":"ACERTAR"}</button>`:""}
+        ${goalLine(pro.id)}
         ${residualDebt>0?`<p class="settle-note">Consumo maior que a comissão: ${money(residualDebt)} fica para a próxima semana.</p>`:""}
         ${items.length?`<details class="settle-items"><summary>Ver consumos (${items.length})</summary>
           ${items.map(x=>`<div><span>${esc(x.product?.name||"Produto")} · ${Number(x.quantity||0)} un. · ${new Date(x.created_at).toLocaleDateString("pt-BR")}</span><strong>${money(open(x))}</strong></div>`).join("")}
@@ -360,6 +447,15 @@ async function init(){
   $("refreshEmployeeConsumptionBtn")?.addEventListener("click",loadEmployeeConsumptions);
   $("refreshSettlementsBtn")?.addEventListener("click",loadWeeklySettlements);
   $("refreshSettlementHistoryBtn")?.addEventListener("click",loadSettlementHistory);
+  $("goalForm")?.addEventListener("submit",saveGoal);
+  document.querySelectorAll("[data-close-goal]").forEach(el=>el.addEventListener("click",()=>$("goalModal").classList.add("hidden")));
+  $("goalDeleteBtn")?.addEventListener("click",async()=>{
+    const id=$("goalId").value;
+    if(!id||!confirm("Remover esta meta? As comissões extras já lançadas continuam.")) return;
+    await supabase.from("commission_goals").delete().eq("id",id);
+    $("goalModal").classList.add("hidden");
+    await loadWeeklySettlements();
+  });
 
   document.querySelectorAll("[data-close-settlement-payment]").forEach(el=>{
     el.addEventListener("click",()=>$("settlementPaymentModal")?.classList.add("hidden"));

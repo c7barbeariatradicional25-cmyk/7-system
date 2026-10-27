@@ -1563,8 +1563,70 @@ function updateAppointmentPreview(){
   }
 }
 
+/* Busca de cliente no agendamento, como no Booksy: digita nome ou telefone e escolhe o cadastro. */
+const digitsOnly=v=>String(v||"").replace(/\D/g,"");
+async function findCustomerByPhone(phone){
+  const digits=digitsOnly(phone);
+  if(digits.length<8) return null;
+  const tail=digits.slice(-8);
+  const {data}=await supabase.from("customers").select("id,full_name,phone").eq("active",true).ilike("phone",`%${tail.slice(0,4)}%${tail.slice(4)}%`).limit(20);
+  return (data||[]).find(c=>{const d=digitsOnly(c.phone);return d===digits||d.endsWith(digits)||digits.endsWith(d)&&d.length>=10;})||null;
+}
+
+let clientSearchTimer=null;
+function clearPickedClient(){
+  $("clientId").value="";
+  $("clientPicked").classList.add("hidden");
+}
+function pickClient(customer){
+  $("clientId").value=customer.id;
+  $("clientName").value=customer.full_name||"";
+  $("clientPhone").value=customer.phone||"";
+  $("clientSuggestions").classList.add("hidden");
+  $("clientPicked").innerHTML=`<span>✓ Cliente cadastrado: <strong>${escapeHtml(customer.full_name||"Cliente")}</strong>${customer.phone?` · ${escapeHtml(customer.phone)}`:""}</span><button type="button" id="clientUnpick">Trocar</button>`;
+  $("clientPicked").classList.remove("hidden");
+}
+async function searchClients(term){
+  const box=$("clientSuggestions");
+  const text=term.trim();
+  const digits=digitsOnly(text);
+  if(!c7Allowed("clients.read")||(text.length<2&&digits.length<3)){box.classList.add("hidden");return;}
+  let query=supabase.from("customers").select("id,full_name,phone").eq("active",true).order("full_name").limit(8);
+  if(digits.length>=3&&digits.length===text.replace(/[\s()+-]/g,"").length){
+    query=query.ilike("phone",`%${digits.slice(-4)}%`);
+  }else{
+    query=query.ilike("full_name",`%${text.replace(/[%,]/g," ")}%`);
+  }
+  const {data}=await query;
+  const list=(data||[]).filter(c=>digits.length<3||digitsOnly(c.phone).includes(digits));
+  box.innerHTML=list.length
+    ? list.map(c=>`<button type="button" data-pick-client="${c.id}"><strong>${escapeHtml(c.full_name||"Cliente")}</strong><span>${escapeHtml(c.phone||"Sem telefone")}</span></button>`).join("")+'<small>Não é nenhum desses? Continue digitando para cadastrar um cliente novo.</small>'
+    : '<small>Nenhum cliente encontrado. Ao salvar, um cadastro novo será criado.</small>';
+  box._clients=list;
+  box.classList.remove("hidden");
+}
+["clientName","clientPhone"].forEach(id=>$(id)?.addEventListener("input",e=>{
+  if($("clientId").value) clearPickedClient();
+  clearTimeout(clientSearchTimer);
+  clientSearchTimer=setTimeout(()=>searchClients(e.target.value),250);
+}));
+$("clientSuggestions")?.addEventListener("click",e=>{
+  const btn=e.target.closest("[data-pick-client]");
+  if(!btn) return;
+  const customer=($("clientSuggestions")._clients||[]).find(c=>String(c.id)===btn.dataset.pickClient);
+  if(customer) pickClient(customer);
+});
+$("clientPicked")?.addEventListener("click",e=>{
+  if(!e.target.closest("#clientUnpick")) return;
+  clearPickedClient();
+  $("clientName").value="";$("clientPhone").value="";
+  $("clientName").focus();
+});
+
 function openAppointmentModal(){
   appointmentForm.reset();
+  clearPickedClient();
+  $("clientSuggestions").classList.add("hidden");
   appointmentMessage.textContent="";
   $("appointmentDate").value=agendaDate.value||localDateInput();
   $("appointmentSource").value="manual";
@@ -1663,24 +1725,19 @@ async function saveAppointment({keepOpen=false}={}){
 
   appointmentMessage.textContent="Salvando...";
 
-  let customerId=null;
-  if(!c7Allowed("clients.read")){
+  let customerId=$("clientId").value||null;
+  if(customerId){
+    // Cliente escolhido na busca: usa o cadastro dele sem alterar nome ou telefone.
+  }else if(!c7Allowed("clients.read")){
     const {data:id,error:lookupError}=await supabase.rpc("c7_customer_for_booking",{p_full_name:name,p_phone:phone});
     if(lookupError||!id){appointmentMessage.textContent="Não foi possível registrar o cliente para este agendamento.";return false;}
     customerId=id;
   }else{
-  const {data:existingCustomer}=await supabase.from("customers")
-    .select("id,full_name")
-    .eq("phone",phone)
-    .maybeSingle();
+  // Mesmo telefone em qualquer formato ("(62) 99627-7138" ou "62996277138") é o mesmo cliente.
+  const existingCustomer=await findCustomerByPhone(phone);
 
   if(existingCustomer){
     customerId=existingCustomer.id;
-    if(existingCustomer.full_name!==name){
-      await supabase.from("customers")
-        .update({full_name:name,updated_at:new Date().toISOString()})
-        .eq("id",customerId);
-    }
   } else {
     const {data:newCustomer,error:customerError}=await supabase
       .from("customers")
@@ -1745,6 +1802,7 @@ async function saveAppointment({keepOpen=false}={}){
     const savedSource=$("appointmentSource").value;
 
     appointmentForm.reset();
+    clearPickedClient();
     $("appointmentDate").value=savedDate;
     $("appointmentSource").value=savedSource||"manual";
     appointmentProfessional.value=savedProfessional;

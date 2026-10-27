@@ -5798,3 +5798,32 @@ button.primary-btn{border-radius:10px}button.ghost-btn{border-radius:10px}
 .promo-visibility b{font-size:13px;color:var(--c7-ink)}
 .promo-visibility small{font-size:12px;color:var(--c7-muted)}
 #detailReopenBtn{color:#8a6a45!important;border-color:#e3d3bf!important}
+
+/* Agendamento: busca de cliente cadastrado */
+.client-suggest{display:grid;gap:4px;margin-top:-6px;padding:6px;border:1px solid var(--c7-border);border-radius:12px;background:#fff;box-shadow:0 10px 24px rgba(30,20,10,.08)}
+.client-suggest.hidden,.client-picked.hidden{display:none}
+.client-suggest button{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:9px 10px;border:0;border-radius:8px;background:none;text-align:left;font:inherit;cursor:pointer}
+.client-suggest button:hover{background:#f6f1ec}
+.client-suggest strong{font-size:14px;color:var(--c7-ink)}
+.client-suggest span{font-size:12px;color:var(--c7-muted)}
+.client-suggest small{padding:4px 10px;font-size:12px;color:var(--c7-muted)}
+.client-picked{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:-6px;padding:9px 12px;border:1px solid #cfe6d6;border-radius:10px;background:var(--st-completed-bg);font-size:13px;color:#2e5d40}
+.client-picked button{height:30px;padding:0 12px;border:1px solid #b9d9c3;border-radius:8px;background:#fff;color:#2e5d40;font-weight:650;cursor:pointer}
+
+/* Acertos: meta de produtos */
+.goal-panel{display:grid;gap:8px;margin-bottom:12px;padding:12px 16px;border:1px solid var(--c7-border);border-radius:14px;background:#fff}
+.goal-panel.hidden{display:none}
+.goal-panel-head{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.goal-panel-head strong{display:block;font-size:15px;color:var(--c7-ink)}
+.goal-panel-head small{font-size:12px;color:var(--c7-muted)}
+.goal-panel .ghost-btn{height:34px!important;min-height:34px!important;font-size:11px!important}
+.goal-row{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:8px 12px;border-radius:10px;background:#f8f5f1;font-size:13px;color:#4d4741}
+.goal-row.is-off{opacity:.55}
+.goal-row b.in{color:var(--c7-in)}
+.goal-empty{margin:0;font-size:13px;color:var(--c7-muted)}
+.settle-goal{grid-column:1/-1;display:grid;gap:5px}
+.settle-goal-text{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;font-size:12px;color:#5f5953}
+.settle-goal-bar{height:7px;border-radius:999px;background:#eee4d8;overflow:hidden}
+.settle-goal-bar i{display:block;height:100%;border-radius:inherit;background:#b8892f}
+.settle-goal.is-done .settle-goal-bar i{background:var(--c7-in)}
+.settle-goal.is-done .settle-goal-text b{color:var(--c7-in)}
