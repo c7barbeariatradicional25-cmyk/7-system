@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { fetchLevels, fetchCustomerLevelMap, levelBadge } from "./niveis.js";
 
 const supabase=createClient(
   "https://cjtgjqxkyvgjlhylrvas.supabase.co",
@@ -13,6 +14,8 @@ let promotions=[];
 let coupons=[];
 let plans=[];
 let birthdayCampaign=null;
+let levels=[];
+let levelServices=[];
 
 function canAdmin(){return mayManagePromotions}
 
@@ -43,7 +46,128 @@ function empty(text){
   return `<div class="agenda-empty">${text}</div>`;
 }
 
+const escHtml=v=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+
+/* Níveis de cliente: lista com regra, benefícios e quantos clientes estão em cada nível. */
+async function loadLevels(){
+  const target=$("levelList");
+  if(!target) return;
+  const [list,levelMap,servicesResult]=await Promise.all([
+    fetchLevels(supabase,{includeInactive:true}),
+    fetchCustomerLevelMap(supabase),
+    supabase.from("services").select("id,name,price").eq("active",true).order("name")
+  ]);
+  levels=list;
+  levelServices=servicesResult.data||[];
+  $("newLevelBtn")?.classList.toggle("hidden",!canAdmin()||!levels.length);
+  if(!levels.length){
+    target.innerHTML=empty("Os níveis ainda não foram ativados no banco de dados.");
+    return;
+  }
+  const counts=new Map();
+  levelMap.forEach(row=>counts.set(String(row.level_id),(counts.get(String(row.level_id))||0)+1));
+  const rule=l=>l.manual_only
+    ? "Escolhido pelo Arthur no perfil do cliente"
+    : Number(l.min_visits_90d)===0&&Number(l.min_spent_90d)===0
+      ? "Todo cliente"
+      : `${l.min_visits_90d}+ visitas em 90 dias${Number(l.min_spent_90d)>0?` ou ${money(l.min_spent_90d)}+ gastos`:""}`;
+  target.innerHTML=[...levels].reverse().map(l=>`
+    <div class="level-row${l.active?"":" is-off"}">
+      <div class="level-row-main">${levelBadge(l)}<small>${rule(l)}</small></div>
+      <ul class="level-row-benefits">${l.benefits.length?l.benefits.map(b=>`<li>${escHtml(b.description)}${b.quantity_per_month?` <b>${b.quantity_per_month}x/mês</b>`:""}</li>`).join(""):"<li class=\"muted\">Sem benefícios</li>"}</ul>
+      <div class="level-row-count"><strong>${counts.get(String(l.id))||0}</strong><small>clientes</small></div>
+      ${canAdmin()?`<button type="button" class="ghost-btn" data-edit-level="${l.id}">EDITAR</button>`:""}
+    </div>`).join("");
+  target.querySelectorAll("[data-edit-level]").forEach(btn=>btn.addEventListener("click",()=>openLevel(btn.dataset.editLevel)));
+}
+
+function levelBenefitRow(b={}){
+  const options='<option value="">Sem serviço (cortesia)</option>'+levelServices.map(s=>`<option value="${s.id}" ${String(s.id)===String(b.service_id)?"selected":""}>${escHtml(s.name)} — ${money(s.price)}</option>`).join("");
+  const row=document.createElement("div");
+  row.className="level-benefit-row";
+  row.innerHTML=`
+    <input type="text" data-benefit-description placeholder="Ex.: Sobrancelha grátis" value="${escHtml(b.description||"")}">
+    <select data-benefit-service>${options}</select>
+    <input type="number" min="1" step="1" data-benefit-qty placeholder="x/mês" value="${b.quantity_per_month??""}">
+    <button type="button" class="split-payment-remove" aria-label="Remover benefício">×</button>`;
+  row.querySelector("button").addEventListener("click",()=>row.remove());
+  row.querySelector("[data-benefit-service]").addEventListener("change",e=>{
+    const desc=row.querySelector("[data-benefit-description]");
+    const service=levelServices.find(s=>String(s.id)===e.target.value);
+    if(service&&!desc.value.trim()) desc.value=`${service.name} grátis`;
+    const qty=row.querySelector("[data-benefit-qty]");
+    if(service&&!qty.value) qty.value="1";
+  });
+  return row;
+}
+
+function syncLevelRuleFields(){
+  const manual=$("levelManualOnly").checked;
+  $("levelMinVisits").disabled=manual;
+  $("levelMinSpent").disabled=manual;
+}
+
+function openLevel(id=null){
+  const level=levels.find(l=>String(l.id)===String(id));
+  $("levelForm").reset();
+  $("levelId").value=level?.id||"";
+  $("levelModalTitle").textContent=level?`Editar ${level.name}`:"Novo nível";
+  $("levelName").value=level?.name||"";
+  $("levelColor").value=level?.color||"#b8892f";
+  $("levelManualOnly").checked=Boolean(level?.manual_only);
+  $("levelSortOrder").value=level?.sort_order??(Math.max(0,...levels.map(l=>l.sort_order))+1);
+  $("levelMinVisits").value=level?.min_visits_90d??0;
+  $("levelMinSpent").value=level?.min_spent_90d??0;
+  $("levelActive").checked=level?level.active:true;
+  $("levelMessage").textContent="";
+  const rows=$("levelBenefitRows");
+  rows.replaceChildren(...(level?.benefits||[]).map(levelBenefitRow));
+  if(!rows.children.length) rows.appendChild(levelBenefitRow());
+  syncLevelRuleFields();
+  $("levelModal").classList.remove("hidden");
+}
+
+async function saveLevel(e){
+  e.preventDefault();
+  if(!canAdmin()) return;
+  const id=$("levelId").value;
+  const payload={
+    name:$("levelName").value.trim(),
+    color:$("levelColor").value,
+    manual_only:$("levelManualOnly").checked,
+    sort_order:Number($("levelSortOrder").value||0),
+    min_visits_90d:Number($("levelMinVisits").value||0),
+    min_spent_90d:Number($("levelMinSpent").value||0),
+    active:$("levelActive").checked,
+    updated_at:new Date().toISOString()
+  };
+  const benefits=[...$("levelBenefitRows").children].map((row,i)=>({
+    description:row.querySelector("[data-benefit-description]").value.trim(),
+    service_id:row.querySelector("[data-benefit-service]").value||null,
+    quantity_per_month:row.querySelector("[data-benefit-qty]").value?Number(row.querySelector("[data-benefit-qty]").value):null,
+    sort_order:i+1
+  })).filter(b=>b.description);
+  if(benefits.some(b=>b.service_id&&!b.quantity_per_month)){
+    $("levelMessage").textContent="Informe quantas vezes por mês o serviço sai grátis.";
+    return;
+  }
+  $("levelMessage").textContent="Salvando...";
+  const result=id
+    ? await supabase.from("customer_levels").update(payload).eq("id",id).select("id").single()
+    : await supabase.from("customer_levels").insert(payload).select("id").single();
+  if(result.error){$("levelMessage").textContent="Não foi possível salvar o nível.";return;}
+  const levelId=result.data.id;
+  const cleared=await supabase.from("customer_level_benefits").delete().eq("level_id",levelId);
+  const inserted=benefits.length&&!cleared.error
+    ? await supabase.from("customer_level_benefits").insert(benefits.map(b=>({...b,level_id:levelId})))
+    : {error:cleared.error};
+  if(inserted.error){$("levelMessage").textContent="Nível salvo, mas os benefícios não foram atualizados.";return;}
+  close("levelModal");
+  await loadLevels();
+}
+
 async function loadAll(){
+  loadLevels();
   const now=new Date();
   const month=now.getMonth()+1;
 
@@ -360,6 +484,11 @@ async function init(){
   $("newPromotionBtn")?.addEventListener("click",()=>openPromotion());
   $("newCouponBtn")?.addEventListener("click",()=>openCoupon());
   $("newPlanBtn")?.addEventListener("click",()=>openPlan());
+  $("newLevelBtn")?.addEventListener("click",()=>openLevel());
+  $("addLevelBenefitBtn")?.addEventListener("click",()=>$("levelBenefitRows").appendChild(levelBenefitRow()));
+  $("levelManualOnly")?.addEventListener("change",syncLevelRuleFields);
+  $("levelForm")?.addEventListener("submit",saveLevel);
+  document.querySelectorAll("[data-close-level]").forEach(el=>el.addEventListener("click",()=>close("levelModal")));
   $("newBirthdayCampaignBtn")?.addEventListener("click",openBirthday);
 
   $("promotionForm")?.addEventListener("submit",savePromotion);

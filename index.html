@@ -226,6 +226,7 @@
           <button type="button" data-crm-filter="scheduled">Com horário marcado <b id="crmScheduledCustomers">0</b></button>
           <button type="button" data-crm-filter="recurring">Recorrentes <b id="crmRecurringCustomers">0</b></button>
           <button type="button" data-crm-filter="dormant">Sem retorno <b id="crmDormantCustomers">0</b></button>
+          <select id="crmLevelFilter" class="hidden" aria-label="Filtrar por nível"></select>
         </div>
         <div class="customer-list-head"><span>Cliente</span><span>Situação</span><span>Visitas</span><span>Total gasto</span><span>Última visita</span></div>
 
@@ -527,6 +528,15 @@
           <article><span>PLANOS ATIVOS</span><strong id="planActiveCount">0</strong></article>
           <article><span>ANIVERSARIANTES DO MÊS</span><strong id="birthdayMonthCount">0</strong></article>
         </div>
+
+        <article class="promo-panel levels-panel">
+          <div class="promo-panel-head">
+            <div><span>FIDELIZAÇÃO</span><h3>Níveis de cliente</h3></div>
+            <button id="newLevelBtn" class="primary-btn" type="button">+ NÍVEL</button>
+          </div>
+          <p class="levels-help">O cliente sobe de nível sozinho pelas visitas dos últimos 90 dias. O VIP C7 é escolhido no perfil do cliente. Os serviços grátis aparecem automaticamente na hora de receber.</p>
+          <div id="levelList" class="levels-list"><div class="agenda-empty">Carregando níveis...</div></div>
+        </article>
 
         <div class="promo-grid">
           <article class="promo-panel">
@@ -872,6 +882,10 @@
           <label><span>Tags</span><input id="crmCustomerTags" type="text" placeholder="VIP, mensal, indicação..."></label>
         </div>
 
+        <div id="crmLevelField" class="level-field hidden">
+          <label><span>Nível do cliente</span><select id="crmCustomerLevel"></select></label>
+          <div id="crmLevelInfo" class="level-info"></div>
+        </div>
         <label><span>Observações</span><textarea id="crmCustomerNotes" rows="4"></textarea></label>
 
         <label class="check-row">
@@ -956,6 +970,7 @@
           <div><span>Total a receber</span><strong id="receiveDueTotal">R$ 0,00</strong></div>
           <small id="receiveDueInfo"></small>
         </div>
+        <div id="receiveLevelInfo" class="receive-level hidden"></div>
         <div class="form-grid two">
           <label><span>Valor</span><input id="receiveGross" type="number" readonly min="0" step="0.01" required></label>
           <label><span>Desconto</span><input id="receiveDiscount" type="number" min="0" step="0.01" value="0"></label>
@@ -1537,6 +1552,34 @@
         <label class="check-row"><input id="couponActive" type="checkbox" checked><span>Cupom ativo</span></label>
         <p id="couponMessage" class="form-message"></p>
         <div class="modal-actions"><button type="button" class="ghost-btn" data-close-coupon>CANCELAR</button><button type="submit" class="primary-btn">SALVAR</button></div>
+      </form>
+    </section>
+  </div>
+
+  <div id="levelModal" class="modal hidden" role="dialog" aria-modal="true">
+    <div class="modal-backdrop" data-close-level></div>
+    <section class="modal-card">
+      <div class="modal-head"><div><span>NÍVEL DE CLIENTE</span><h2 id="levelModalTitle">Novo nível</h2></div><button type="button" class="modal-close" data-close-level>×</button></div>
+      <form id="levelForm" class="appointment-form">
+        <input id="levelId" type="hidden">
+        <div class="form-grid two">
+          <label><span>Nome</span><input id="levelName" type="text" required placeholder="Ex.: C7 Ouro"></label>
+          <label><span>Cor</span><input id="levelColor" type="color" value="#b8892f"></label>
+        </div>
+        <label class="check-row"><input id="levelManualOnly" type="checkbox"><span>Só por escolha do Arthur (não sobe sozinho)</span></label>
+        <div id="levelRuleFields" class="form-grid three">
+          <label><span>Ordem (maior = melhor)</span><input id="levelSortOrder" type="number" min="0" step="1" value="1"></label>
+          <label><span>Visitas em 90 dias</span><input id="levelMinVisits" type="number" min="0" step="1" value="0"></label>
+          <label><span>ou gasto em 90 dias (R$)</span><input id="levelMinSpent" type="number" min="0" step="0.01" value="0"></label>
+        </div>
+        <div class="level-benefits-edit">
+          <div class="level-benefits-head"><strong>Benefícios</strong><small>Escolha um serviço para ele sair grátis no receber. Sem serviço vira só cortesia/lembrete.</small></div>
+          <div id="levelBenefitRows"></div>
+          <button id="addLevelBenefitBtn" type="button" class="split-payment-add">+ Adicionar benefício</button>
+        </div>
+        <label class="check-row"><input id="levelActive" type="checkbox" checked><span>Nível ativo</span></label>
+        <p id="levelMessage" class="form-message"></p>
+        <div class="modal-actions"><button type="button" class="ghost-btn" data-close-level>CANCELAR</button><button type="submit" class="primary-btn">SALVAR</button></div>
       </form>
     </section>
   </div>

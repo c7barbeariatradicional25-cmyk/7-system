@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { fetchLevels, fetchCustomerLevelMap, fetchMonthUses, benefitsWithBalance, levelBadge, benefitText, nextLevelHint } from "./niveis.js";
 
 const supabase = createClient(
   "https://cjtgjqxkyvgjlhylrvas.supabase.co",
@@ -13,6 +14,9 @@ let professionals = [];
 let currentRole = null;
 let currentUser = null;
 let rights=null;
+let levels=[];
+let levelMap=new Map();
+const levelOf=customerId=>{const row=levelMap.get(String(customerId));return levels.find(l=>String(l.id)===String(row?.level_id))||null;};
 function can(key){return currentRole==="admin" || (rights?Boolean(rights[key]):["admin","reception"].includes(currentRole));}
 
 const statusLabels={scheduled:"Agendado",confirmed:"Confirmado",waiting:"Aguardando",in_service:"Em atendimento",completed:"Finalizado",cancelled:"Cancelado",no_show:"Faltou"};
@@ -56,6 +60,14 @@ async function loadCustomers(){
   const result=await supabase.from("customer_crm_summary").select("*").order("full_name",{ascending:true});
   if(result.error) return;
   customers=result.data||[];
+  [levels,levelMap]=await Promise.all([fetchLevels(supabase),fetchCustomerLevelMap(supabase)]);
+  const levelFilter=$("crmLevelFilter");
+  if(levelFilter){
+    const current=levelFilter.value;
+    levelFilter.innerHTML='<option value="">Todos os níveis</option>'+levels.map(l=>`<option value="${l.id}">${l.name}</option>`).join("");
+    levelFilter.value=current;
+    levelFilter.classList.toggle("hidden",!levels.length);
+  }
   renderCustomers(customers);
 }
 
@@ -88,7 +100,8 @@ let crmFilter="all";
 function renderCustomers(items){
   const list=$("customerList");
   const all=customers.filter(c=>c.active!==false);
-  const active=items.filter(c=>c.active!==false&&crmFilters[crmFilter](c));
+  const levelFilter=$("crmLevelFilter")?.value||"";
+  const active=items.filter(c=>c.active!==false&&crmFilters[crmFilter](c)&&(!levelFilter||String(levelOf(c.id)?.id)===levelFilter));
 
   $("crmTotalCustomers").textContent=all.length;
   $("crmScheduledCustomers").textContent=all.filter(crmFilters.scheduled).length;
@@ -110,7 +123,10 @@ function renderCustomers(items){
     const identity=makeEl("div","customer-identity");
     identity.appendChild(makeEl("div","customer-avatar",(customer.full_name||"C").slice(0,1).toUpperCase()));
     const identityText=makeEl("div","customer-identity-text");
-    identityText.appendChild(makeEl("strong","customer-name",customer.full_name||"Cliente"));
+    const nameLine=makeEl("strong","customer-name",customer.full_name||"Cliente");
+    const level=levelOf(customer.id);
+    if(level&&level.sort_order>1) nameLine.insertAdjacentHTML("beforeend"," "+levelBadge(level));
+    identityText.appendChild(nameLine);
     identityText.appendChild(makeEl("span","customer-phone",customer.phone||"Sem telefone"));
     (customer.tags||[]).forEach(tag=>identityText.appendChild(makeEl("span","tag-pill",tag)));
     identity.appendChild(identityText);
@@ -142,6 +158,7 @@ function applySearch(){
   ));
 }
 
+$("crmLevelFilter")?.addEventListener("change",applySearch);
 document.querySelectorAll("[data-crm-filter]").forEach(btn=>btn.addEventListener("click",()=>{
   crmFilter=btn.dataset.crmFilter;
   document.querySelectorAll("[data-crm-filter]").forEach(b=>b.classList.toggle("active",b===btn));
@@ -287,6 +304,7 @@ async function openCustomer(id=null){
   $("deleteCustomerBtn")?.classList.toggle("hidden",!id||!can("clients.delete")||!can("clients.read"));
   $("customerHistory").classList.toggle("hidden",!id||!can("clients.history"));
   $("customerInsights")?.classList.toggle("hidden",!id||!can("clients.history"));
+  $("crmLevelField")?.classList.toggle("hidden",!id||!levels.length);
 
   if(id){
     const customer=customers.find(c=>c.id===id);
@@ -300,10 +318,31 @@ async function openCustomer(id=null){
     $("crmCustomerTags").value=(customer.tags||[]).join(", ");
     $("crmCustomerNotes").value=customer.notes||"";
     $("crmMarketingOptIn").checked=Boolean(customer.marketing_opt_in);
+    await renderLevelField(id);
     if(can("clients.history"))await Promise.all([loadHistory(id),loadConsumptionProfile(id)]);
   }
 
   $("customerModal").classList.remove("hidden");
+}
+
+// Nível no perfil: automático (pelas visitas) ou escolhido à mão, com os benefícios do mês.
+async function renderLevelField(customerId){
+  const select=$("crmCustomerLevel");
+  if(!select||!levels.length) return;
+  const row=levelMap.get(String(customerId));
+  const current=levelOf(customerId);
+  const autoLevel=row&&!row.level_locked?current:null;
+  select.innerHTML=`<option value="auto">Automático${autoLevel?` (hoje: ${autoLevel.name})`:""}</option>`+
+    levels.map(l=>`<option value="${l.id}">${l.name}${l.manual_only?" — escolhido pelo Arthur":""}</option>`).join("");
+  select.value=row?.level_locked&&row.level_id!=null?String(row.level_id):"auto";
+
+  const uses=await fetchMonthUses(supabase,customerId);
+  const benefits=benefitsWithBalance(current,uses);
+  const hint=nextLevelHint(levels,current,row);
+  $("crmLevelInfo").innerHTML=`
+    <div class="level-info-head">${levelBadge(current)}<small>${row?`${row.visits_90d} visita${Number(row.visits_90d)===1?"":"s"} nos últimos 90 dias`:""}</small></div>
+    ${benefits.length?`<ul>${benefits.map(b=>`<li class="${b.remaining===0?"is-used":""}">${benefitText(b)}</li>`).join("")}</ul>`:'<p>Sem benefícios neste nível.</p>'}
+    ${hint&&!row?.level_locked?`<p class="level-next">${hint.text}.</p>`:""}`;
 }
 
 function closeCustomer(){
@@ -330,6 +369,10 @@ async function saveCustomer(event){
     tags:$("crmCustomerTags").value.split(",").map(v=>v.trim()).filter(Boolean),
     notes:$("crmCustomerNotes").value.trim()||null,
     marketing_opt_in:$("crmMarketingOptIn").checked,
+    ...(id&&levels.length?{
+      level_id:$("crmCustomerLevel").value==="auto"?null:$("crmCustomerLevel").value,
+      level_locked:$("crmCustomerLevel").value!=="auto"
+    }:{}),
     updated_at:new Date().toISOString(),
     updated_by:currentUser
   };

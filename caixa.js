@@ -1,5 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { PAYMENT_LABELS, CARD_METHODS, fetchPaymentSplits } from "./pagamentos.js";
+import { fetchLevels, fetchCustomerLevelMap, fetchMonthUses, benefitsWithBalance, levelBadge, benefitText } from "./niveis.js";
 
 const supabase = createClient(
   "https://cjtgjqxkyvgjlhylrvas.supabase.co",
@@ -489,8 +490,49 @@ async function loadReceiveBenefits(item){
     }
   }
 
+  await addLevelBenefits(item);
+
   $("receiveBenefit").innerHTML='<option value="">Sem benefício</option>'+
     receiveBenefits.map(b=>`<option value="${b.key}">${b.label} — ${b.discount_type==="percent"?Number(b.discount_value)+"%":money(b.discount_value)}</option>`).join("");
+
+  // Serviço grátis do nível já vem selecionado: o cliente tem direito e o serviço está no atendimento.
+  const levelBenefit=receiveBenefits.find(b=>b.levelBenefit);
+  if(levelBenefit){
+    $("receiveBenefit").value=levelBenefit.key;
+    $("receiveDiscount").value=benefitDiscount(appointmentCheckoutGross(item),levelBenefit).toFixed(2);
+  }
+}
+
+/* Nível do cliente: serviços grátis do mês viram benefício no receber; cortesias aparecem como lembrete. */
+async function addLevelBenefits(item){
+  const info=$("receiveLevelInfo");
+  if(info){info.innerHTML="";info.classList.add("hidden");}
+  if(!item?.customer_id) return;
+  const levels=await fetchLevels(supabase);
+  if(!levels.length) return;
+  const row=(await fetchCustomerLevelMap(supabase,[item.customer_id])).get(String(item.customer_id));
+  const level=levels.find(l=>String(l.id)===String(row?.level_id));
+  if(!level||!level.benefits.length) return;
+
+  const benefits=benefitsWithBalance(level,await fetchMonthUses(supabase,item.customer_id));
+  benefits.forEach(b=>{
+    if(!b.service_id||!b.remaining) return;
+    const service=(item.appointment_services||[]).find(s=>String(s.service_id)===String(b.service_id));
+    if(!service) return;
+    receiveBenefits.push({
+      key:`level:${b.id}`,
+      source:"promotion",
+      label:`${level.name} · ${b.description}`,
+      discount_type:"fixed",
+      discount_value:Number(service.price||0),
+      levelBenefit:{id:b.id,service_id:b.service_id}
+    });
+  });
+
+  if(info){
+    info.innerHTML=`${levelBadge(level)}<span>${benefits.map(benefitText).join(" · ")}</span>`;
+    info.classList.remove("hidden");
+  }
 }
 
 async function openReceiveModal(id=null){
@@ -673,6 +715,16 @@ $("receiveForm")?.addEventListener("submit",async e=>{
       message.includes("Cupom")?message:
       "Não foi possível concluir o checkout.";
     return;
+  }
+
+  if(benefit?.levelBenefit){
+    const {error:useError}=await supabase.from("customer_level_benefit_uses").insert({
+      customer_id:appointment.customer_id,
+      benefit_id:benefit.levelBenefit.id,
+      service_id:benefit.levelBenefit.service_id,
+      appointment_id:appointment.id
+    });
+    if(useError) console.warn("C7: uso do benefício do nível não registrado",useError.message);
   }
 
   let splitWarning=null;
