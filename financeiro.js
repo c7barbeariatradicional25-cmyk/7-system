@@ -23,7 +23,7 @@ async function loadContext(){
 }
 
 async function loadCommissions(){
-  if(!canAccessFinance()) return;
+  if(!canAccessFinance()||!$("commissionList")) return;
   const {data,error}=await supabase
     .from("commission_entries")
     .select("id,commission_amount,commission_percent,base_amount,status,created_at,paid_at,professional:professionals(full_name)")

@@ -69,7 +69,6 @@
         <button class="nav-item" data-section="caixa">Caixa</button>
         <button class="nav-item" data-section="financeiro">Financeiro</button>
         <button class="nav-item" data-section="acertos">Acertos</button>
-        <button class="nav-item" data-section="operacoes">Operações</button>
         <button class="nav-item" data-section="servicos">Serviços</button>
         <button class="nav-item" data-section="produtos">Produtos</button>
         <button class="nav-item hidden" data-section="historico-produtos">Histórico de produtos</button>
@@ -102,9 +101,9 @@
 
       <section id="dashboard" class="section active">
         <div class="stats">
-          <article><span id="statAppointmentsLabel">Atendimentos</span><strong id="statAppointments">0</strong><small id="statAppointmentsHint">Concluídos + em andamento</small></article>
+          <article><span id="statAppointmentsLabel">Finalizados</span><strong id="statAppointments">0</strong><small id="statAppointmentsHint">Atendimentos de hoje</small></article>
           <article><span id="statRevenueLabel">Faturamento</span><strong id="statRevenue">R$ 0</strong><small id="statRevenueHint">Recebido no Caixa</small></article>
-          <article><span id="statWaitingLabel">Na espera</span><strong id="statWaiting">0</strong><small id="statWaitingHint">Operações</small></article>
+          <article><span id="statWaitingLabel">A atender</span><strong id="statWaiting">0</strong><small id="statWaitingHint">Ainda hoje</small></article>
           <article><span id="statLowStockLabel">Estoque baixo</span><strong id="statLowStock">0</strong><small id="statLowStockHint">Produtos</small></article>
         </div>
 
@@ -278,15 +277,6 @@
         </div>
 
         <div class="finance-grid">
-          <article class="cash-panel">
-            <div class="cash-panel-head">
-              <div><span>COMISSÕES</span><h3>Pendentes por Barbeiro</h3></div>
-              <button id="refreshCommissionsBtn" class="ghost-btn" type="button">ATUALIZAR</button>
-            </div>
-            <div id="commissionList" class="finance-list">
-              <div class="agenda-empty">Carregando comissões...</div>
-            </div>
-          </article>
 
           <article class="cash-panel">
             <div class="cash-panel-head">
@@ -1758,7 +1748,7 @@ document.addEventListener("keydown",function(e){
  const buttons=new Map(known.map(x=>[x.dataset.section,x]));
  nav.replaceChildren();
  const direct=document.createElement("div");direct.className="c7-primary-nav";
- for(const id of ["dashboard","agenda","caixa","clientes","operacoes"]){
+ for(const id of ["dashboard","agenda","caixa","clientes"]){
    const el=buttons.get(id);
    if(el)direct.appendChild(el);
  }

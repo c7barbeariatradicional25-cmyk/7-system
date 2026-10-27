@@ -5554,3 +5554,49 @@ button.primary-btn{border-radius:10px}button.ghost-btn{border-radius:10px}
   #agenda .agenda-summary>div{padding:7px 10px!important}
   #agenda .live-timeline-scroll{height:calc(100vh - 300px)!important;min-height:380px}
 }
+
+/* ==========================================================
+   C7 — Limpeza: sem título repetido, cartões enxutos
+   ========================================================== */
+/* A linha decorativa entrava como item do cabeçalho e empurrava o título para o meio */
+.catalog-toolbar::before,.cash-toolbar::before,.ops-toolbar::before,.report-toolbar::before{display:none!important}
+/* O nome da tela já está no topo: some o título repetido, fica só a descrição curta e as ações */
+.catalog-toolbar,.ops-toolbar,.report-toolbar,.cash-toolbar{display:flex!important;align-items:center!important;justify-content:space-between!important;gap:10px!important;margin-bottom:12px!important;padding:0!important;min-height:0!important}
+.catalog-toolbar>div:first-child .eyebrow,.catalog-toolbar>div:first-child h2,
+.ops-toolbar>div:first-child .eyebrow,.ops-toolbar>div:first-child h2,
+.report-toolbar>div:first-child .eyebrow,.report-toolbar>div:first-child h2,
+.performance-hero .eyebrow,.performance-hero h2,
+.cash-toolbar .eyebrow,#cashStatusText{display:none!important}
+.catalog-toolbar>div:first-child p,.ops-toolbar>div:first-child p,.report-toolbar>div:first-child p,.performance-hero p{margin:0!important;font-size:13px!important;color:#857b72!important}
+.performance-hero{min-height:0!important;padding:0!important;margin-bottom:12px!important;background:none!important;border:0!important;box-shadow:none!important}
+/* Caixa: situação do caixa como etiqueta */
+#cashStatusTitle{display:inline-flex!important;align-items:center;gap:8px;margin:0!important;padding:7px 14px;border-radius:999px;font-size:14px!important;letter-spacing:0!important;background:#fdeadf;color:#b8412c!important}
+#cashStatusTitle::before{content:"";width:9px;height:9px;border-radius:50%;background:currentColor}
+#cashStatusTitle[data-open="true"]{background:var(--st-completed-bg);color:var(--c7-in)!important}
+.cash-actions{gap:8px!important}
+.cash-actions button{height:40px!important;min-height:40px!important}
+
+/* Cartões de números: menores, sem enfeite */
+.stats article,.cash-stats article,.ops-stats article,.crm-stats article,.product-admin-stats article,.report-stats article,.promo-overview article,.finance-stats article,.performance-stats article{min-height:0!important;padding:14px 16px!important}
+.stats article::before,.cash-stats article::before,.ops-stats article::before,.crm-stats article::before,.product-admin-stats article::before,.report-stats article::before,.promo-overview article::before,.finance-stats article::before,.performance-stats article::before{display:none!important}
+.stats strong,.cash-stats strong,.ops-stats strong,.crm-stats strong,.product-admin-stats strong,.report-stats strong,.promo-overview strong,.finance-stats strong,.performance-stats strong{margin-top:6px!important;font-size:24px!important}
+.cash-stats,.crm-stats,.ops-stats,.report-stats,.product-admin-stats,.finance-stats{gap:10px!important;margin-bottom:12px!important}
+#dashboard .stats article{min-height:0!important;padding:14px 16px!important}
+#dashboard .stats strong{font-size:26px!important;margin-top:8px!important}
+#dashboard .dashboard-grid .panel{min-height:0!important;padding:16px 18px!important}
+#dashboard .dashboard-grid .panel h2{margin-top:8px!important}
+#dashboard .dashboard-grid .panel p{margin-top:8px!important}
+
+/* Painéis: sem altura vazia e botão Atualizar discreto */
+.cash-panel,.finance-panel{min-height:0!important}
+.cash-panel-head{gap:8px!important;padding-bottom:10px!important;margin-bottom:10px!important}
+.cash-panel-head h3{font-size:18px!important}
+.cash-panel-head .ghost-btn{height:32px!important;min-height:32px!important;padding:0 10px!important;font-size:11px!important;border-radius:8px!important}
+.cash-empty,.agenda-empty{padding:18px!important;min-height:0!important}
+/* Topo: o nome da barbearia já está no menu */
+.topbar>div:first-child>span{display:none!important}
+#arthurPortalModeBtn{font-size:11px!important;padding:0 12px!important}
+/* Início: estoque baixo só fica vermelho quando há produto em falta */
+#dashboard .stats article:nth-child(4) strong{color:#241f1b!important}
+#dashboard .stats article.is-alert{border-color:#f0c2b6!important;background:#fff6f3!important}
+#dashboard .stats article.is-alert strong{color:var(--c7-out)!important}

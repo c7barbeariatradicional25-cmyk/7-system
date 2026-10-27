@@ -91,6 +91,7 @@ function renderCashState(){
   const isOpen=Boolean(openSession);
 
   $("cashStatusTitle").textContent=isOpen?"Caixa aberto":"Caixa fechado";
+  $("cashStatusTitle").dataset.open=String(isOpen);
   $("cashStatusText").textContent=isOpen
     ? "Movimentações do caixa atual."
     : "Abra o caixa para registrar movimentações.";

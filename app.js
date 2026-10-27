@@ -1297,23 +1297,23 @@ async function updateDashboard(){
     appointments=appointments.filter(a=>a.professional?.full_name && professionals.find(p=>p.id===currentProfessionalId)?.full_name===a.professional.full_name);
   }
 
-  const relevantAppointments=appointments.filter(a=>["waiting","in_service","completed"].includes(a.status));
-  const waiting=appointments.filter(a=>a.status==="waiting");
+  const relevantAppointments=appointments.filter(a=>a.status==="completed");
+  const waiting=appointments.filter(a=>OPEN_STATUSES.includes(a.status));
   const revenue=transactions.filter(t=>t.direction==="in")
     .reduce((sum,t)=>sum+Number(t.net_amount||0),0);
   const lowStock=products.filter(p=>Number(p.stock_quantity||0)<=Number(p.min_stock||0));
 
   if(currentRole==="barber"||barberPreviewMode){
-    $("statAppointmentsLabel").textContent="Meus Atendimentos Hoje";
-    $("statAppointmentsHint").textContent="Concluídos + em andamento";
-    $("statRevenueLabel").textContent="Em Atendimento";
-    $("statRevenueHint").textContent="Atendimento em andamento agora";
-    $("statWaitingLabel").textContent="Aguardando";
-    $("statWaitingHint").textContent="Clientes da sua agenda";
+    $("statAppointmentsLabel").textContent="Finalizados";
+    $("statAppointmentsHint").textContent="Seus atendimentos de hoje";
+    $("statRevenueLabel").textContent="Faltaram";
+    $("statRevenueHint").textContent="Clientes que não vieram hoje";
+    $("statWaitingLabel").textContent="A atender";
+    $("statWaitingHint").textContent="Ainda hoje na sua agenda";
     $("statLowStockLabel").textContent="Próximo Horário";
     $("statLowStockHint").textContent="Seu próximo atendimento";
 
-    const inService=appointments.filter(a=>a.status==="in_service").length;
+    const inService=appointments.filter(a=>a.status==="no_show").length;
     const nextMine=appointments.find(a=>new Date(a.starts_at)>=now&&["scheduled","confirmed"].includes(a.status));
 
     $("statAppointments").textContent=relevantAppointments.length;
@@ -1325,6 +1325,7 @@ async function updateDashboard(){
     $("statRevenue").textContent=money(revenue);
     $("statWaiting").textContent=waiting.length;
     $("statLowStock").textContent=lowStock.length;
+    $("statLowStock").closest("article").classList.toggle("is-alert",lowStock.length>0);
   }
 
   if(currentRole==="barber"||barberPreviewMode){
@@ -1349,8 +1350,8 @@ async function updateDashboard(){
 
   $("dashboardActivePros").textContent=`${activePros.length} ${activePros.length===1?"barbeiro ativo":"barbeiros ativos"}`;
   $("dashboardTeamText").textContent=waiting.length
-    ? `${waiting.length} cliente${waiting.length===1?"":"s"} aguardando atendimento.`
-    : "Nenhum cliente aguardando.";
+    ? `${waiting.length} atendimento${waiting.length===1?"":"s"} ainda hoje.`
+    : "Agenda de hoje concluída.";
 
   const alerts=[];
   if(lowStock.length){
@@ -1359,8 +1360,9 @@ async function updateDashboard(){
   if(!openCash && ["admin","reception"].includes(currentRole)){
     alerts.push({title:"Caixa fechado",text:"Abra o caixa antes de registrar recebimentos."});
   }
-  if(waiting.length){
-    alerts.push({title:"Cliente aguardando",text:`${waiting.length} atendimento${waiting.length===1?"":"s"} na fila.`});
+  const overdue=waiting.filter(a=>new Date(a.starts_at)<new Date(now.getTime()-30*60000));
+  if(overdue.length){
+    alerts.push({title:"Sem recebimento",text:`${overdue.length} atendimento${overdue.length===1?"":"s"} já passou do horário e não foi recebido nem marcado como falta.`});
   }
 
   $("dashboardAlertCount").textContent=`${alerts.length} ${alerts.length===1?"pendência":"pendências"}`;
