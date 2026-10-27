@@ -385,7 +385,7 @@ function scheduleAgendaReload(){
   clearTimeout(agendaReloadTimer);
   agendaReloadTimer=setTimeout(()=>{
     if(document.hidden||!$("agenda")?.classList.contains("active")) return;
-    if(document.querySelector(".modal:not(.hidden)")) return;
+    if(document.querySelector(".modal:not(.hidden)")||$("c7SlotMenu")) return;
     loadAgenda();
   },600);
 }
@@ -1156,23 +1156,24 @@ function renderTimeline(){
   });
 
   agendaTimeline.querySelectorAll("[data-live-professional]").forEach(column=>{
-    column.addEventListener("dblclick",e=>{
+    // Clique num horário vazio: menu do Booksy (agendamento, bloqueio ou folga) já com barbeiro e horário.
+    column.addEventListener("click",e=>{
       if(!["admin","reception"].includes(currentRole)&&currentRole!=="barber") return;
       if(currentRole==="barber"&&column.dataset.liveProfessional!==currentProfessionalId) return;
-      if(e.target.closest(".live-booking,.live-block")) return;
+      if(e.target.closest(".live-booking,.live-block,button")) return;
 
       const rect=column.getBoundingClientRect();
       const y=e.clientY-rect.top;
       const rawMinute=minMinute+((y-timelineTopPadding)/pxPerMinute);
-      const snapped=Math.round(rawMinute/15)*15;
-      const start=Math.max(minMinute,Math.min(snapped,maxMinute-15));
-      const end=Math.min(start+60,maxMinute);
-
-      openBlockModal({
+      const start=Math.max(minMinute,Math.min(Math.floor(rawMinute/15)*15,maxMinute-15));
+      openSlotMenu({
+        column,
         professionalId:column.dataset.liveProfessional,
         date:selected,
-        start:hhmmFromMinutes(start),
-        end:hhmmFromMinutes(end)
+        start,
+        top:timelineTopPadding+(start-minMinute)*pxPerMinute,
+        height:15*pxPerMinute,
+        x:e.clientX,y:e.clientY
       });
     });
   });
@@ -1889,12 +1890,61 @@ saveAndNewAppointmentBtn?.addEventListener("click",async()=>{
   await saveAppointment({keepOpen:true});
 });
 
+function closeSlotMenu(){
+  $("c7SlotMenu")?.remove();
+  document.querySelector(".live-slot-ghost")?.remove();
+}
+function openSlotMenu(slot){
+  closeSlotMenu();
+  const ghost=document.createElement("div");
+  ghost.className="live-slot-ghost";
+  ghost.style.top=`${slot.top}px`;ghost.style.height=`${slot.height}px`;
+  ghost.textContent=`${hhmmFromMinutes(slot.start)} - ${hhmmFromMinutes(slot.start+15)}`;
+  slot.column.appendChild(ghost);
+  const menu=document.createElement("div");
+  menu.id="c7SlotMenu";
+  menu.className="slot-menu";
+  menu.innerHTML=`
+    <button type="button" data-slot="appointment">Novo agendamento</button>
+    <button type="button" data-slot="block">Novo bloqueio de horário</button>
+    <button type="button" data-slot="dayoff">Adicionar folga</button>`;
+  document.body.appendChild(menu);
+  const w=menu.offsetWidth,h=menu.offsetHeight;
+  menu.style.left=`${Math.max(8,Math.min(slot.x-w/2,window.innerWidth-w-8))}px`;
+  menu.style.top=`${Math.max(8,Math.min(slot.y-h/2,window.innerHeight-h-8))}px`;
+  menu.addEventListener("click",ev=>{
+    const action=ev.target.closest("[data-slot]")?.dataset.slot;
+    if(!action) return;
+    closeSlotMenu();
+    const time=hhmmFromMinutes(slot.start);
+    if(action==="appointment"){
+      openAppointmentModal();
+      appointmentProfessional.value=slot.professionalId;
+      $("appointmentDate").value=slot.date;
+      $("appointmentTime").value=time;
+      updateAppointmentPreview();
+    }else if(action==="block"){
+      openBlockModal({professionalId:slot.professionalId,date:slot.date,start:time,end:hhmmFromMinutes(Math.min(slot.start+60,24*60-1))});
+    }else{
+      const hours=currentWorkingHours.find(h=>h.professional_id===slot.professionalId);
+      openBlockModal({professionalId:slot.professionalId,date:slot.date,start:String(hours?.starts_at||"09:00").slice(0,5),end:String(hours?.ends_at||"20:00").slice(0,5),reason:"Folga"});
+    }
+  });
+  setTimeout(()=>document.addEventListener("click",function away(ev){
+    if(ev.target.closest("#c7SlotMenu")) return;
+    document.removeEventListener("click",away);
+    closeSlotMenu();
+  }),0);
+}
+document.addEventListener("keydown",e=>{if(e.key==="Escape") closeSlotMenu();});
+
 function openBlockModal(preset={}){
   blockForm.reset();
   blockMessage.textContent="";
   $("blockDate").value=preset.date||agendaDate.value||localDateInput();
   $("blockStart").value=preset.start||"12:00";
   $("blockEnd").value=preset.end||"13:00";
+  if(preset.reason) $("blockReason").value=preset.reason;
   if(preset.professionalId){
     blockProfessional.value=preset.professionalId;
   }else if(professionalFilter.value){

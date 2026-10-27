@@ -6014,3 +6014,11 @@ button.primary-btn{border-radius:10px}button.ghost-btn{border-radius:10px}
 #posCheckout:disabled{background:#d8d2cb!important;border-color:#d8d2cb!important;cursor:not-allowed}
 @media(max-width:1200px){.pos{grid-template-columns:minmax(0,1fr) 320px}.pos-menu{grid-column:1/-1;position:static;display:flex;overflow-x:auto}.pos-menu button{border-left:0;border-bottom:3px solid transparent;white-space:nowrap}.pos-menu button.active{border-bottom-color:#211d19}}
 @media(max-width:760px){.pos{grid-template-columns:minmax(0,1fr)}.pos-cart{position:static}.pos-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+/* Agenda: menu ao clicar num horário vazio (como no Booksy) */
+.live-pro-column{cursor:pointer}
+.live-slot-ghost{position:absolute;left:4px;right:4px;z-index:4;display:flex;align-items:center;padding:0 8px;border:1px dashed #8a7e73;border-radius:6px;background:#fff;font-size:11px;font-weight:700;color:#3a332c;pointer-events:none}
+.slot-menu{position:fixed;z-index:60;display:grid;width:280px;border-radius:12px;background:#fff;box-shadow:0 18px 50px rgba(20,15,10,.25);overflow:hidden}
+.slot-menu button{height:64px;border:0;border-bottom:1px solid #eee6dc;background:#fff;font-size:13px;font-weight:800;letter-spacing:.3px;text-transform:uppercase;color:var(--c7-ink);cursor:pointer}
+.slot-menu button:last-child{border-bottom:0}
+.slot-menu button:hover{background:#f6f1ec}
