@@ -221,12 +221,13 @@
           <button id="newCustomerBtn" class="primary-btn" type="button">+ NOVO CLIENTE</button>
         </div>
 
-        <div class="crm-stats">
-          <article><span>CLIENTES</span><strong id="crmTotalCustomers">0</strong></article>
-          <article><span>RECORRENTES</span><strong id="crmRecurringCustomers">0</strong></article>
-          <article><span>SEM RETORNO</span><strong id="crmDormantCustomers">0</strong></article>
-          <article><span>FATURAMENTO HISTÓRICO</span><strong id="crmTotalSpent">R$ 0</strong></article>
+        <div class="crm-filters">
+          <button type="button" class="active" data-crm-filter="all">Todos <b id="crmTotalCustomers">0</b></button>
+          <button type="button" data-crm-filter="scheduled">Com horário marcado <b id="crmScheduledCustomers">0</b></button>
+          <button type="button" data-crm-filter="recurring">Recorrentes <b id="crmRecurringCustomers">0</b></button>
+          <button type="button" data-crm-filter="dormant">Sem retorno <b id="crmDormantCustomers">0</b></button>
         </div>
+        <div class="customer-list-head"><span>Cliente</span><span>Situação</span><span>Visitas</span><span>Total gasto</span><span>Última visita</span></div>
 
         <div id="customerList" class="customer-list">
           <div class="agenda-empty">Carregando clientes...</div>

@@ -5634,3 +5634,33 @@ button.primary-btn{border-radius:10px}button.ghost-btn{border-radius:10px}
   .settle-period small{margin-left:0}
   .settle-pay{width:100%}
 }
+
+/* Clientes: lista compacta com filtros */
+.crm-filters{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}
+.crm-filters button{display:inline-flex;align-items:center;gap:8px;height:38px;padding:0 14px;border:1px solid var(--c7-border);border-radius:999px;background:#fff;color:var(--c7-ink);font-size:13px;font-weight:650;cursor:pointer}
+.crm-filters b{min-width:24px;padding:2px 7px;border-radius:999px;background:#f1ece6;font-size:12px;text-align:center}
+.crm-filters button.active{background:#211d19;border-color:#211d19;color:#fff}
+.crm-filters button.active b{background:#fff;color:#211d19}
+.crm-filters [data-crm-filter="dormant"] b{background:var(--st-no_show-bg);color:var(--st-no_show)}
+.crm-filters [data-crm-filter="scheduled"] b{background:var(--st-scheduled-bg);color:var(--st-scheduled)}
+.customer-list-head,.customer-row{display:grid;grid-template-columns:minmax(220px,2.2fr) minmax(150px,1.3fr) 80px 120px 110px;align-items:center;gap:12px}
+.customer-list-head{padding:0 16px 6px;font-size:11px;font-weight:700;color:#8a7e73;text-transform:uppercase;letter-spacing:.4px}
+#customerList{display:grid!important;gap:6px!important}
+.customer-row{width:100%;padding:10px 16px;border:1px solid var(--c7-border);border-radius:12px;background:#fff;text-align:left;cursor:pointer;font:inherit;color:var(--c7-ink);transition:border-color .12s,box-shadow .12s}
+.customer-row:hover{border-color:#cdbba6;box-shadow:0 4px 14px rgba(40,30,20,.06)}
+.customer-row .customer-identity{display:flex;align-items:center;gap:12px;min-width:0}
+.customer-row .customer-avatar{flex:0 0 36px;width:36px!important;height:36px!important;font-size:14px!important}
+.customer-row .customer-identity-text{display:flex;flex-wrap:wrap;align-items:center;gap:2px 8px;min-width:0}
+.customer-row .customer-name{flex-basis:100%;font-size:14px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.customer-row .customer-phone{font-size:12px;color:var(--c7-muted)}
+.customer-row .tag-pill{padding:1px 8px;font-size:10px}
+.customer-cell{font-size:13px;color:#5f5953}
+.customer-num{font-weight:700;color:var(--c7-ink)}
+.customer-money{font-weight:700;color:var(--c7-in)}
+@media(max-width:760px){
+  .customer-list-head{display:none}
+  .customer-row{grid-template-columns:1fr auto;gap:6px 10px}
+  .customer-row .customer-identity{grid-column:1/-1}
+  .customer-row .customer-cell:nth-child(3),.customer-row .customer-cell:nth-child(5){display:none}
+}
+#clientes #customerList{margin-top:0!important}

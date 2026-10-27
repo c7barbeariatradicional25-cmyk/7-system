@@ -31,15 +31,6 @@ function daysSince(value){
   return Math.floor((Date.now()-new Date(value).getTime())/86400000);
 }
 
-function statusText(customer){
-  if(customer.next_visit_at) return "Próximo horário agendado";
-  const days=daysSince(customer.last_visit_at);
-  if(days===null) return "Ainda sem atendimento concluído";
-  if(days>=45) return `Sem retorno há ${days} dias`;
-  if(days<=15) return "Cliente recente";
-  return `Última visita há ${days} dias`;
-}
-
 async function loadContext(){
   const {data:{session}}=await supabase.auth.getSession();
   if(!session) return false;
@@ -75,19 +66,34 @@ function makeEl(tag,className,text){
   return el;
 }
 
+// Situação do cliente em uma etiqueta: cor + texto curto.
+function customerSituation(customer){
+  if(customer.next_visit_at) return {status:"scheduled",text:"Horário marcado"};
+  const days=daysSince(customer.last_visit_at);
+  if(days===null) return {status:"cancelled",text:"Novo"};
+  if(days>=45) return {status:"no_show",text:`Sem retorno · ${days} dias`};
+  if(days<=15) return {status:"completed",text:"Recente"};
+  return {status:"confirmed",text:`Veio há ${days} dias`};
+}
+
+const isDormant=c=>{const days=daysSince(c.last_visit_at);return days!==null&&days>=45&&!c.next_visit_at;};
+const crmFilters={
+  all:()=>true,
+  scheduled:c=>Boolean(c.next_visit_at),
+  recurring:c=>Number(c.completed_visits)>=3,
+  dormant:isDormant
+};
+let crmFilter="all";
+
 function renderCustomers(items){
   const list=$("customerList");
-  const active=items.filter(c=>c.active!==false);
+  const all=customers.filter(c=>c.active!==false);
+  const active=items.filter(c=>c.active!==false&&crmFilters[crmFilter](c));
 
-  $("crmTotalCustomers").textContent=active.length;
-  $("crmRecurringCustomers").textContent=active.filter(c=>Number(c.completed_visits)>=3).length;
-
-  const dormant=active.filter(c=>{
-    const days=daysSince(c.last_visit_at);
-    return days!==null && days>=45 && !c.next_visit_at;
-  });
-  $("crmDormantCustomers").textContent=dormant.length;
-  $("crmTotalSpent").textContent=money(active.reduce((sum,c)=>sum+Number(c.total_spent||0),0));
+  $("crmTotalCustomers").textContent=all.length;
+  $("crmScheduledCustomers").textContent=all.filter(crmFilters.scheduled).length;
+  $("crmRecurringCustomers").textContent=all.filter(crmFilters.recurring).length;
+  $("crmDormantCustomers").textContent=all.filter(isDormant).length;
 
   list.replaceChildren();
 
@@ -97,59 +103,33 @@ function renderCustomers(items){
   }
 
   active.forEach(customer=>{
-    const card=makeEl("article","customer-card");
+    const row=makeEl("button","customer-row");
+    row.type="button";
+    row.addEventListener("click",()=>openCustomer(customer.id));
 
     const identity=makeEl("div","customer-identity");
-    const avatar=makeEl("div","customer-avatar",(customer.full_name||"C").slice(0,1).toUpperCase());
+    identity.appendChild(makeEl("div","customer-avatar",(customer.full_name||"C").slice(0,1).toUpperCase()));
     const identityText=makeEl("div","customer-identity-text");
     identityText.appendChild(makeEl("strong","customer-name",customer.full_name||"Cliente"));
     identityText.appendChild(makeEl("span","customer-phone",customer.phone||"Sem telefone"));
+    (customer.tags||[]).forEach(tag=>identityText.appendChild(makeEl("span","tag-pill",tag)));
+    identity.appendChild(identityText);
 
-    if(customer.tags?.length){
-      const tags=makeEl("div","tag-row");
-      customer.tags.forEach(tag=>tags.appendChild(makeEl("span","tag-pill",tag)));
-      identityText.appendChild(tags);
-    }
+    const situation=customerSituation(customer);
+    const pill=makeEl("span","c7-status",situation.text);
+    pill.dataset.status=situation.status;
+    if(customer.next_visit_at) pill.title=new Date(customer.next_visit_at).toLocaleString("pt-BR",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"});
+    const situationCell=makeEl("div","customer-cell");
+    situationCell.appendChild(pill);
 
-    identity.append(avatar,identityText);
-
-    const last=customer.last_visit_at
-      ? new Date(customer.last_visit_at).toLocaleDateString("pt-BR")
-      : "—";
-
-    const next=customer.next_visit_at
-      ? new Date(customer.next_visit_at).toLocaleString("pt-BR",{
-          day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"
-        })
-      : "—";
-
-    const metrics=makeEl("div","customer-metrics-grid");
-
-    const visits=makeEl("div","customer-metric");
-    visits.appendChild(makeEl("small","","ATENDIMENTOS"));
-    visits.appendChild(makeEl("strong","",String(customer.completed_visits||0)));
-
-    const spent=makeEl("div","customer-metric");
-    spent.appendChild(makeEl("small","","TOTAL GASTO"));
-    spent.appendChild(makeEl("strong","",money(customer.total_spent)));
-
-    const lastVisit=makeEl("div","customer-metric");
-    lastVisit.appendChild(makeEl("small","","ÚLTIMA VISITA"));
-    lastVisit.appendChild(makeEl("strong","",last));
-
-    const nextVisit=makeEl("div","customer-metric");
-    nextVisit.appendChild(makeEl("small","","PRÓXIMO HORÁRIO"));
-    nextVisit.appendChild(makeEl("strong","",next));
-    nextVisit.appendChild(makeEl("span","customer-status-text",statusText(customer)));
-
-    metrics.append(visits,spent,lastVisit,nextVisit);
-
-    const button=makeEl("button","customer-open","ABRIR PERFIL");
-    button.type="button";
-    button.addEventListener("click",()=>openCustomer(customer.id));
-
-    card.append(identity,metrics,button);
-    list.appendChild(card);
+    row.append(
+      identity,
+      situationCell,
+      makeEl("div","customer-cell customer-num",String(customer.completed_visits||0)),
+      makeEl("div","customer-cell customer-money",money(customer.total_spent)),
+      makeEl("div","customer-cell",customer.last_visit_at?new Date(customer.last_visit_at).toLocaleDateString("pt-BR"):"—")
+    );
+    list.appendChild(row);
   });
 }
 
@@ -161,6 +141,12 @@ function applySearch(){
     String(c.phone||"").toLowerCase().includes(term)
   ));
 }
+
+document.querySelectorAll("[data-crm-filter]").forEach(btn=>btn.addEventListener("click",()=>{
+  crmFilter=btn.dataset.crmFilter;
+  document.querySelectorAll("[data-crm-filter]").forEach(b=>b.classList.toggle("active",b===btn));
+  applySearch();
+}));
 
 async function loadHistory(customerId){
   const result=await supabase
