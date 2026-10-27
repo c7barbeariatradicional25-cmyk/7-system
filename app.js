@@ -42,6 +42,8 @@ const appointmentMessage=$("appointmentMessage");
 const appointmentProfessional=$("appointmentProfessional");
 const appointmentServiceList=$("appointmentServiceList");
 const appointmentServiceCount=$("appointmentServiceCount");
+// Serviços escolhidos no agendamento, na ordem; o mesmo serviço pode entrar mais de uma vez (ex.: pai e filho).
+let pickedServiceIds=[];
 const saveAndNewAppointmentBtn=$("saveAndNewAppointmentBtn");
 
 const blockModal=$("blockModal");
@@ -103,11 +105,15 @@ function money(value){
   return new Intl.NumberFormat("pt-BR",{style:"currency",currency:"BRL"}).format(Number(value||0));
 }
 
+// Aceita "30", "45 min", "1h", "1h20", "1h 30min" e "01:20".
 function durationToMinutes(value){
-  const text=String(value||"").toLowerCase();
-  const hours=Number((text.match(/(\d+)\s*h/)||[])[1]||0);
-  const minutes=Number((text.match(/(\d+)\s*min/)||[])[1]||0);
-  return hours*60+minutes || 30;
+  const text=String(value||"").trim().toLowerCase();
+  if(/^\d+$/.test(text)) return Number(text)||30;
+  const hhmm=text.match(/^(\d{1,2}):(\d{2})/);
+  if(hhmm) return Number(hhmm[1])*60+Number(hhmm[2]);
+  const h=text.match(/(\d+)\s*h\s*(\d+)?/);
+  const m=text.match(/(\d+)\s*min/);
+  return (h?Number(h[1])*60+Number(h[2]||0):m?Number(m[1]):0) || 30;
 }
 
 function formatTime(value){
@@ -352,26 +358,45 @@ async function initAgenda(){
     return acc;
   },{});
 
-  appointmentServiceList.innerHTML=Object.entries(serviceGroups).map(([category,items])=>`
-    <div class="service-picker-category">
-      <div class="service-picker-category-title">${escapeHtml(category)}</div>
+  // Lista no estilo Booksy: categorias que abrem e fecham, uma linha por serviço; clicar adiciona.
+  appointmentServiceList.innerHTML=Object.entries(serviceGroups).map(([category,items],index)=>`
+    <details class="service-picker-category"${index===0?" open":""}>
+      <summary class="service-picker-category-title">${escapeHtml(category)}<small>${items.length}</small></summary>
       ${items.map(s=>`
-        <label class="service-option">
-          <input type="checkbox" value="${s.id}" data-service-id="${s.id}">
-          <span class="service-option-main">
-            <strong>${escapeHtml(s.name)}</strong>
-            <small>${escapeHtml(s.duration)} • ${money(s.price)}</small>
-          </span>
-        </label>
+        <button type="button" class="service-option" data-service-id="${s.id}" data-search="${escapeHtml(`${s.name} ${category}`.toLowerCase())}">
+          <strong>${escapeHtml(s.name)}</strong>
+          <small>${formatDuration(durationToMinutes(s.duration))}</small>
+          <b>${money(s.price)}</b>
+          <i aria-hidden="true">+</i>
+        </button>
       `).join("")}
-    </div>
+    </details>
   `).join("");
 
-  appointmentServiceList.querySelectorAll('input[type="checkbox"]').forEach(input=>{
-    input.addEventListener("change",updateAppointmentPreview);
-  });
-
   await loadAgenda();
+  startAgendaLiveUpdates();
+}
+
+/* Agenda ao vivo: recarrega quando um atendimento muda (tempo real do Supabase) e,
+   como garantia, a cada 30s com a agenda aberta. Não recarrega com janela aberta. */
+let agendaLiveTimer=null;
+let agendaReloadTimer=null;
+function scheduleAgendaReload(){
+  clearTimeout(agendaReloadTimer);
+  agendaReloadTimer=setTimeout(()=>{
+    if(document.hidden||!$("agenda")?.classList.contains("active")) return;
+    if(document.querySelector(".modal:not(.hidden)")) return;
+    loadAgenda();
+  },600);
+}
+function startAgendaLiveUpdates(){
+  if(agendaLiveTimer) return;
+  supabase.channel("c7-agenda-live")
+    .on("postgres_changes",{event:"*",schema:"public",table:"appointments"},scheduleAgendaReload)
+    .on("postgres_changes",{event:"*",schema:"public",table:"schedule_blocks"},scheduleAgendaReload)
+    .subscribe();
+  agendaLiveTimer=setInterval(scheduleAgendaReload,30000);
+  document.addEventListener("visibilitychange",()=>{if(!document.hidden) scheduleAgendaReload();});
 }
 
 async function loadAgenda(){
@@ -867,6 +892,9 @@ function professionalsForView(){
 
 function renderTimeline(){
   const pros=professionalsForView();
+  // Atualização da mesma data mantém a rolagem; troca de data reposiciona no expediente.
+  const previousScroll=agendaTimeline.querySelector(".live-timeline-scroll")?.scrollTop;
+  const sameDate=agendaTimeline.dataset.renderedDate===agendaDate.value;
 
   if(!pros.length){
     agendaTimeline.innerHTML='<div class="agenda-empty">Nenhum profissional cadastrado.</div>';
@@ -917,7 +945,7 @@ function renderTimeline(){
     maxMinute=Math.min(24*60,minMinute+8*60);
   }
 
-  const pxPerMinute=2;
+  const pxPerMinute=1.6;
   const timelineTopPadding=22;
   const timelineBottomPadding=22;
   const totalMinutes=maxMinute-minMinute;
@@ -927,8 +955,8 @@ function renderTimeline(){
   const timeLabels=[];
   for(let min=minMinute;min<=maxMinute;min+=30){
     timeLabels.push(`
-      <div class="live-time-label" style="top:${timelineTopPadding+(min-minMinute)*pxPerMinute}px">
-        <span>${hhmmFromMinutes(min)}</span>
+      <div class="live-time-label${min%60?" is-half":""}" style="top:${timelineTopPadding+(min-minMinute)*pxPerMinute}px">
+        <span>${min%60?"":hhmmFromMinutes(min)}</span>
       </div>
     `);
   }
@@ -944,28 +972,40 @@ function renderTimeline(){
 
     const proBlocks=currentBlocks.filter(b=>b.professional_id===p.id);
 
+    // Encaixes: atendimentos que se sobrepõem ficam lado a lado, como no Booksy.
+    const lanes=new Map();
+    {
+      const sorted=[...proAppointments].sort((x,y)=>new Date(x.starts_at)-new Date(y.starts_at));
+      let cluster=[],clusterEnd=0,laneEnds=[];
+      const close=()=>{cluster.forEach(a=>lanes.get(a.id).count=laneEnds.length);cluster=[];laneEnds=[];};
+      sorted.forEach(a=>{
+        const start=new Date(a.starts_at).getTime(),end=new Date(a.ends_at).getTime();
+        if(cluster.length&&start>=clusterEnd) close();
+        let lane=laneEnds.findIndex(e=>e<=start);
+        if(lane<0){lane=laneEnds.length;laneEnds.push(end);}else laneEnds[lane]=end;
+        lanes.set(a.id,{lane,count:1});
+        cluster.push(a);
+        clusterEnd=Math.max(clusterEnd,end);
+      });
+      close();
+    }
+
     const appointmentHtml=proAppointments.map(a=>{
+      const {lane,count}=lanes.get(a.id)||{lane:0,count:1};
+      const laneStyle=count>1?`--lane-left:calc(4px + (100% - 8px) * ${lane} / ${count});--lane-width:calc((100% - 8px) / ${count} - 3px);`:"";
       const startDate=new Date(a.starts_at);
       const endDate=new Date(a.ends_at);
       const startMin=startDate.getHours()*60+startDate.getMinutes();
       const endMin=endDate.getHours()*60+endDate.getMinutes();
       const top=timelineTopPadding+Math.max(0,(startMin-minMinute)*pxPerMinute);
-      const height=Math.max(32,(endMin-startMin)*pxPerMinute-4);
+      const height=Math.max(22,(endMin-startMin)*pxPerMinute-3);
       const customer=escapeHtml(a.customer?.full_name||"Cliente");
       const service=escapeHtml((a.appointment_services||[]).map(s=>s.service_name).join(" + ")||"Serviço");
-      const canCheckout=["admin","reception"].includes(currentRole)||
-        (currentRole==="barber"&&a.professional_id===currentProfessionalId);
-      const checkout=OPEN_STATUSES.includes(a.status) && new Date(a.starts_at)<=new Date() && canCheckout
-        ? `<button class="live-checkout" type="button" data-timeline-checkout="${a.id}">CHECKOUT</button>`
-        : "";
 
       return `
-        <article class="live-booking status-${a.status} clickable-appointment" data-open-appointment="${a.id}" role="button" tabindex="0" style="top:${top}px;height:${height}px">
-          <div class="live-booking-time">${formatTime(a.starts_at)}–${formatTime(a.ends_at)}</div>
-          <strong>${customer}</strong>
-          <span>${service}</span>
-          <small>${escapeHtml(statusLabels[a.status]||a.status)}</small>
-          ${checkout}
+        <article class="live-booking status-${a.status} clickable-appointment" data-open-appointment="${a.id}" role="button" tabindex="0" style="top:${top}px;height:${height}px;${laneStyle}">
+          <div class="live-booking-time">${formatTime(a.starts_at)} - ${formatTime(a.ends_at)}</div>
+          <div class="live-booking-line"><strong>${customer}</strong><span> • ${service}</span></div>
         </article>
       `;
     }).join("");
@@ -1011,7 +1051,13 @@ function renderTimeline(){
         <span>HOJE</span>
         <strong id="liveClockText">—</strong>
       </div>
-      ${pros.map(p=>`
+      ${pros.map(p=>{
+        // Expediente do dia, como no Booksy: "9:00-12:00, 13:00-20:00".
+        const hours=currentWorkingHours.find(h=>h.professional_id===p.id);
+        const lunch=currentBlocks.some(b=>b.recurringLunch&&b.professional_id===p.id);
+        const fmt=t=>String(t||"").slice(0,5).replace(/^0/,"");
+        const shift=!hours?"Sem expediente hoje":lunch?`${fmt(hours.starts_at)}-12:00, 13:00-${fmt(hours.ends_at)}`:`${fmt(hours.starts_at)}-${fmt(hours.ends_at)}`;
+        return `
         <div class="live-pro-head">
           <div class="live-pro-avatar">
             ${p.avatar_url
@@ -1020,13 +1066,13 @@ function renderTimeline(){
           </div>
           <div>
             <strong>${escapeHtml(p.full_name)}</strong>
-            <small>${escapeHtml(p.specialty||"Barbeiro")}</small>
+            <small>${escapeHtml(shift)}</small>
           </div>
           ${(["admin","reception"].includes(currentRole)||(currentRole==="barber"&&p.id===currentProfessionalId))
-  ? `<button type="button" class="quick-block-btn" data-quick-block="${p.id}">BLOQUEAR</button>`
+  ? `<button type="button" class="quick-block-btn" data-quick-block="${p.id}" title="Bloquear horário">Bloquear</button>`
   : ""}
         </div>
-      `).join("")}
+      `;}).join("")}
     </div>
   `;
 
@@ -1041,7 +1087,7 @@ function renderTimeline(){
               <span id="liveNowLabel">AGORA</span>
             </div>
           </div>
-          <div class="live-columns" style="--pro-count:${pros.length};height:${timelineHeight}px">
+          <div class="live-columns" style="--pro-count:${pros.length};height:${timelineHeight}px;--slot:${30*pxPerMinute}px;--hour:${60*pxPerMinute}px;--grid-top:${timelineTopPadding}px;--hour-top:${timelineTopPadding+(minMinute%60?30*pxPerMinute:0)}px">
             ${columns}
             <div id="liveNowLine" class="live-now-line hidden"></div>
           </div>
@@ -1074,17 +1120,6 @@ function renderTimeline(){
       if(error)window.C7UX?.notify("Não foi possível liberar o horário.","error"); await loadAgenda();
     });
   });
-  agendaTimeline.querySelectorAll("[data-timeline-checkout]").forEach(btn=>{
-    btn.addEventListener("click",async e=>{
-      e.stopPropagation();
-      if(window.C7Cash?.checkoutAppointment){
-        await window.C7Cash.checkoutAppointment(btn.dataset.timelineCheckout);
-      }else{
-        alert("O checkout ainda não terminou de carregar. Tente novamente.");
-      }
-    });
-  });
-
   agendaTimeline.querySelectorAll("[data-quick-block]").forEach(btn=>{
     btn.addEventListener("click",()=>{
       openBlockModal({
@@ -1248,7 +1283,11 @@ function renderTimeline(){
     if(isToday&&nowMinute>firstWork&&nowMinute<lastWork) focus=nowMinute-60;
     agendaTimeline.dataset.focusTop=String(Math.max(0,timelineTopPadding+(focus-minMinute)*pxPerMinute-12));
   }
-  requestAnimationFrame(focusTimeline);
+  agendaTimeline.dataset.renderedDate=selected;
+  if(sameDate&&previousScroll!=null){
+    const scroller=agendaTimeline.querySelector(".live-timeline-scroll");
+    if(scroller) scroller.scrollTop=previousScroll;
+  }else requestAnimationFrame(focusTimeline);
 }
 
 function focusTimeline(){
@@ -1405,9 +1444,61 @@ agendaDate.addEventListener("change",loadAgenda);
 professionalFilter.addEventListener("change",loadAgenda);
 
 function selectedServices(){
-  const ids=[...appointmentServiceList.querySelectorAll('input[type="checkbox"]:checked')].map(input=>String(input.value));
-  return services.filter(s=>ids.includes(String(s.id)));
+  return pickedServiceIds.map(id=>services.find(s=>String(s.id)===id)).filter(Boolean);
 }
+
+function renderPickedServices(){
+  const list=$("appointmentSelectedServices");
+  const picked=selectedServices();
+  list.innerHTML=picked.length
+    ? picked.map((s,i)=>`
+      <div class="service-picked">
+        <strong>${escapeHtml(s.name)}</strong>
+        <small>${formatDuration(durationToMinutes(s.duration))}</small>
+        <b>${money(s.price)}</b>
+        <button type="button" data-repeat-service="${s.id}" title="Repetir este serviço (ex.: cliente com o filho)">Repetir</button>
+        <button type="button" data-unpick-service="${i}" aria-label="Remover ${escapeHtml(s.name)}">×</button>
+      </div>`).join("")
+    : '<p class="service-picked-empty">Toque nos serviços abaixo para adicionar.</p>';
+  appointmentServiceList.querySelectorAll("[data-service-id]").forEach(btn=>btn.classList.toggle("is-picked",pickedServiceIds.includes(btn.dataset.serviceId)));
+  updateAppointmentPreview();
+}
+
+function resetPickedServices(){
+  pickedServiceIds=[];
+  if($("appointmentServiceSearch")) $("appointmentServiceSearch").value="";
+  filterServiceOptions();
+  renderPickedServices();
+}
+
+function filterServiceOptions(){
+  const term=($("appointmentServiceSearch")?.value||"").trim().toLowerCase();
+  appointmentServiceList.querySelectorAll(".service-picker-category").forEach(group=>{
+    let visible=0;
+    group.querySelectorAll("[data-service-id]").forEach(btn=>{
+      const show=!term||btn.dataset.search.includes(term);
+      btn.classList.toggle("hidden",!show);
+      if(show) visible++;
+    });
+    group.classList.toggle("hidden",!visible);
+    if(term) group.open=true;
+  });
+}
+
+appointmentServiceList.addEventListener("click",e=>{
+  const btn=e.target.closest("[data-service-id]");
+  if(!btn) return;
+  pickedServiceIds.push(btn.dataset.serviceId);
+  renderPickedServices();
+});
+$("appointmentSelectedServices")?.addEventListener("click",e=>{
+  const repeat=e.target.closest("[data-repeat-service]");
+  const remove=e.target.closest("[data-unpick-service]");
+  if(repeat) pickedServiceIds.push(repeat.dataset.repeatService);
+  if(remove) pickedServiceIds.splice(Number(remove.dataset.unpickService),1);
+  if(repeat||remove) renderPickedServices();
+});
+$("appointmentServiceSearch")?.addEventListener("input",filterServiceOptions);
 
 function formatDuration(minutes){
   const h=Math.floor(minutes/60);
@@ -1453,8 +1544,7 @@ function openAppointmentModal(){
   $("appointmentDate").value=agendaDate.value||localDateInput();
   $("appointmentSource").value="manual";
   if(professionalFilter.value) appointmentProfessional.value=professionalFilter.value;
-  appointmentServiceList.querySelectorAll('input[type="checkbox"]').forEach(input=>input.checked=false);
-  updateAppointmentPreview();
+  resetPickedServices();
   appointmentModal.classList.remove("hidden");
 }
 
@@ -1533,9 +1623,17 @@ async function saveAppointment({keepOpen=false}={}){
   if(lunchLocked!==false && startMinutes<780 && endMinutes>720){
     appointmentMessage.textContent="Horário de almoço bloqueado.";return false;
   }
-  if((conflicts&&conflicts.length)||(blocks&&blocks.length)){
-    appointmentMessage.textContent="Esse profissional já está ocupado nesse horário.";
+  if(blocks&&blocks.length){
+    appointmentMessage.textContent="Esse horário está bloqueado para o profissional.";
     return false;
+  }
+  if(conflicts&&conflicts.length){
+    // Encaixe: só admin e recepção podem sobrepor (cliente atrasado, horário apertado).
+    if(!["admin","reception"].includes(currentRole)){
+      appointmentMessage.textContent="Esse profissional já está ocupado nesse horário.";
+      return false;
+    }
+    if(!confirm("Já existe atendimento nesse horário para este profissional.\n\nFazer um ENCAIXE mesmo assim?")) return false;
   }
 
   appointmentMessage.textContent="Salvando...";
@@ -1625,9 +1723,8 @@ async function saveAppointment({keepOpen=false}={}){
     $("appointmentDate").value=savedDate;
     $("appointmentSource").value=savedSource||"manual";
     appointmentProfessional.value=savedProfessional;
-    appointmentServiceList.querySelectorAll('input[type="checkbox"]').forEach(input=>input.checked=false);
+    resetPickedServices();
     appointmentMessage.textContent="Agendamento salvo. Cadastre o próximo.";
-    updateAppointmentPreview();
     $("clientName").focus();
   }else{
     closeAppointmentModal();

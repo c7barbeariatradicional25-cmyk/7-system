@@ -775,13 +775,13 @@
           <label><span>WhatsApp / telefone</span><input id="clientPhone" type="tel" required placeholder="(62) 99999-9999"></label>
         </div>
 
-        <div class="form-grid two">
-          <label><span>Profissional</span><select id="appointmentProfessional" required></select></label>
-          <div class="service-picker-field">
-            <span>Serviços</span>
-            <div id="appointmentServiceList" class="appointment-service-list"></div>
-            <small id="appointmentServiceCount">Nenhum serviço selecionado</small>
-          </div>
+        <label><span>Profissional</span><select id="appointmentProfessional" required></select></label>
+
+        <div class="service-picker-field">
+          <div class="service-picker-head"><span>Serviços</span><small id="appointmentServiceCount">Nenhum serviço selecionado</small></div>
+          <div id="appointmentSelectedServices" class="service-selected"></div>
+          <input id="appointmentServiceSearch" class="service-search" type="search" placeholder="Buscar serviço..." autocomplete="off">
+          <div id="appointmentServiceList" class="appointment-service-list"></div>
         </div>
 
         <div class="form-grid three">

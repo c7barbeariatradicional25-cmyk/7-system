@@ -5726,3 +5726,65 @@ button.primary-btn{border-radius:10px}button.ghost-btn{border-radius:10px}
   .level-benefit-row{grid-template-columns:1fr 70px 38px}
   .level-benefit-row select{grid-column:1/-1;grid-row:2}
 }
+
+/* Agendamento: escolha de serviços no estilo Booksy */
+#appointmentModal .service-picker-field{display:grid;gap:8px}
+.service-picker-head{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
+.service-picker-head>span{font-size:11px;font-weight:700;color:#78675b}
+.service-picker-head small{font-size:12px;color:var(--c7-muted)}
+.service-selected{display:grid;gap:6px}
+.service-picked{display:grid;grid-template-columns:1fr auto auto auto 34px;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--c7-border);border-left:4px solid var(--c7-in);border-radius:10px;background:#fff}
+.service-picked strong{font-size:14px;color:var(--c7-ink)}
+.service-picked small{font-size:12px;color:var(--c7-muted)}
+.service-picked b{font-size:14px;color:var(--c7-ink)}
+.service-picked button{height:30px;padding:0 10px;border:1px solid var(--c7-border);border-radius:8px;background:#fff;color:#5f5953;font-size:12px;font-weight:650;cursor:pointer}
+.service-picked button[data-repeat-service]{color:#8a6a45;border-color:#e3d3bf}
+.service-picked button[data-unpick-service]{font-size:16px;padding:0}
+.service-picked button:hover{border-color:#cdbba6}
+.service-picked-empty{margin:0;padding:10px 12px;border:1px dashed #e0d6ca;border-radius:10px;font-size:13px;color:var(--c7-muted)}
+.service-search{height:42px;padding:0 12px;border:1px solid var(--c7-border);border-radius:10px;background:#fff;font-size:14px}
+#appointmentModal .appointment-service-list{display:block!important;max-height:340px!important;overflow:auto;padding:0!important;border:0!important;background:none!important}
+#appointmentModal .service-picker-category{display:block!important;margin:0 0 6px!important;border:1px solid var(--c7-border);border-radius:10px;background:#fff;overflow:hidden}
+#appointmentModal .service-picker-category.hidden{display:none}
+#appointmentModal .service-picker-category-title{position:static!important;margin:0!important;display:flex;justify-content:space-between;align-items:center;padding:10px 12px!important;cursor:pointer;list-style:none;background:#f6f1ec!important;font-size:13px!important;font-weight:750!important;letter-spacing:0!important;text-transform:none!important;color:var(--c7-ink)!important}
+#appointmentModal .service-picker-category-title::-webkit-details-marker{display:none}
+#appointmentModal .service-picker-category-title::after{content:"▾";margin-left:8px;color:#8a7e73}
+#appointmentModal .service-picker-category:not([open]) .service-picker-category-title::after{content:"▸"}
+#appointmentModal .service-picker-category-title small{margin-left:auto;padding:1px 8px;border-radius:999px;background:#fff;color:#8a7e73;font-size:11px}
+#appointmentModal .service-option{display:flex!important;align-items:center;gap:8px;width:100%;min-height:0!important;margin:0!important;padding:10px 12px!important;border:0!important;border-top:1px solid #f0ebe5!important;border-radius:0!important;background:#fff!important;text-align:left;font:inherit;cursor:pointer;box-shadow:none!important}
+#appointmentModal .service-option.hidden{display:none!important}
+#appointmentModal .service-option:hover{background:#fbf7f2!important}
+#appointmentModal .service-option strong{flex:1 1 auto;min-width:0;font-size:14px;font-weight:600;color:var(--c7-ink)}
+#appointmentModal .service-option small{flex:0 0 64px;font-size:12px;color:var(--c7-muted)}
+#appointmentModal .service-option b{flex:0 0 84px;font-size:13px;text-align:right;color:var(--c7-ink)}
+#appointmentModal .service-option i{flex:0 0 26px;display:grid;place-items:center;width:26px;height:26px;border-radius:50%;background:#211d19;color:#fff;font-style:normal;font-weight:700}
+#appointmentModal .service-option.is-picked{background:#f1f8f3!important}
+#appointmentModal .service-option.is-picked i{background:var(--c7-in)}
+@media(max-width:700px){
+  .service-picked{grid-template-columns:1fr auto 34px}
+  .service-picked small,.service-picked button[data-repeat-service]{grid-row:2}
+  #appointmentModal .service-option small{display:none}
+}
+
+/* Grade da agenda no estilo Booksy */
+.live-columns{background:none!important}
+.live-pro-column{background-color:#fff!important;background-image:repeating-linear-gradient(to bottom,#e7ded3 0 1px,transparent 1px var(--hour)),repeating-linear-gradient(to bottom,#f3eee8 0 1px,transparent 1px var(--slot))!important;background-position:0 var(--hour-top),0 var(--grid-top)!important;background-repeat:repeat-y!important;border-right:1px solid #ece4da!important}
+.live-pro-column:hover{background-color:#fffcf8!important}
+.live-time-label span{font-size:12px!important;font-weight:600!important;color:#5f5953!important}
+.live-time-label.is-half{display:none}
+.live-pro-head{gap:10px!important;padding:10px 14px!important}
+.live-pro-head strong{font-size:14px!important;font-weight:700!important}
+.live-pro-head small{font-size:11px!important;color:#8a7e73!important;letter-spacing:0!important;text-transform:none!important}
+.live-pro-avatar{width:38px!important;height:38px!important;flex:0 0 38px}
+.quick-block-btn{height:26px!important;padding:0 9px!important;border-radius:7px!important;font-size:10px!important;font-weight:650!important;text-transform:none!important;letter-spacing:0!important;opacity:.7}
+.quick-block-btn:hover{opacity:1}
+.live-booking{left:var(--lane-left,4px)!important;right:auto!important;width:var(--lane-width,calc(100% - 8px))!important;padding:3px 8px!important;border-radius:6px!important;border-left-width:4px!important;box-shadow:none!important;overflow:hidden}
+.live-booking:hover{box-shadow:0 3px 10px rgba(30,20,10,.12)!important;z-index:6}
+.live-booking-time{margin:0 0 1px!important;font:700 11px "DM Sans",sans-serif!important;color:#3a332c!important}
+.live-booking-line{font-size:12px;line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#3a332c}
+.live-booking-line strong{display:inline!important;font-size:12px!important;font-weight:700!important}
+.live-booking-line span{display:inline!important;margin:0!important;font-size:12px!important;color:#5f5953!important}
+.live-booking[style*="height:2"]{display:flex;align-items:center;gap:8px}
+.live-booking[style*="height:2"] .live-booking-time{margin:0!important}
+.live-checkout{position:absolute;right:6px;bottom:4px;height:22px!important;padding:0 8px!important;border-radius:6px!important;font-size:10px!important}
+.live-block{left:4px!important;right:4px!important;border-radius:6px!important;box-shadow:none!important;padding:4px 8px!important}
