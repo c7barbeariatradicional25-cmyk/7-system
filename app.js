@@ -802,6 +802,16 @@ $("detailNoShowBtn")?.addEventListener("click",async()=>{
   await Promise.all([refreshAppointmentDetail(),loadAgenda()]);
 });
 
+/* Mover, remarcar ou dar tempo extra por cima de outro atendimento: admin e recepção
+   podem confirmar um ENCAIXE (cliente atrasado); o banco só libera para esses perfis. */
+async function rpcWithEncaixe(name,args){
+  const result=await supabase.rpc(name,args);
+  const overlap=/Já existe atendimento|sobrepõe a outro atendimento/.test(String(result.error?.message||""));
+  if(!overlap||!["admin","reception"].includes(currentRole)) return result;
+  if(!confirm("Já existe atendimento nesse horário para este profissional.\n\nFazer um ENCAIXE mesmo assim?")) return {error:{message:"Encaixe cancelado."}};
+  return supabase.rpc(name,{...args,p_allow_overlap:true});
+}
+
 let staffRescheduleAppointment=null;
 async function openStaffReschedule(appointmentId){
   const appointment=await fetchAppointmentDetail(appointmentId);
@@ -825,7 +835,7 @@ $("detailExtraSave")?.addEventListener("click",async()=>{
   $("appointmentDetailMessage").textContent="Atualizando tempo adicional...";
   try{
     const extra=Number($("detailExtraMinutes").value||0);
-    const {error}=await supabase.rpc("c7_staff_set_extra_minutes",{
+    const {error}=await rpcWithEncaixe("c7_staff_set_extra_minutes",{
       p_appointment_id:detailAppointmentId,p_extra_minutes:extra
     });
     if(error)throw error;
@@ -849,7 +859,7 @@ $("staffRescheduleForm")?.addEventListener("submit",async e=>{
   const wasNoShow=staffRescheduleAppointment.status==="no_show";
   const setStatus=status=>supabase.from("appointments").update({status,updated_at:new Date().toISOString()}).eq("id",staffRescheduleAppointment.id);
   if(wasNoShow)await setStatus("scheduled");
-  const {error}=await supabase.rpc("c7_staff_move_appointment",{p_appointment_id:staffRescheduleAppointment.id,p_starts_at:startsAt.toISOString(),p_extra_minutes:Number($("staffRescheduleExtra").value||0)});
+  const {error}=await rpcWithEncaixe("c7_staff_move_appointment",{p_appointment_id:staffRescheduleAppointment.id,p_starts_at:startsAt.toISOString(),p_extra_minutes:Number($("staffRescheduleExtra").value||0)});
   if(error){
     if(wasNoShow)await setStatus("no_show");
     $("staffRescheduleMessage").textContent=error.message||"Não foi possível remarcar.";return;
@@ -1214,7 +1224,7 @@ function renderTimeline(){
       date.setHours(Math.floor(minute/60),minute%60,0,0);
       if(date<=new Date()){window.C7UX?.notify("Escolha um horário futuro.","error");return;}
       c7AgendaToast("Atualizando horário...");
-      const {error}=await supabase.rpc("c7_staff_move_appointment",{
+      const {error}=await rpcWithEncaixe("c7_staff_move_appointment",{
         p_appointment_id:record.id,p_starts_at:date.toISOString(),
         p_extra_minutes:record.extra_minutes||0
       });
