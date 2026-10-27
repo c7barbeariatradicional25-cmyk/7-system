@@ -182,36 +182,65 @@
         <div class="performance-stats portal-balance"><article><span>COMISSÕES PENDENTES</span><strong id="portalPendingBalance">R$ 0</strong></article><article><span>CONSUMOS NÃO QUITADOS</span><strong id="portalOutstandingConsumption">R$ 0</strong></article><article><span>SALDO ESTIMADO</span><strong id="portalEstimatedBalance">R$ 0</strong></article></div><p class="portal-disclaimer">Prévia informativa baseada nos registros exibidos. O fechamento oficial é realizado pela administração.</p><article class="performance-panel"><h3>Extrato de comissões</h3><div id="portalCommissions" class="performance-list">Carregando comissões...</div></article></section>
 
       <section id="agenda" class="section">
-        <div class="agenda-toolbar">
-          <div class="agenda-date-nav">
-            <button id="prevDay" type="button" aria-label="Dia anterior">←</button>
-            <input id="agendaDate" type="date">
-            <button id="nextDay" type="button" aria-label="Próximo dia">→</button>
-            <button id="todayBtn" type="button" class="ghost-btn">HOJE</button>
+        <div class="agenda-shell">
+          <aside id="agendaSidebar" class="agenda-sidebar">
+            <div class="mini-cal">
+              <div class="mini-cal-head">
+                <strong id="miniCalTitle">—</strong>
+                <div><button id="miniCalPrev" type="button" aria-label="Mês anterior">‹</button><button id="miniCalNext" type="button" aria-label="Próximo mês">›</button></div>
+              </div>
+              <div class="mini-cal-week"><span>Seg</span><span>Ter</span><span>Qua</span><span>Qui</span><span>Sex</span><span>Sáb</span><span>Dom</span></div>
+              <div id="miniCalDays" class="mini-cal-days"></div>
+            </div>
+            <div class="mini-jump">
+              <span>Pular por semana</span>
+              <div><button type="button" data-jump-weeks="1">+1</button><button type="button" data-jump-weeks="2">+2</button><button type="button" data-jump-weeks="3">+3</button><button type="button" data-jump-weeks="4">+4</button><button type="button" data-jump-weeks="5">+5</button><button type="button" data-jump-weeks="6">+6</button></div>
+              <div><button type="button" data-jump-weeks="-1">-1</button><button type="button" data-jump-weeks="-2">-2</button><button type="button" data-jump-weeks="-3">-3</button><button type="button" data-jump-weeks="-4">-4</button><button type="button" data-jump-weeks="-5">-5</button><button type="button" data-jump-weeks="-6">-6</button></div>
+            </div>
+            <div class="agenda-summary">
+              <div><span>DATA</span><strong id="agendaDateLabel">—</strong></div>
+              <div><span>AGENDADOS</span><strong id="agendaCount">0</strong></div>
+              <div><span>PREVISTO</span><strong id="agendaTotal">R$ 0</strong></div>
+            </div>
+          </aside>
+
+          <div class="agenda-main">
+            <div class="agenda-toolbar">
+              <div class="agenda-toolbar-left">
+                <button id="agendaSidebarToggle" class="ghost-btn agenda-icon-btn" type="button" aria-label="Mostrar ou esconder calendário" title="Calendário">▤</button>
+                <div class="agenda-view-switch">
+                  <button id="timelineViewBtn" class="ghost-btn" type="button">Dia</button>
+                  <button id="listViewBtn" class="ghost-btn active-view" type="button">Lista</button>
+                </div>
+              </div>
+
+              <div class="agenda-date-nav">
+                <button id="prevDay" type="button" aria-label="Dia anterior">‹</button>
+                <label class="agenda-date-pill" title="Escolher data">
+                  <strong id="agendaDatePill">—</strong>
+                  <small id="agendaDateSub">Escolher data ▾</small>
+                  <input id="agendaDate" type="date" aria-label="Data da agenda">
+                </label>
+                <button id="nextDay" type="button" aria-label="Próximo dia">›</button>
+              </div>
+
+              <div class="agenda-actions">
+                <button id="todayBtn" type="button" class="ghost-btn">Hoje</button>
+                <select id="professionalFilter" aria-label="Filtrar profissional">
+                  <option value="">Todos os profissionais</option>
+                </select>
+                <button id="blockTimeBtn" class="ghost-btn" type="button">Bloquear horário</button>
+              </div>
+            </div>
+
+            <div id="agendaList" class="agenda-list">
+              <div class="agenda-empty">Carregando agenda...</div>
+            </div>
+
+            <div id="agendaTimeline" class="agenda-timeline hidden"></div>
           </div>
-
-          <div class="agenda-actions">
-            <select id="professionalFilter" aria-label="Filtrar profissional">
-              <option value="">Todos os Profissionais</option>
-            </select>
-            <button id="listViewBtn" class="ghost-btn active-view" type="button">LISTA</button>
-            <button id="timelineViewBtn" class="ghost-btn" type="button">GRADE</button>
-            <button id="blockTimeBtn" class="ghost-btn" type="button">Bloquear horário</button>
-            <button id="newAppointmentBtn" class="primary-btn" type="button">+ Agendar</button>
-          </div>
         </div>
-
-        <div class="agenda-summary">
-          <div><span>DATA</span><strong id="agendaDateLabel">—</strong></div>
-          <div><span>AGENDADOS</span><strong id="agendaCount">0</strong></div>
-          <div><span>PREVISTO</span><strong id="agendaTotal">R$ 0</strong></div>
-        </div>
-
-        <div id="agendaList" class="agenda-list">
-          <div class="agenda-empty">Carregando agenda...</div>
-        </div>
-
-        <div id="agendaTimeline" class="agenda-timeline hidden"></div>
+        <button id="newAppointmentBtn" class="agenda-fab" type="button" aria-label="Novo agendamento" title="Novo agendamento">+</button>
       </section>
       <section id="clientes" class="section">
         <div class="crm-toolbar">

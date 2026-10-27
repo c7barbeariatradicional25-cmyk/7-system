@@ -437,6 +437,7 @@ async function loadAgenda(){
   ]);
 
   agendaDateLabel.textContent=formatDateLabel(selected);
+  renderAgendaDateNav();
 
   if(appointmentsResult.error||blocksResult.error||hoursResult.error){
     agendaList.innerHTML='<div class="agenda-empty">Não foi possível carregar a agenda.</div>';
@@ -1094,7 +1095,7 @@ function renderTimeline(){
             <small>${escapeHtml(shift)}</small>
           </div>
           ${(["admin","reception"].includes(currentRole)||(currentRole==="barber"&&p.id===currentProfessionalId))
-  ? `<button type="button" class="quick-block-btn" data-quick-block="${p.id}" title="Bloquear horário">Bloquear</button>`
+  ? `<button type="button" class="quick-block-btn" data-quick-block="${p.id}" title="Bloquear horário de ${escapeHtml(p.full_name)}" aria-label="Bloquear horário">⊘</button>`
   : ""}
         </div>
       `;}).join("")}
@@ -1447,6 +1448,63 @@ function setAgendaView(view){
 
 listViewBtn.addEventListener("click",()=>setAgendaView("list"));
 timelineViewBtn.addEventListener("click",()=>setAgendaView("timeline"));
+
+/* Minicalendário e data no centro, como no Booksy. */
+let miniCalMonth=null;
+const weekdayShort=["Dom","Seg","Ter","Qua","Qui","Sex","Sáb"];
+const monthShort=["Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"];
+const monthLong=["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
+function parseInputDate(value){const [y,m,d]=String(value).split("-").map(Number);return new Date(y,m-1,d);}
+function renderAgendaDateNav(){
+  if(!agendaDate.value) return;
+  const day=parseInputDate(agendaDate.value);
+  $("agendaDatePill").textContent=`${weekdayShort[day.getDay()]}, ${day.getDate()} ${monthShort[day.getMonth()]}`;
+  $("agendaDateSub").textContent=agendaDate.value===localDateInput()?"Hoje":"Escolher data ▾";
+  miniCalMonth=new Date(day.getFullYear(),day.getMonth(),1);
+  renderMiniCal();
+}
+function renderMiniCal(){
+  if(!miniCalMonth) return;
+  $("miniCalTitle").textContent=`${monthLong[miniCalMonth.getMonth()]} ${miniCalMonth.getFullYear()}`;
+  const first=new Date(miniCalMonth);
+  const offset=(first.getDay()+6)%7; // semana começando na segunda
+  const start=new Date(first);start.setDate(1-offset);
+  const today=localDateInput();
+  const cells=[];
+  for(let i=0;i<42;i++){
+    const d=new Date(start);d.setDate(start.getDate()+i);
+    const value=localDateInput(d);
+    const cls=[d.getMonth()!==miniCalMonth.getMonth()?"is-other":"",value===today?"is-today":"",value===agendaDate.value?"is-selected":""].filter(Boolean).join(" ");
+    cells.push(`<button type="button" class="${cls}" data-mini-day="${value}">${d.getDate()}</button>`);
+  }
+  $("miniCalDays").innerHTML=cells.join("");
+}
+$("miniCalDays")?.addEventListener("click",e=>{
+  const value=e.target.closest("[data-mini-day]")?.dataset.miniDay;
+  if(!value) return;
+  agendaDate.value=value;
+  loadAgenda();
+});
+$("miniCalPrev")?.addEventListener("click",()=>{miniCalMonth.setMonth(miniCalMonth.getMonth()-1);renderMiniCal();});
+$("miniCalNext")?.addEventListener("click",()=>{miniCalMonth.setMonth(miniCalMonth.getMonth()+1);renderMiniCal();});
+document.querySelectorAll("[data-jump-weeks]").forEach(btn=>btn.addEventListener("click",()=>{
+  const d=parseInputDate(agendaDate.value||localDateInput());
+  d.setDate(d.getDate()+Number(btn.dataset.jumpWeeks)*7);
+  agendaDate.value=localDateInput(d);
+  loadAgenda();
+}));
+// Calendário lateral recolhível; a escolha fica salva neste navegador.
+(function(){
+  const shell=document.querySelector("#agenda .agenda-shell");
+  let collapsed=false;
+  try{collapsed=localStorage.getItem("c7-agenda-sidebar")==="closed";}catch(e){}
+  shell?.classList.toggle("is-collapsed",collapsed);
+  $("agendaSidebarToggle")?.addEventListener("click",()=>{
+    collapsed=!shell.classList.contains("is-collapsed");
+    shell.classList.toggle("is-collapsed",collapsed);
+    try{localStorage.setItem("c7-agenda-sidebar",collapsed?"closed":"open");}catch(e){}
+  });
+})();
 
 $("prevDay").addEventListener("click",()=>{
   const [y,m,d]=agendaDate.value.split("-").map(Number);
