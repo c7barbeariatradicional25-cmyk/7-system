@@ -5389,3 +5389,10 @@ button.primary-btn{border-radius:10px}button.ghost-btn{border-radius:10px}
 .split-payment-remove:disabled{opacity:.35;cursor:default}
 .split-payment-add{justify-self:start;border:0;background:none;padding:4px 0;color:var(--c7-accent);font-size:12px;font-weight:650;cursor:pointer}
 @media(max-width:700px){.split-payment-row{grid-template-columns:minmax(0,1fr) minmax(0,1.2fr) 36px}}
+/* Formas de pagamento em botões, como no Booksy */
+.pay-methods{display:grid;gap:7px}
+.pay-methods>span{font-size:11px;font-weight:700;color:#78675b}
+.pay-tiles{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.pay-tiles button{min-height:46px;padding:8px;border:1px solid var(--c7-border);border-radius:10px;background:#fff;color:var(--c7-ink);font-size:13px;font-weight:600;cursor:pointer}
+.pay-tiles button:hover{border-color:var(--c7-accent)}
+.pay-tiles button.active{border:2px solid var(--c7-ink);background:var(--c7-cream);font-weight:750}

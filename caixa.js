@@ -22,6 +22,7 @@ let activeServiceLinks = [];
 let receiveBenefits = [];
 let appliedCoupon = null;
 let splitRows = [];
+let checkoutAfterOpening = null;
 
 function canAccessCash(){return currentRole==="admin" || (c7ModuleRights?Boolean(c7ModuleRights["cash.view"]):currentRole==="reception");}
 async function loadContext(){
@@ -63,7 +64,7 @@ async function loadCash(){
       .select("id,customer_id,status,starts_at,customer:customers(id,full_name),professional:professionals(full_name)")
       .gte("starts_at",start.toISOString())
       .lte("starts_at",end.toISOString())
-      .in("status",["waiting","in_service"])
+      .in("status",["scheduled","confirmed","waiting","in_service"])
       .order("starts_at",{ascending:true})
   ]);
 
@@ -237,13 +238,14 @@ function openModal(id){$(id).classList.remove("hidden")}
 function closeModal(id){$(id).classList.add("hidden")}
 
 $("openCashBtn")?.addEventListener("click",()=>{
+  checkoutAfterOpening=null;
   $("openCashForm").reset();
   $("openingAmount").value="0";
   $("openCashMessage").textContent="";
   openModal("openCashModal");
 });
 
-document.querySelectorAll("[data-close-open-cash]").forEach(el=>el.addEventListener("click",()=>closeModal("openCashModal")));
+document.querySelectorAll("[data-close-open-cash]").forEach(el=>el.addEventListener("click",()=>{checkoutAfterOpening=null;closeModal("openCashModal");}));
 
 $("openCashForm")?.addEventListener("submit",async e=>{
   e.preventDefault();
@@ -265,6 +267,11 @@ $("openCashForm")?.addEventListener("submit",async e=>{
   openSession=data;
   closeModal("openCashModal");
   await loadCash();
+  if(checkoutAfterOpening){
+    const id=checkoutAfterOpening;
+    checkoutAfterOpening=null;
+    await checkoutAppointment(id);
+  }
 });
 
 
@@ -345,6 +352,13 @@ function updateSplitRemaining(){
   el.classList.toggle("is-pending",rest!==0);
 }
 
+$("receiveMethodTiles")?.addEventListener("click",e=>{
+  const method=e.target.closest("[data-pay-method]")?.dataset.payMethod;
+  if(!method) return;
+  $("receiveMethod").value=method;
+  $("receiveMethod").dispatchEvent(new Event("change"));
+});
+
 $("receiveSplitRows")?.addEventListener("input",e=>{
   const i=e.target.dataset.splitAmount;
   if(i==null) return;
@@ -384,6 +398,7 @@ function updateReceivePreview(){
   const discount=Math.min(Number($("receiveDiscount").value||0),gross);
   const benefit=selectedBenefit();
 
+  document.querySelectorAll("[data-pay-method]").forEach(btn=>btn.classList.toggle("active",btn.dataset.payMethod===$("receiveMethod").value));
   $("receiveSplitBox")?.classList.toggle("hidden",!isSplitPayment());
   if(isSplitPayment()) updateSplitRemaining();
   const fee=cardFee("receiveMethod","receiveCardFee","receiveCardFeeBox");
@@ -700,7 +715,7 @@ $("sellProductBtn")?.addEventListener("click",()=>{
   $("productSaleMessage").textContent="";
 
   const activeOptions=activeServiceLinks.map(a=>
-    '<option value="appointment:'+a.id+'">EM ATENDIMENTO — '+(a.customer?.full_name||"Cliente")+' • '+(a.professional?.full_name||"Barbeiro")+'</option>'
+    '<option value="appointment:'+a.id+'">'+(a.customer?.full_name||"Cliente")+' • '+(a.professional?.full_name||"Barbeiro")+'</option>'
   ).join("");
 
   const activeCustomerIds=new Set(activeServiceLinks.map(a=>a.customer_id).filter(Boolean));
@@ -711,7 +726,7 @@ $("sellProductBtn")?.addEventListener("click",()=>{
 
   $("cashProductCustomerLink").innerHTML=
     '<option value="">Venda Avulsa</option>'+
-    (activeOptions?'<optgroup label="Em Atendimento">'+activeOptions+'</optgroup>':"")+
+    (activeOptions?'<optgroup label="Atendimentos de hoje">'+activeOptions+'</optgroup>':"")+
     (otherCustomerOptions?'<optgroup label="Outros Clientes">'+otherCustomerOptions+'</optgroup>':"");
 
   $("cashProduct").innerHTML='<option value="">Selecione</option>'+
@@ -881,11 +896,27 @@ async function checkoutAppointment(appointmentId){
     await loadCash();
 
     if(!openSession){
-      window.C7UX?.notify("Abra o caixa antes de receber pagamentos.","error");
-      return false;
+      // Abre o caixa ali mesmo e segue para o pagamento.
+      checkoutAfterOpening=appointmentId;
+      $("openCashForm").reset();
+      $("openingAmount").value="0";
+      $("openCashMessage").textContent="Abra o caixa para receber este atendimento.";
+      openModal("openCashModal");
+      return true;
     }
 
     await loadPendingAppointments();
+    if(!pendingAppointments.some(a=>String(a.id)===String(appointmentId))){
+      // Atendimento de outro dia: busca direto para poder receber.
+      const {data:other}=await supabase
+        .from("appointments")
+        .select("id,customer_id,professional_id,starts_at,total_amount,status,customer:customers(id,full_name,birth_date),professional:professionals(full_name),appointment_services(service_id,service_name,price),appointment_products(id,product_id,product_name,quantity,unit_price,total_amount,department)")
+        .eq("id",appointmentId)
+        .maybeSingle();
+      const {data:paid}=await supabase.from("cash_transactions").select("id")
+        .eq("appointment_id",appointmentId).eq("transaction_type","service").eq("status","posted").limit(1);
+      if(other&&!paid?.length&&!["cancelled","no_show"].includes(other.status))pendingAppointments.push(other);
+    }
   }else{
     const {data:appointment,error}=await supabase
       .from("appointments")

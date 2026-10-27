@@ -59,6 +59,8 @@ const statusLabels={
   cancelled:"Cancelado",
   no_show:"Faltou"
 };
+// Atendimento ainda em aberto: pode ser recebido, remarcado, cancelado ou marcado como falta.
+const OPEN_STATUSES=["scheduled","confirmed","waiting","in_service"];
 
 let currentRole=null;
 let accountRole=null;
@@ -465,7 +467,7 @@ function renderAgendaList(){
             <span class="source-badge">${escapeHtml(a.source)}</span>
             <strong class="amount-badge">${money(a.total_amount)}</strong>
             <select class="status-select" data-appointment-status="${a.id}" ${disabled}>
-              ${Object.entries(statusLabels).map(([value,label])=>`<option value="${value}" ${a.status===value?"selected":""}>${label}</option>`).join("")}
+              ${Object.entries(statusLabels).filter(([value])=>!["waiting","in_service"].includes(value)||a.status===value).map(([value,label])=>`<option value="${value}" ${a.status===value?"selected":""}>${label}</option>`).join("")}
             </select>
           </div>
         </article>`
@@ -653,11 +655,11 @@ function renderAppointmentDetail(appointment){
   $("detailProductQty").disabled=!canManage||finished;
   $("detailAddProductBtn").disabled=!canManage||finished;
 
-  $("detailStartBtn").classList.toggle("hidden",!canManage||finished||appointment.status==="in_service");
-  $("detailStartBtn").textContent=appointment.status==="waiting"?"INICIAR ATENDIMENTO":"MARCAR EM ATENDIMENTO";
-  $("detailCheckoutBtn").classList.toggle("hidden",!canManage||finished);
-  $("detailRescheduleBtn").classList.toggle("hidden",!canManage||!["scheduled","confirmed","waiting"].includes(appointment.status)||new Date(appointment.starts_at)<=new Date());
-  $("detailCancelBtn").classList.toggle("hidden",!canManage||!["scheduled","confirmed","waiting"].includes(appointment.status)||new Date(appointment.starts_at)<=new Date());
+  const open=OPEN_STATUSES.includes(appointment.status);
+  $("detailCheckoutBtn").classList.toggle("hidden",!canManage||finished||appointment.status==="no_show");
+  $("detailRescheduleBtn").classList.toggle("hidden",!canManage||!(open||appointment.status==="no_show"));
+  $("detailNoShowBtn").classList.toggle("hidden",!canManage||!open);
+  $("detailCancelBtn").classList.toggle("hidden",!canManage||!open);
   $("appointmentDetailMessage").textContent="";
 
   document.querySelectorAll("[data-remove-service]").forEach(btn=>{
@@ -757,29 +759,26 @@ $("detailAddProductBtn")?.addEventListener("click",async()=>{
   await refreshAppointmentDetail();
 });
 
-$("detailStartBtn")?.addEventListener("click",async()=>{
+$("detailNoShowBtn")?.addEventListener("click",async()=>{
   if(!detailAppointmentId) return;
   const {error}=await supabase.from("appointments")
-    .update({
-      status:"in_service",
-      service_started_at:new Date().toISOString(),
-      updated_at:new Date().toISOString()
-    })
+    .update({status:"no_show",updated_at:new Date().toISOString()})
     .eq("id",detailAppointmentId);
 
   if(error){
-    $("appointmentDetailMessage").textContent="Não foi possível iniciar o atendimento.";
+    $("appointmentDetailMessage").textContent="Não foi possível marcar a falta.";
     return;
   }
 
+  window.C7UX?.notify("Falta registrada. Se o cliente remarcar, use REMARCAR.");
   await Promise.all([refreshAppointmentDetail(),loadAgenda()]);
 });
 
 let staffRescheduleAppointment=null;
 async function openStaffReschedule(appointmentId){
   const appointment=await fetchAppointmentDetail(appointmentId);
-  if(!appointment||!["scheduled","confirmed","waiting"].includes(appointment.status)||new Date(appointment.starts_at)<=new Date()){
-    window.C7UX?.notify("Este atendimento não pode ser reagendado.","error");return;
+  if(!appointment||!(OPEN_STATUSES.includes(appointment.status)||appointment.status==="no_show")){
+    window.C7UX?.notify("Este atendimento não pode ser remarcado.","error");return;
   }
   staffRescheduleAppointment=appointment;
   const local=new Date(appointment.starts_at);
@@ -818,8 +817,15 @@ $("staffRescheduleForm")?.addEventListener("submit",async e=>{
   const startsAt=new Date(date+"T"+time+":00");
   if(Number.isNaN(startsAt.getTime()))return;
   $("staffRescheduleMessage").textContent="Verificando disponibilidade...";
+  // Quem faltou volta para "Agendado" antes de mudar de horário.
+  const wasNoShow=staffRescheduleAppointment.status==="no_show";
+  const setStatus=status=>supabase.from("appointments").update({status,updated_at:new Date().toISOString()}).eq("id",staffRescheduleAppointment.id);
+  if(wasNoShow)await setStatus("scheduled");
   const {error}=await supabase.rpc("c7_staff_move_appointment",{p_appointment_id:staffRescheduleAppointment.id,p_starts_at:startsAt.toISOString(),p_extra_minutes:Number($("staffRescheduleExtra").value||0)});
-  if(error){$("staffRescheduleMessage").textContent=error.message||"Não foi possível reagendar.";return;}
+  if(error){
+    if(wasNoShow)await setStatus("no_show");
+    $("staffRescheduleMessage").textContent=error.message||"Não foi possível remarcar.";return;
+  }
   $("staffRescheduleModal").classList.add("hidden");
   if(detailAppointmentId===staffRescheduleAppointment.id)closeAppointmentDetail();
   await loadAgenda();
@@ -946,7 +952,7 @@ function renderTimeline(){
       const service=escapeHtml((a.appointment_services||[]).map(s=>s.service_name).join(" + ")||"Serviço");
       const canCheckout=["admin","reception"].includes(currentRole)||
         (currentRole==="barber"&&a.professional_id===currentProfessionalId);
-      const checkout=a.status==="in_service" && canCheckout
+      const checkout=OPEN_STATUSES.includes(a.status) && new Date(a.starts_at)<=new Date() && canCheckout
         ? `<button class="live-checkout" type="button" data-timeline-checkout="${a.id}">CHECKOUT</button>`
         : "";
 

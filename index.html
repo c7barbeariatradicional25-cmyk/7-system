@@ -985,10 +985,21 @@
       </div>
       <form id="receiveForm" class="appointment-form">
         <label><span>Atendimento</span><select id="receiveAppointment" required></select></label>
-        <div class="form-grid three">
+        <div class="form-grid two">
           <label><span>Valor</span><input id="receiveGross" type="number" readonly min="0" step="0.01" required></label>
           <label><span>Desconto</span><input id="receiveDiscount" type="number" min="0" step="0.01" value="0"></label>
-          <label><span>Pagamento</span>
+        </div>
+        <div class="pay-methods">
+          <span>Forma de pagamento</span>
+          <div id="receiveMethodTiles" class="pay-tiles">
+            <button type="button" data-pay-method="pix">Pix</button>
+            <button type="button" data-pay-method="cash">Dinheiro</button>
+            <button type="button" data-pay-method="debit">Débito</button>
+            <button type="button" data-pay-method="credit">Crédito</button>
+            <button type="button" data-pay-method="other">Outro</button>
+            <button type="button" data-pay-method="split">Dividir pagamento</button>
+          </div>
+          <label class="hidden"><span>Pagamento</span>
             <select id="receiveMethod" required>
               <option value="pix">Pix</option>
               <option value="cash">Dinheiro</option>
@@ -1666,9 +1677,9 @@
       <p id="appointmentDetailMessage" class="form-message"></p>
 
       <div class="appointment-detail-actions">
-        <button id="detailRescheduleBtn" type="button" class="ghost-btn hidden">REAGENDAR</button>
+        <button id="detailRescheduleBtn" type="button" class="ghost-btn hidden">REMARCAR</button>
+        <button id="detailNoShowBtn" type="button" class="ghost-btn hidden">CLIENTE FALTOU</button>
         <button id="detailCancelBtn" type="button" class="ghost-btn hidden" style="color:#ad4034;border-color:#ad4034">CANCELAR ATENDIMENTO</button>
-        <button id="detailStartBtn" type="button" class="ghost-btn">INICIAR ATENDIMENTO</button>
         <button id="detailCheckoutBtn" type="button" class="primary-btn">FINALIZAR / RECEBER</button>
       </div>
     </section>
