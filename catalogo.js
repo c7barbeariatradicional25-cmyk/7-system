@@ -237,7 +237,8 @@ function renderProducts(){
     const name=document.createElement("strong");
     name.textContent=p.name;
     const stock=document.createElement("span");
-    stock.textContent="Estoque: "+Number(p.stock_quantity||0)+" • Mínimo: "+Number(p.min_stock||0);
+    stock.textContent="Estoque: "+Number(p.stock_quantity||0)+" • Mínimo: "+Number(p.min_stock||0)+
+      ("commission_percent" in p?(Number(p.commission_percent||0)>0?" • Comissão "+Number(p.commission_percent).toLocaleString("pt-BR")+"%":" • Sem comissão"):"");
     if(Number(p.stock_quantity)<=Number(p.min_stock)) stock.className="stock-low";
     main.append(name,stock);
 
@@ -348,6 +349,10 @@ function openProduct(id=null){
   $("productAdminSort").value=p?.sort_order??0;
   $("productAdminStock").value=p?.stock_quantity??0;
   $("productAdminActive").checked=p?.active??true;
+  // Comissão por produto só aparece depois que o SQL de comissões foi aplicado.
+  const hasCommission=products.some(x=>"commission_percent" in x);
+  $("productAdminCommissionField").classList.toggle("hidden",!hasCommission);
+  $("productAdminCommission").value=p?.commission_percent??"";
   $("stockAdjustmentArea").classList.toggle("hidden",!p||!canStock());
   $("productAdminMessage").textContent="";
   $("productAdminForm").querySelectorAll("input:not([readonly]),select").forEach(el=>{if(!el.closest("#stockAdjustmentArea"))el.disabled=!canProducts();});
@@ -370,7 +375,10 @@ async function saveProduct(e){
     department:$("productAdminDepartment").value,
     product_kind:$("productAdminKind").value,
     sort_order:Number($("productAdminSort").value||0),
-    active:$("productAdminActive").checked
+    active:$("productAdminActive").checked,
+    ...(!$("productAdminCommissionField").classList.contains("hidden")?{
+      commission_percent:$("productAdminCommission").value===""?null:Math.min(100,Math.max(0,Number($("productAdminCommission").value)))
+    }:{})
   };
   const result=id
     ? await supabase.from("products").update(payload).eq("id",id)

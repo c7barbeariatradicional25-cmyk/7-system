@@ -15,6 +15,7 @@ let coupons=[];
 let plans=[];
 let birthdayCampaign=null;
 let levels=[];
+let promotionsHaveVisibility=false;
 let levelServices=[];
 
 function canAdmin(){return mayManagePromotions}
@@ -180,6 +181,10 @@ async function loadAll(){
   ]);
 
   promotions=p.data||[];
+  if(!promotions.length){
+    const probe=await supabase.from("promotions").select("show_online").limit(1);
+    promotionsHaveVisibility=!probe.error;
+  }
   coupons=c.data||[];
   plans=pl.data||[];
   birthdayCampaign=b.data||null;
@@ -206,7 +211,7 @@ function renderPromotions(){
       <div>
         <strong>${item.name}</strong>
         <span>${item.description||"Sem descrição"} • ${discountLabel(item.discount_type,item.discount_value)}</span>
-        <span class="promo-status">${item.active?"ATIVA":"INATIVA"}</span>
+        <span class="promo-status">${item.active?"ATIVA":"INATIVA"}${"show_online" in item?(item.show_online?" · 🌐 ONLINE":" · 🔒 SÓ INTERNA"):""}</span>
       </div>
       <div class="promo-row-actions">
         <button type="button" data-edit-promotion="${item.id}">EDITAR</button>
@@ -331,6 +336,10 @@ function openPromotion(id=null){
   $("promotionStart").value=toLocalInput(item?.starts_at);
   $("promotionEnd").value=toLocalInput(item?.ends_at);
   $("promotionActive").checked=item?.active??true;
+  // Online/interna só aparece depois que o SQL foi aplicado (coluna show_online).
+  const hasVisibility=promotions.some(x=>"show_online" in x)||!promotions.length&&promotionsHaveVisibility;
+  $("promotionVisibilityField").classList.toggle("hidden",!hasVisibility);
+  document.querySelector(`[name="promotionVisibility"][value="${item?.show_online?"online":"internal"}"]`).checked=true;
   $("promotionMessage").textContent="";
   $("promotionModal").classList.remove("hidden");
 }
@@ -398,6 +407,9 @@ async function savePromotion(e){
     starts_at:$("promotionStart").value?new Date($("promotionStart").value).toISOString():null,
     ends_at:$("promotionEnd").value?new Date($("promotionEnd").value).toISOString():null,
     active:$("promotionActive").checked,
+    ...(!$("promotionVisibilityField").classList.contains("hidden")?{
+      show_online:document.querySelector('[name="promotionVisibility"]:checked')?.value==="online"
+    }:{}),
     updated_at:new Date().toISOString()
   };
   const result=id

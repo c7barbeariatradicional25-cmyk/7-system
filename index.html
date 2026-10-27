@@ -1050,6 +1050,7 @@
         </label>
         <small id="cashProductCustomerHint" class="form-hint">Se houver cliente em atendimento, ele aparecerá primeiro.</small>
         <label><span>Produto</span><select id="cashProduct" required></select></label>
+        <label><span>Vendido por (comissão)</span><select id="cashProductSeller"><option value="">Ninguém / venda da casa</option></select></label>
         <div class="form-grid two">
           <label><span>Quantidade</span><input id="cashProductQty" type="number" min="1" step="1" value="1" required></label>
           <label><span>Pagamento</span>
@@ -1328,6 +1329,7 @@
           <label><span>Ordem</span><input id="productAdminSort" type="number" min="0" step="1" value="0"></label>
           <label><span>Estoque atual</span><input id="productAdminStock" type="number" readonly></label>
         </div>
+        <label id="productAdminCommissionField" class="hidden"><span>Comissão do barbeiro neste produto (%)</span><input id="productAdminCommission" type="number" min="0" max="100" step="0.01" placeholder="0 = não ganha comissão"></label>
         <label class="check-row"><input id="productAdminActive" type="checkbox" checked><span>Produto ativo no link público</span></label>
 
         <div id="stockAdjustmentArea" class="stock-adjustment hidden">
@@ -1523,6 +1525,11 @@
           <label><span>Fim</span><input id="promotionEnd" type="datetime-local"></label>
         </div>
         <label class="check-row"><input id="promotionActive" type="checkbox" checked><span>Promoção ativa</span></label>
+        <div id="promotionVisibilityField" class="promo-visibility hidden">
+          <span>Quem vê esta promoção</span>
+          <label><input type="radio" name="promotionVisibility" value="internal" checked><b>🔒 Só interna</b><small>Aparece só para a equipe aplicar no caixa.</small></label>
+          <label><input type="radio" name="promotionVisibility" value="online"><b>🌐 Online</b><small>Aparece também para o cliente na Área C7.</small></label>
+        </div>
         <p id="promotionMessage" class="form-message"></p>
         <div class="modal-actions"><button type="button" class="ghost-btn" data-close-promotion>CANCELAR</button><button type="submit" class="primary-btn">SALVAR</button></div>
       </form>
@@ -1695,6 +1702,7 @@
       <div class="appointment-detail-actions">
         <button id="detailRescheduleBtn" type="button" class="ghost-btn hidden">REMARCAR</button>
         <button id="detailNoShowBtn" type="button" class="ghost-btn hidden">CLIENTE FALTOU</button>
+        <button id="detailReopenBtn" type="button" class="ghost-btn hidden">REABRIR PARA CORRIGIR</button>
         <button id="detailCancelBtn" type="button" class="ghost-btn hidden" style="color:#ad4034;border-color:#ad4034">CANCELAR ATENDIMENTO</button>
         <button id="detailCheckoutBtn" type="button" class="primary-btn">FINALIZAR / RECEBER</button>
       </div>

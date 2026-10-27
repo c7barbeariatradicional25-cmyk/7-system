@@ -662,10 +662,9 @@ function renderAppointmentDetail(appointment){
     `).join("")
     :'<div class="detail-empty">Nenhum produto ou consumível adicionado.</div>';
 
-  const currentServiceIds=new Set(servicesRows.map(item=>String(item.service_id)));
+  // O mesmo serviço pode entrar de novo (ex.: pai e filho no mesmo horário).
   $("detailAddService").innerHTML='<option value="">Adicionar serviço...</option>'+
     services
-      .filter(s=>!currentServiceIds.has(String(s.id)))
       .map(s=>`<option value="${s.id}">${escapeHtml(s.name)} — ${money(s.price)}</option>`)
       .join("");
 
@@ -688,6 +687,7 @@ function renderAppointmentDetail(appointment){
   $("detailRescheduleBtn").classList.toggle("hidden",!canManage||!(open||appointment.status==="no_show"));
   $("detailNoShowBtn").classList.toggle("hidden",!canManage||!open);
   $("detailCancelBtn").classList.toggle("hidden",!canManage||!open);
+  $("detailReopenBtn")?.classList.toggle("hidden",!(appointment.status==="completed"&&currentRole==="admin"));
   $("appointmentDetailMessage").textContent="";
 
   document.querySelectorAll("[data-remove-service]").forEach(btn=>{
@@ -785,6 +785,21 @@ $("detailAddProductBtn")?.addEventListener("click",async()=>{
 
   $("detailProductQty").value="1";
   await refreshAppointmentDetail();
+});
+
+// Corrigir atendimento já recebido: desfaz o recebimento (só admin, com o caixa do dia aberto).
+$("detailReopenBtn")?.addEventListener("click",async()=>{
+  if(!detailAppointmentId) return;
+  if(!confirm("Reabrir este atendimento para corrigir?\n\nO recebimento, a comissão, a taxa da maquininha e o cupom/benefício usados serão desfeitos. Depois é só ajustar e receber de novo.")) return;
+  const {error}=await supabase.rpc("c7_reopen_appointment",{p_appointment_id:detailAppointmentId});
+  if(error){
+    $("appointmentDetailMessage").textContent=/function/i.test(String(error.message||""))
+      ?"Essa opção ainda não foi ativada no banco de dados."
+      :error.message||"Não foi possível reabrir o atendimento.";
+    return;
+  }
+  window.C7UX?.notify("Atendimento reaberto. Ajuste e receba novamente.");
+  await Promise.all([refreshAppointmentDetail(),loadAgenda(),window.C7Cash?.refresh?.()]);
 });
 
 $("detailNoShowBtn")?.addEventListener("click",async()=>{

@@ -62,7 +62,7 @@ async function loadCash(){
     supabase.from("professionals").select("id,full_name").eq("active",true).order("full_name"),
     supabase.from("customers").select("id,full_name,phone").eq("active",true).order("full_name").limit(500),
     supabase.from("appointments")
-      .select("id,customer_id,status,starts_at,customer:customers(id,full_name),professional:professionals(full_name)")
+      .select("id,customer_id,professional_id,status,starts_at,customer:customers(id,full_name),professional:professionals(full_name)")
       .gte("starts_at",start.toISOString())
       .lte("starts_at",end.toISOString())
       .in("status",["scheduled","confirmed","waiting","in_service"])
@@ -795,16 +795,28 @@ $("sellProductBtn")?.addEventListener("click",()=>{
     (activeOptions?'<optgroup label="Atendimentos de hoje">'+activeOptions+'</optgroup>':"")+
     (otherCustomerOptions?'<optgroup label="Outros Clientes">'+otherCustomerOptions+'</optgroup>':"");
 
+  $("cashProductSeller").innerHTML='<option value="">Ninguém / venda da casa</option>'+
+    cashProfessionals.map(p=>'<option value="'+p.id+'">'+p.full_name+'</option>').join("");
+
   $("cashProduct").innerHTML='<option value="">Selecione</option>'+
     products.map(product=>'<option value="'+product.id+'">'+product.name+' — '+money(product.price)+'</option>').join("");
 
   if(activeServiceLinks.length===1){
     $("cashProductCustomerLink").value="appointment:"+activeServiceLinks[0].id;
   }
+  syncProductSeller();
 
   updateProductPreview();
   openModal("productSaleModal");
 });
+
+// Venda ligada a um atendimento: a comissão vai para o barbeiro que está atendendo.
+function syncProductSeller(){
+  const link=$("cashProductCustomerLink").value;
+  const appointment=link.startsWith("appointment:")?activeServiceLinks.find(a=>String(a.id)===link.split(":")[1]):null;
+  if(appointment?.professional_id) $("cashProductSeller").value=appointment.professional_id;
+}
+$("cashProductCustomerLink")?.addEventListener("change",syncProductSeller);
 
 document.querySelectorAll("[data-close-product-sale]").forEach(el=>el.addEventListener("click",()=>closeModal("productSaleModal")));
 $("cashProduct")?.addEventListener("change",updateProductPreview);
@@ -835,14 +847,20 @@ $("productSaleForm")?.addEventListener("submit",async e=>{
 
   $("productSaleMessage").textContent="Registrando venda...";
 
-  const {error}=await supabase.rpc("sell_product_card",{
+  const saleArgs={
     p_product_id:Number(product.id),
     p_quantity:qty,
     p_payment_method:$("cashProductMethod").value,
     p_customer_id:customerId,
     p_appointment_id:appointmentId,
     p_card_fee_percent:cardFee("cashProductMethod","productCardFee","productCardFeeBox")
-  });
+  };
+  const seller=$("cashProductSeller").value;
+  let {error}=await supabase.rpc("sell_product_card",seller?{...saleArgs,p_professional_id:seller}:saleArgs);
+  // Banco ainda sem o "vendido por": registra a venda sem o vendedor.
+  if(error&&seller&&/function|p_professional_id/i.test(String(error.message||""))){
+    ({error}=await supabase.rpc("sell_product_card",saleArgs));
+  }
 
   if(error){
     const message=String(error.message||"");
