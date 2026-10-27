@@ -179,6 +179,7 @@ async function openCustomerProfile(id){
       <button type="button" data-profile-tab="appointments">Agendamentos</button>
       <button type="button" data-profile-tab="products">Produtos</button>
       <button type="button" data-profile-tab="payments">Pagamentos</button>
+      <button type="button" data-profile-tab="packages">Pacotes</button>
       <button type="button" data-profile-tab="about">Sobre</button>
     </div>
     <div id="crmProfileTab" class="crm-profile-tab"></div>`;
@@ -191,12 +192,13 @@ async function openCustomerProfile(id){
   target.querySelectorAll("[data-profile-tab]").forEach(btn=>btn.addEventListener("click",()=>{profileTab=btn.dataset.profileTab;renderProfileTab();}));
 
   const history=can("clients.history");
-  const [apptResult,txResult]=await Promise.all([
+  const [apptResult,txResult,packageResult]=await Promise.all([
     history?supabase.from("appointments").select("id,starts_at,status,total_amount,professional:professionals(full_name),appointment_services(service_name)").eq("customer_id",id).order("starts_at",{ascending:false}).limit(200):{data:[]},
-    history?supabase.from("cash_transactions").select("id,created_at,net_amount,payment_method,transaction_type,status,cash_transaction_items(item_type,description,quantity,total_amount)").eq("customer_id",id).eq("status","posted").order("created_at",{ascending:false}).limit(100):{data:[]}
+    history?supabase.from("cash_transactions").select("id,created_at,net_amount,payment_method,transaction_type,status,cash_transaction_items(item_type,description,quantity,total_amount)").eq("customer_id",id).eq("status","posted").order("created_at",{ascending:false}).limit(100):{data:[]},
+    history?supabase.rpc("c7_customer_package_balance",{p_customer_id:id}):{data:[]}
   ]);
   if(profileCustomerId!==id) return;
-  profileData={appointments:apptResult.data||[],transactions:txResult.data||[],customer};
+  profileData={appointments:apptResult.data||[],transactions:txResult.data||[],packages:packageResult.error?null:(packageResult.data||[]),customer};
   const appts=profileData.appointments;
   const count=st=>appts.filter(a=>a.status===st).length;
   $("crmProfileStats").innerHTML=[
@@ -210,7 +212,7 @@ async function openCustomerProfile(id){
   renderProfileTab();
 }
 
-let profileData={appointments:[],transactions:[],customer:null};
+let profileData={appointments:[],transactions:[],packages:[],customer:null};
 let profileApptView="upcoming";
 function renderProfileTab(){
   const box=$("crmProfileTab");
@@ -239,7 +241,17 @@ function renderProfileTab(){
     }));
     box.innerHTML=map.size?[...map.entries()].sort((a,b)=>b[1].qty-a[1].qty).map(([name,v])=>`<div class="crm-line"><span>${esc(name)}</span><small>${v.qty} un.</small><b>${money(v.total)}</b></div>`).join(""):'<div class="agenda-empty">Nenhum produto comprado.</div>';
   }else if(profileTab==="payments"){
-    box.innerHTML=profileData.transactions.length?profileData.transactions.map(t=>`<div class="crm-line"><span>${new Date(t.created_at).toLocaleDateString("pt-BR")} · ${t.transaction_type==="product"?"Produto":"Atendimento"}</span><small class="pay-chip" data-method="${t.payment_method}">${esc(paymentLabel(t.payment_method))}</small><b>${money(t.net_amount)}</b></div>`).join(""):'<div class="agenda-empty">Nenhum pagamento registrado.</div>';
+    box.innerHTML=profileData.transactions.length?profileData.transactions.map(t=>`<div class="crm-line"><span>${new Date(t.created_at).toLocaleDateString("pt-BR")} · ${t.transaction_type==="product"?"Produto":t.transaction_type==="package"?"Pacote":"Atendimento"}</span><small class="pay-chip" data-method="${t.payment_method}">${esc(paymentLabel(t.payment_method))}</small><b>${money(t.net_amount)}</b></div>`).join(""):'<div class="agenda-empty">Nenhum pagamento registrado.</div>';
+  }else if(profileTab==="packages"){
+    const rows=profileData.packages;
+    if(rows===null){box.innerHTML='<div class="agenda-empty">Os pacotes ainda não foram ativados no banco de dados.</div>';return;}
+    const groups=new Map();
+    rows.forEach(r=>{if(!groups.has(r.customer_package_id)) groups.set(r.customer_package_id,{...r,items:[]});groups.get(r.customer_package_id).items.push(r);});
+    const label={active:"Ativo",expired:"Expirado",cancelled:"Cancelado"};
+    box.innerHTML=groups.size?[...groups.values()].map(g=>`<div class="crm-line crm-package">
+        <span><strong>${esc(g.package_name)}</strong><small>${g.items.map(i=>`${esc(i.service_name)} ${i.remaining}/${i.quantity}`).join(" · ")}${g.expires_at?` · vence ${new Date(g.expires_at).toLocaleDateString("pt-BR")}`:""}</small></span>
+        <small class="c7-status" data-status="${g.status==="active"?"confirmed":"cancelled"}">${label[g.status]||g.status}</small>
+      </div>`).join(""):'<div class="agenda-empty">Nenhum pacote. Venda pelo Caixa → Nova venda → Pacotes.</div>';
   }else{
     const c=profileData.customer||{};
     box.innerHTML=`<div class="crm-about">

@@ -17,6 +17,7 @@ let currentProfessionalId = null;
 let openSession = null;
 let pendingAppointments = [];
 let products = [];
+let cashPackages = [];
 let cashProfessionals = [];
 let cashCustomers = [];
 let activeServiceLinks = [];
@@ -68,6 +69,11 @@ async function loadCash(){
       .in("status",["scheduled","confirmed","waiting","in_service"])
       .order("starts_at",{ascending:true})
   ]);
+  const packageResult=await supabase.from("packages")
+    .select("id,name,price,expires_days,visibility,items:package_items(quantity,service:services(name))")
+    .neq("visibility","off").order("sort_order").order("name");
+  cashPackages=packageResult.error?[]:(packageResult.data||[]).filter(p=>p.visibility!=="off"&&(p.items||[]).length);
+  $("posPackagesCat")?.classList.toggle("hidden",!cashPackages.length);
 
   openSession=sessionData||null;
   products=productData||[];
@@ -494,12 +500,13 @@ async function loadReceiveBenefits(item){
   }
 
   await addLevelBenefits(item);
+  await addPackageBenefits(item);
 
   $("receiveBenefit").innerHTML='<option value="">Sem benefício</option>'+
     receiveBenefits.map(b=>`<option value="${b.key}">${b.label} — ${b.discount_type==="percent"?Number(b.discount_value)+"%":money(b.discount_value)}</option>`).join("");
 
   // Serviço grátis do nível já vem selecionado: o cliente tem direito e o serviço está no atendimento.
-  const levelBenefit=receiveBenefits.find(b=>b.levelBenefit);
+  const levelBenefit=receiveBenefits.find(b=>b.packageUses)||receiveBenefits.find(b=>b.levelBenefit);
   if(levelBenefit){
     $("receiveBenefit").value=levelBenefit.key;
     $("receiveDiscount").value=benefitDiscount(appointmentCheckoutGross(item),levelBenefit).toFixed(2);
@@ -536,6 +543,38 @@ async function addLevelBenefits(item){
     info.innerHTML=`${levelBadge(level)}<span>${benefits.map(benefitText).join(" · ")}</span>`;
     info.classList.remove("hidden");
   }
+}
+
+/* Pacote do cliente: os serviços do atendimento que ainda têm saldo saem pelo pacote. */
+async function addPackageBenefits(item){
+  if(!item?.customer_id) return;
+  const {data,error}=await supabase.rpc("c7_customer_package_balance",{p_customer_id:item.customer_id});
+  if(error||!data?.length) return;
+  const groups=new Map();
+  data.filter(r=>r.status==="active"&&r.remaining>0).forEach(r=>{
+    if(!groups.has(r.customer_package_id)) groups.set(r.customer_package_id,{name:r.package_name,left:new Map()});
+    groups.get(r.customer_package_id).left.set(String(r.service_id),r.remaining);
+  });
+  groups.forEach((g,customerPackageId)=>{
+    const uses=[];
+    let amount=0;
+    (item.appointment_services||[]).forEach(s=>{
+      const left=g.left.get(String(s.service_id))||0;
+      if(left<=0) return;
+      g.left.set(String(s.service_id),left-1);
+      uses.push({customer_package_id:customerPackageId,service_id:s.service_id,name:s.service_name,left:left-1});
+      amount+=Number(s.price||0);
+    });
+    if(!uses.length) return;
+    receiveBenefits.push({
+      key:`package:${customerPackageId}`,
+      source:"promotion",
+      label:`Pacote ${g.name} · ${uses.map(u=>`${u.name} (restam ${u.left})`).join(" + ")}`,
+      discount_type:"fixed",
+      discount_value:amount,
+      packageUses:uses
+    });
+  });
 }
 
 async function openReceiveModal(id=null){
@@ -728,6 +767,14 @@ $("receiveForm")?.addEventListener("submit",async e=>{
       appointment_id:appointment.id
     });
     if(useError) console.warn("C7: uso do benefício do nível não registrado",useError.message);
+  }
+  if(benefit?.packageUses){
+    const {error:useError}=await supabase.from("customer_package_uses").insert(benefit.packageUses.map(u=>({
+      customer_package_id:u.customer_package_id,
+      service_id:u.service_id,
+      appointment_id:appointment.id
+    })));
+    if(useError) console.warn("C7: uso do pacote não registrado",useError.message);
   }
 
   let splitWarning=null;
@@ -1036,6 +1083,11 @@ async function checkoutAppointment(appointmentId){
 /* Nova venda no estilo Booksy: itens em cartões, carrinho com cliente, vendedor e pagamento. */
 const pos={cat:"pending",cart:[],method:"pix"};
 function posProduct(id){return products.find(p=>String(p.id)===String(id));}
+function posPackage(id){return cashPackages.find(p=>String(p.id)===String(id));}
+function posLine(line){
+  const item=line.pkg?posPackage(line.pkg):posProduct(line.id);
+  return {name:item?.name||(line.pkg?"Pacote":"Produto"),price:Number(item?.price||0),max:line.pkg?1:Number(item?.stock_quantity||0)};
+}
 function renderPos(){
   if(!$("cashPosView")) return;
   const status=$("posCashStatus");
@@ -1056,6 +1108,14 @@ function renderPos(){
           <b>${money(appointmentCheckoutGross(a))}</b>
         </button>`;}).join("")
       :'<div class="agenda-empty">Nenhum atendimento para cobrar hoje.</div>';
+  }else if(pos.cat==="packages"){
+    const rows=cashPackages.filter(p=>!term||p.name.toLowerCase().includes(term));
+    grid.innerHTML=rows.length?rows.map(p=>`<button type="button" class="pos-tile pos-tile-package" data-pos-package="${p.id}">
+        <small>${p.visibility==="online"?"🌐 Visível":"🔒 Interno"}${p.expires_days?` · ${p.expires_days} dias`:""}</small>
+        <strong>${p.name}</strong>
+        <span>${(p.items||[]).map(i=>`${i.quantity}x ${i.service?.name||"Serviço"}`).join(", ")}</span>
+        <b>${money(p.price)}</b>
+      </button>`).join(""):'<div class="agenda-empty">Nenhum pacote à venda. Crie em Marketing → Pacotes.</div>';
   }else{
     const rows=products.filter(p=>(p.department||"barbershop")===pos.cat&&(!term||p.name.toLowerCase().includes(term)));
     grid.innerHTML=rows.length?rows.map(p=>{
@@ -1070,13 +1130,13 @@ function renderPos(){
 }
 function renderPosCart(){
   const box=$("posCartItems");
-  const total=pos.cart.reduce((sum,i)=>sum+Number(posProduct(i.id)?.price||0)*i.qty,0);
+  const total=pos.cart.reduce((sum,i)=>sum+posLine(i).price*i.qty,0);
   box.innerHTML=pos.cart.length?pos.cart.map((i,idx)=>{
-    const p=posProduct(i.id);
+    const p=posLine(i);
     return `<div class="pos-cart-row">
-      <div><strong>${p?.name||"Produto"}</strong><small>${money(p?.price)} cada</small></div>
+      <div><strong>${i.pkg?"📦 ":""}${p.name}</strong><small>${i.pkg?"pacote · precisa do cliente":`${money(p.price)} cada`}</small></div>
       <div class="pos-qty"><button type="button" data-pos-dec="${idx}">−</button><span>${i.qty}</span><button type="button" data-pos-inc="${idx}">+</button></div>
-      <b>${money(Number(p?.price||0)*i.qty)}</b>
+      <b>${money(p.price*i.qty)}</b>
       <button type="button" class="pos-remove" data-pos-remove="${idx}" aria-label="Remover">×</button>
     </div>`;}).join(""):'<div class="pos-cart-empty"><strong>O carrinho está vazio</strong><span>Toque nos produtos para adicionar. Para cobrar um atendimento, use "Para ser cobrado".</span></div>';
   $("posTotal").textContent=money(total);
@@ -1105,6 +1165,12 @@ $("posSearch")?.addEventListener("input",renderPos);
 $("posGrid")?.addEventListener("click",e=>{
   const appt=e.target.closest("[data-pos-appt]");
   if(appt){checkoutAppointment(appt.dataset.posAppt);return;}
+  const pkgTile=e.target.closest("[data-pos-package]");
+  if(pkgTile){
+    if(!pos.cart.some(i=>String(i.pkg)===pkgTile.dataset.posPackage)) pos.cart.push({pkg:pkgTile.dataset.posPackage,qty:1});
+    renderPosCart();
+    return;
+  }
   const tile=e.target.closest("[data-pos-product]");
   if(!tile) return;
   const p=posProduct(tile.dataset.posProduct);
@@ -1118,7 +1184,7 @@ $("posCartItems")?.addEventListener("click",e=>{
   if(!t) return;
   const idx=Number(t.dataset.posInc??t.dataset.posDec??t.dataset.posRemove);
   const line=pos.cart[idx];
-  if(t.dataset.posInc!=null){if(line.qty<Number(posProduct(line.id)?.stock_quantity||0)) line.qty++;}
+  if(t.dataset.posInc!=null){if(line.qty<posLine(line).max) line.qty++;}
   else if(t.dataset.posDec!=null){line.qty--;if(line.qty<=0) pos.cart.splice(idx,1);}
   else pos.cart.splice(idx,1);
   renderPosCart();
@@ -1131,12 +1197,23 @@ $("posClear")?.addEventListener("click",()=>{pos.cart=[];$("posMessage").textCon
 $("posCheckout")?.addEventListener("click",async()=>{
   if(!pos.cart.length) return;
   if(!openSession){$("posMessage").textContent="Abra o caixa antes de vender.";return;}
+  if(pos.cart.some(i=>i.pkg)&&!$("posCustomer").value){$("posMessage").textContent="Escolha o cliente: o pacote fica no nome dele.";$("posCustomer").focus();return;}
   const btn=$("posCheckout");btn.disabled=true;
   $("posMessage").textContent="Registrando venda...";
   const fee=CARD_METHODS.includes(pos.method)?Math.min(100,Math.max(0,Number($("posFee").value||0))):0;
   const seller=$("posSeller").value||null;
   const sold=[];
   for(const line of [...pos.cart]){
+    if(line.pkg){
+      const {error}=await supabase.rpc("c7_sell_package",{p_package_id:Number(line.pkg),p_customer_id:$("posCustomer").value,p_payment_method:pos.method,p_card_fee_percent:fee,p_professional_id:seller});
+      if(error){
+        $("posMessage").textContent=`${posLine(line).name}: ${error.message||"não foi possível vender"}.${sold.length?" Os itens anteriores foram vendidos.":""}`;
+        pos.cart=pos.cart.filter(i=>!sold.includes(i));
+        btn.disabled=false;await loadCash();return;
+      }
+      sold.push(line);
+      continue;
+    }
     const args={p_product_id:Number(line.id),p_quantity:line.qty,p_payment_method:pos.method,p_customer_id:$("posCustomer").value||null,p_appointment_id:null,p_card_fee_percent:fee};
     let {error}=await supabase.rpc("sell_product_card",seller?{...args,p_professional_id:seller}:args);
     if(error&&seller&&/function|p_professional_id/i.test(String(error.message||""))) ({error}=await supabase.rpc("sell_product_card",args));

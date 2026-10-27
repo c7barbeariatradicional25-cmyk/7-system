@@ -286,6 +286,7 @@
             <button type="button" class="active" data-pos-cat="pending">Para ser cobrado <b id="posPendingCount">0</b></button>
             <button type="button" data-pos-cat="barbershop">Produtos</button>
             <button type="button" data-pos-cat="convenience">Bebidas & consumíveis</button>
+            <button type="button" id="posPackagesCat" class="hidden" data-pos-cat="packages">Pacotes</button>
           </nav>
           <div class="pos-items">
             <input id="posSearch" class="pos-search" type="search" placeholder="Buscar item..." autocomplete="off">
@@ -601,19 +602,40 @@
         <div class="catalog-toolbar">
           <div>
             <span class="eyebrow">RELACIONAMENTO</span>
-            <h2>Promoções & Benefícios</h2>
-            <p>Campanhas, cupons, planos e aniversariantes em um só lugar.</p>
+            <h2>Marketing</h2>
+            <p>Pacotes, níveis, promoções, cupons, planos e aniversariantes.</p>
           </div>
         </div>
 
-        <div class="promo-overview">
-          <article><span>PROMOÇÕES ATIVAS</span><strong id="promoActiveCount">0</strong></article>
-          <article><span>CUPONS ATIVOS</span><strong id="couponActiveCount">0</strong></article>
-          <article><span>PLANOS ATIVOS</span><strong id="planActiveCount">0</strong></article>
-          <article><span>ANIVERSARIANTES DO MÊS</span><strong id="birthdayMonthCount">0</strong></article>
-        </div>
+        <nav class="promo-hub" aria-label="Áreas de marketing">
+          <button type="button" class="promo-hub-card is-active" data-promo-tab="pacotes"><i>📦</i><strong>Pacotes</strong><small>Serviços vendidos juntos com preço especial</small><em id="packageActiveCount">0</em></button>
+          <button type="button" class="promo-hub-card" data-promo-tab="niveis"><i>⭐</i><strong>Níveis de cliente</strong><small>C7, Prata, Ouro e VIP com benefícios</small><em id="levelActiveCount">0</em></button>
+          <button type="button" class="promo-hub-card" data-promo-tab="promocoes"><i>🏷️</i><strong>Promoções</strong><small>Descontos por período, online ou internos</small><em id="promoActiveCount">0</em></button>
+          <button type="button" class="promo-hub-card" data-promo-tab="cupons"><i>🎟️</i><strong>Cupons</strong><small>Códigos de desconto para o cliente</small><em id="couponActiveCount">0</em></button>
+          <button type="button" class="promo-hub-card" data-promo-tab="planos"><i>🔁</i><strong>Planos</strong><small>Assinaturas mensais</small><em id="planActiveCount">0</em></button>
+          <button type="button" class="promo-hub-card" data-promo-tab="aniversarios"><i>🎂</i><strong>Aniversariantes</strong><small>Mensagem e benefício do mês</small><em id="birthdayMonthCount">0</em></button>
+        </nav>
 
-        <article class="promo-panel levels-panel">
+        <article class="promo-panel" data-promo-pane="pacotes">
+          <div class="promo-panel-head">
+            <div><span>CARTÕES PRESENTE, PACOTES &amp; ASSINATURAS</span><h3>Pacotes</h3></div>
+            <button id="newPackageBtn" class="primary-btn" type="button">+ CRIAR PACOTE</button>
+          </div>
+          <div class="package-tabs" role="tablist">
+            <button type="button" class="is-active" data-package-view="list">Pacotes</button>
+            <button type="button" data-package-view="sold">Adquiridos</button>
+          </div>
+          <div class="package-filter" id="packageFilter">
+            <button type="button" class="is-active" data-package-filter="all">Todos</button>
+            <button type="button" data-package-filter="online">🌐 Visíveis</button>
+            <button type="button" data-package-filter="internal">🔒 Internos</button>
+            <button type="button" data-package-filter="off">⏻ Desligados</button>
+          </div>
+          <div id="packageList" class="package-list"><div class="agenda-empty">Carregando pacotes...</div></div>
+          <div id="packageSoldList" class="package-list hidden"></div>
+        </article>
+
+        <article class="promo-panel levels-panel hidden" data-promo-pane="niveis">
           <div class="promo-panel-head">
             <div><span>FIDELIZAÇÃO</span><h3>Níveis de cliente</h3></div>
             <button id="newLevelBtn" class="primary-btn" type="button">+ NÍVEL</button>
@@ -622,39 +644,37 @@
           <div id="levelList" class="levels-list"><div class="agenda-empty">Carregando níveis...</div></div>
         </article>
 
-        <div class="promo-grid">
-          <article class="promo-panel">
-            <div class="promo-panel-head">
-              <div><span>CAMPANHAS</span><h3>Promoções</h3></div>
-              <button id="newPromotionBtn" class="primary-btn" type="button">+ NOVA</button>
-            </div>
-            <div id="promotionList" class="promo-list"></div>
-          </article>
+        <article class="promo-panel hidden" data-promo-pane="promocoes">
+          <div class="promo-panel-head">
+            <div><span>CAMPANHAS</span><h3>Promoções</h3></div>
+            <button id="newPromotionBtn" class="primary-btn" type="button">+ NOVA</button>
+          </div>
+          <div id="promotionList" class="promo-list"></div>
+        </article>
 
-          <article class="promo-panel">
-            <div class="promo-panel-head">
-              <div><span>DESCONTOS</span><h3>Cupons</h3></div>
-              <button id="newCouponBtn" class="primary-btn" type="button">+ NOVO</button>
-            </div>
-            <div id="couponList" class="promo-list"></div>
-          </article>
+        <article class="promo-panel hidden" data-promo-pane="cupons">
+          <div class="promo-panel-head">
+            <div><span>DESCONTOS</span><h3>Cupons</h3></div>
+            <button id="newCouponBtn" class="primary-btn" type="button">+ NOVO</button>
+          </div>
+          <div id="couponList" class="promo-list"></div>
+        </article>
 
-          <article class="promo-panel">
-            <div class="promo-panel-head">
-              <div><span>FIDELIZAÇÃO</span><h3>Planos</h3></div>
-              <button id="newPlanBtn" class="primary-btn" type="button">+ NOVO</button>
-            </div>
-            <div id="planList" class="promo-list"></div>
-          </article>
+        <article class="promo-panel hidden" data-promo-pane="planos">
+          <div class="promo-panel-head">
+            <div><span>FIDELIZAÇÃO</span><h3>Planos</h3></div>
+            <button id="newPlanBtn" class="primary-btn" type="button">+ NOVO</button>
+          </div>
+          <div id="planList" class="promo-list"></div>
+        </article>
 
-          <article class="promo-panel">
-            <div class="promo-panel-head">
-              <div><span>CRM</span><h3>Aniversariantes</h3></div>
-              <button id="newBirthdayCampaignBtn" class="primary-btn" type="button">CONFIGURAR</button>
-            </div>
-            <div id="birthdayList" class="promo-list"></div>
-          </article>
-        </div>
+        <article class="promo-panel hidden" data-promo-pane="aniversarios">
+          <div class="promo-panel-head">
+            <div><span>CRM</span><h3>Aniversariantes</h3></div>
+            <button id="newBirthdayCampaignBtn" class="primary-btn" type="button">CONFIGURAR</button>
+          </div>
+          <div id="birthdayList" class="promo-list"></div>
+        </article>
       </section>
 
       <section id="automacoes" class="section">
@@ -1646,6 +1666,44 @@
         <label class="check-row"><input id="couponActive" type="checkbox" checked><span>Cupom ativo</span></label>
         <p id="couponMessage" class="form-message"></p>
         <div class="modal-actions"><button type="button" class="ghost-btn" data-close-coupon>CANCELAR</button><button type="submit" class="primary-btn">SALVAR</button></div>
+      </form>
+    </section>
+  </div>
+
+  <div id="packageModal" class="modal hidden" role="dialog" aria-modal="true">
+    <div class="modal-backdrop" data-close-package></div>
+    <section class="modal-card package-modal-card">
+      <div class="modal-head"><div><span>PACOTE</span><h2 id="packageModalTitle">Criar pacote</h2></div><button type="button" class="modal-close" data-close-package>×</button></div>
+      <form id="packageForm" class="appointment-form">
+        <input id="packageId" type="hidden">
+        <h4 class="package-section-title">Informações básicas</h4>
+        <label><span>Nome do pacote</span><input id="packageName" type="text" required maxlength="80" placeholder="Ex.: 4 cortes"></label>
+        <div class="form-grid two">
+          <label><span>Preço de venda (R$)</span><input id="packagePrice" type="number" min="0" step="0.01" required></label>
+          <label><span>Expira após</span>
+            <select id="packageExpires">
+              <option value="">Nunca expira</option>
+              <option value="30">30 dias</option>
+              <option value="60">60 dias</option>
+              <option value="90">90 dias</option>
+              <option value="180">6 meses</option>
+              <option value="365">1 ano</option>
+            </select>
+          </label>
+        </div>
+        <div class="promo-visibility package-visibility">
+          <span>Para quem o pacote aparece</span>
+          <label><input type="radio" name="packageVisibility" value="online"><b>🌐 Visível</b><small>O cliente vê e pode comprar online; a equipe vende no caixa.</small></label>
+          <label><input type="radio" name="packageVisibility" value="internal" checked><b>🔒 Interno</b><small>Só a equipe vende no caixa. O cliente não vê.</small></label>
+          <label><input type="radio" name="packageVisibility" value="off"><b>⏻ Desligado</b><small>Não aparece para ninguém. Quem já comprou continua usando.</small></label>
+        </div>
+        <h4 class="package-section-title">Serviços incluídos</h4>
+        <div id="packageItemRows" class="package-item-rows"></div>
+        <button id="addPackageItemBtn" type="button" class="split-payment-add">+ Adicionar serviço</button>
+        <div id="packageSummary" class="package-summary"></div>
+        <label><span>Nota interna</span><textarea id="packageNote" rows="2" placeholder="Só a equipe vê"></textarea></label>
+        <p id="packageMessage" class="form-message"></p>
+        <div class="modal-actions"><button type="button" class="ghost-btn" data-close-package>CANCELAR</button><button type="submit" class="primary-btn">SALVAR</button></div>
       </form>
     </section>
   </div>

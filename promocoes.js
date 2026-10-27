@@ -17,6 +17,8 @@ let birthdayCampaign=null;
 let levels=[];
 let promotionsHaveVisibility=false;
 let levelServices=[];
+let packages=[];
+let packageFilter="all";
 
 function canAdmin(){return mayManagePromotions}
 
@@ -59,6 +61,7 @@ async function loadLevels(){
     supabase.from("services").select("id,name,price").eq("active",true).order("name")
   ]);
   levels=list;
+  if($("levelActiveCount")) $("levelActiveCount").textContent=levels.filter(l=>l.active).length;
   levelServices=servicesResult.data||[];
   $("newLevelBtn")?.classList.toggle("hidden",!canAdmin()||!levels.length);
   if(!levels.length){
@@ -167,7 +170,203 @@ async function saveLevel(e){
   await loadLevels();
 }
 
+/* Pacotes (como no Booksy): visível online, interno (só caixa) ou desligado. */
+const PACKAGE_VISIBILITY={
+  online:{label:"Visível",icon:"🌐",cls:"is-online"},
+  internal:{label:"Interno",icon:"🔒",cls:"is-internal"},
+  off:{label:"Desligado",icon:"⏻",cls:"is-off"}
+};
+const expiresLabel=days=>days?`Expira em ${Number(days)%30===0&&days<365?`${days/30} ${days/30===1?"mês":"meses"}`:days===365?"1 ano":`${days} dias`}`:"Nunca expira";
+
+async function loadPackages(){
+  const target=$("packageList");
+  if(!target) return;
+  const [{data,error},servicesResult]=await Promise.all([
+    supabase.from("packages").select("*,items:package_items(id,service_id,quantity,unit_price,service:services(id,name,price))").order("sort_order").order("name"),
+    levelServices.length?{data:levelServices}:supabase.from("services").select("id,name,price").eq("active",true).order("name")
+  ]);
+  levelServices=servicesResult.data||[];
+  $("newPackageBtn")?.classList.toggle("hidden",!canAdmin()||Boolean(error));
+  if(error){
+    target.innerHTML=empty("Os pacotes ainda não foram ativados no banco de dados (rode o SQL 20261027_pacotes.sql).");
+    $("packageActiveCount").textContent="0";
+    return;
+  }
+  packages=data||[];
+  $("packageActiveCount").textContent=packages.filter(p=>p.visibility!=="off").length;
+  renderPackages();
+}
+
+function renderPackages(){
+  const target=$("packageList");
+  const list=packages.filter(p=>packageFilter==="all"||p.visibility===packageFilter);
+  if(!list.length){
+    target.innerHTML=empty(packages.length?"Nenhum pacote neste filtro.":"Nenhum pacote criado. Crie o primeiro com + CRIAR PACOTE.");
+    return;
+  }
+  target.innerHTML=list.map(p=>{
+    const vis=PACKAGE_VISIBILITY[p.visibility]||PACKAGE_VISIBILITY.internal;
+    const items=(p.items||[]).map(i=>`${i.quantity}x ${escHtml(i.service?.name||"Serviço")}`).join(", ")||"Sem serviços";
+    const full=(p.items||[]).reduce((t,i)=>t+Number(i.service?.price||0)*i.quantity,0);
+    const save=full-Number(p.price);
+    return `<div class="package-row${p.visibility==="off"?" is-off":""}">
+      <div class="package-row-main">
+        <strong>${escHtml(p.name)}</strong>
+        <small>${items}</small>
+        <small class="muted">${expiresLabel(p.expires_days)}${p.note?` · ${escHtml(p.note)}`:""}</small>
+      </div>
+      <span class="package-vis ${vis.cls}">${vis.icon} ${vis.label}</span>
+      <div class="package-row-price"><strong>${money(p.price)}</strong>${save>0?`<small>economia ${money(save)}</small>`:""}</div>
+      ${canAdmin()?`<button type="button" class="ghost-btn" data-edit-package="${p.id}">EDITAR</button>`:""}
+    </div>`;
+  }).join("");
+  target.querySelectorAll("[data-edit-package]").forEach(btn=>btn.addEventListener("click",()=>openPackage(btn.dataset.editPackage)));
+}
+
+async function loadSoldPackages(){
+  const target=$("packageSoldList");
+  target.innerHTML=empty("Carregando...");
+  const {data,error}=await supabase.rpc("c7_customer_package_balance",{p_customer_id:null});
+  if(error){target.innerHTML=empty("Não foi possível carregar os pacotes adquiridos.");return;}
+  const groups=new Map();
+  (data||[]).forEach(r=>{
+    if(!groups.has(r.customer_package_id)) groups.set(r.customer_package_id,{...r,items:[]});
+    groups.get(r.customer_package_id).items.push(r);
+  });
+  if(!groups.size){target.innerHTML=empty("Nenhum pacote vendido ainda. Venda pelo Caixa → Nova venda → Pacotes.");return;}
+  const statusLabel={active:"Ativo",expired:"Expirado",cancelled:"Cancelado"};
+  const date=v=>v?new Date(v).toLocaleDateString("pt-BR"):"";
+  target.innerHTML=[...groups.values()].map(g=>{
+    const left=g.items.reduce((t,i)=>t+i.remaining,0);
+    const st=left===0&&g.status==="active"?"used":g.status;
+    return `<div class="package-row sold${st!=="active"?" is-off":""}">
+      <div class="package-row-main">
+        <strong>${escHtml(g.customer_name)}</strong>
+        <small>${escHtml(g.package_name)} · comprado em ${date(g.purchased_at)}${g.expires_at?` · vence ${date(g.expires_at)}`:""}</small>
+        <div class="package-balance">${g.items.map(i=>`<span>${escHtml(i.service_name)} <b>${i.remaining}/${i.quantity}</b></span>`).join("")}</div>
+      </div>
+      <span class="package-vis ${st==="active"?"is-online":"is-off"}">${st==="used"?"Usado":statusLabel[st]||st}</span>
+    </div>`;
+  }).join("");
+}
+
+function packageItemRow(item={}){
+  const row=document.createElement("div");
+  row.className="package-item-row";
+  const options=levelServices.map(s=>`<option value="${s.id}" data-price="${s.price}" ${String(s.id)===String(item.service_id)?"selected":""}>${escHtml(s.name)} — ${money(s.price)}</option>`).join("");
+  row.innerHTML=`
+    <select data-package-service required><option value="">Escolha o serviço</option>${options}</select>
+    <div class="qty-stepper"><button type="button" data-qty="-1" aria-label="Menos">−</button><input type="number" min="1" step="1" data-package-qty value="${item.quantity||1}"><button type="button" data-qty="1" aria-label="Mais">+</button></div>
+    <label class="package-unit"><small>R$ por uso</small><input type="number" min="0" step="0.01" data-package-unit value="${item.unit_price??""}"></label>
+    <button type="button" class="split-payment-remove" aria-label="Remover serviço">×</button>`;
+  const qty=row.querySelector("[data-package-qty]");
+  row.querySelectorAll("[data-qty]").forEach(b=>b.addEventListener("click",()=>{qty.value=Math.max(1,Number(qty.value||1)+Number(b.dataset.qty));syncPackageSummary();}));
+  row.querySelector(".split-payment-remove").addEventListener("click",()=>{row.remove();syncPackageSummary();});
+  row.querySelector("[data-package-service]").addEventListener("change",syncPackageUnits);
+  row.querySelectorAll("input").forEach(i=>i.addEventListener("input",syncPackageSummary));
+  return row;
+}
+
+function packageRows(){
+  return [...$("packageItemRows").children].map(row=>{
+    const select=row.querySelector("[data-package-service]");
+    return {
+      row,
+      service_id:select.value,
+      full:Number(select.selectedOptions[0]?.dataset.price||0),
+      quantity:Math.max(1,Number(row.querySelector("[data-package-qty]").value||1)),
+      unitInput:row.querySelector("[data-package-unit]")
+    };
+  });
+}
+
+/* Divide o preço do pacote entre os serviços (valor de cada uso), proporcional ao preço cheio. */
+function syncPackageUnits(){
+  const rows=packageRows().filter(r=>r.service_id);
+  const price=Number($("packagePrice").value||0);
+  const full=rows.reduce((t,r)=>t+r.full*r.quantity,0);
+  rows.forEach(r=>{r.unitInput.value=full>0?(price*r.full/full).toFixed(2):"0.00";});
+  syncPackageSummary();
+}
+
+function syncPackageSummary(){
+  const rows=packageRows().filter(r=>r.service_id);
+  const price=Number($("packagePrice").value||0);
+  const full=rows.reduce((t,r)=>t+r.full*r.quantity,0);
+  const uses=rows.reduce((t,r)=>t+r.quantity,0);
+  $("packageSummary").innerHTML=rows.length
+    ? `<span>${uses} uso${uses===1?"":"s"} · valor cheio <b>${money(full)}</b></span><span>Cliente paga <b>${money(price)}</b>${full>price?` · economiza <b class="pos">${money(full-price)} (${Math.round((full-price)/full*100)}%)</b>`:""}</span>`
+    : "";
+}
+
+function openPackage(id=null){
+  const pkg=packages.find(p=>String(p.id)===String(id));
+  $("packageForm").reset();
+  $("packageId").value=pkg?.id||"";
+  $("packageModalTitle").textContent=pkg?"Editar pacote":"Criar pacote";
+  $("packageName").value=pkg?.name||"";
+  $("packagePrice").value=pkg?.price??"";
+  $("packageExpires").value=pkg?.expires_days?String(pkg.expires_days):"";
+  if(pkg?.expires_days&&!$("packageExpires").value){
+    $("packageExpires").append(new Option(`${pkg.expires_days} dias`,String(pkg.expires_days),true,true));
+  }
+  $("packageNote").value=pkg?.note||"";
+  document.querySelectorAll('[name="packageVisibility"]').forEach(r=>{r.checked=r.value===(pkg?.visibility||"internal");});
+  const rows=$("packageItemRows");
+  rows.replaceChildren(...(pkg?.items||[]).map(packageItemRow));
+  if(!rows.children.length) rows.appendChild(packageItemRow());
+  $("packageMessage").textContent="";
+  syncPackageSummary();
+  $("packageModal").classList.remove("hidden");
+}
+
+async function savePackage(e){
+  e.preventDefault();
+  if(!canAdmin()) return;
+  const id=$("packageId").value;
+  const items=packageRows().filter(r=>r.service_id).map(r=>({
+    service_id:Number(r.service_id),
+    quantity:r.quantity,
+    unit_price:Number(r.unitInput.value||0)
+  }));
+  if(!items.length){$("packageMessage").textContent="Adicione pelo menos um serviço ao pacote.";return;}
+  const payload={
+    name:$("packageName").value.trim(),
+    price:Number($("packagePrice").value||0),
+    expires_days:$("packageExpires").value?Number($("packageExpires").value):null,
+    visibility:document.querySelector('[name="packageVisibility"]:checked')?.value||"internal",
+    note:$("packageNote").value.trim()||null,
+    updated_at:new Date().toISOString()
+  };
+  $("packageMessage").textContent="Salvando...";
+  const result=id
+    ? await supabase.from("packages").update(payload).eq("id",id).select("id").single()
+    : await supabase.from("packages").insert(payload).select("id").single();
+  if(result.error){$("packageMessage").textContent="Não foi possível salvar o pacote.";return;}
+  const packageId=result.data.id;
+  const cleared=await supabase.from("package_items").delete().eq("package_id",packageId);
+  const inserted=cleared.error?cleared:await supabase.from("package_items").insert(items.map(i=>({...i,package_id:packageId})));
+  if(inserted.error){$("packageMessage").textContent="Pacote salvo, mas os serviços não foram atualizados.";return;}
+  close("packageModal");
+  await loadPackages();
+}
+
+function showPromoTab(tab){
+  document.querySelectorAll("[data-promo-tab]").forEach(b=>b.classList.toggle("is-active",b.dataset.promoTab===tab));
+  document.querySelectorAll("[data-promo-pane]").forEach(p=>p.classList.toggle("hidden",p.dataset.promoPane!==tab));
+  try{localStorage.setItem("c7PromoTab",tab)}catch{}
+}
+
+function showPackageView(view){
+  document.querySelectorAll("[data-package-view]").forEach(b=>b.classList.toggle("is-active",b.dataset.packageView===view));
+  $("packageList").classList.toggle("hidden",view!=="list");
+  $("packageFilter").classList.toggle("hidden",view!=="list");
+  $("packageSoldList").classList.toggle("hidden",view!=="sold");
+  if(view==="sold") loadSoldPackages();
+}
+
 async function loadAll(){
+  loadPackages();
   loadLevels();
   const now=new Date();
   const month=now.getMonth()+1;
@@ -497,6 +696,19 @@ async function init(){
   $("newCouponBtn")?.addEventListener("click",()=>openCoupon());
   $("newPlanBtn")?.addEventListener("click",()=>openPlan());
   $("newLevelBtn")?.addEventListener("click",()=>openLevel());
+  $("newPackageBtn")?.addEventListener("click",()=>openPackage());
+  $("addPackageItemBtn")?.addEventListener("click",()=>{$("packageItemRows").appendChild(packageItemRow());});
+  $("packagePrice")?.addEventListener("input",syncPackageUnits);
+  $("packageForm")?.addEventListener("submit",savePackage);
+  document.querySelectorAll("[data-close-package]").forEach(el=>el.addEventListener("click",()=>close("packageModal")));
+  document.querySelectorAll("[data-promo-tab]").forEach(b=>b.addEventListener("click",()=>showPromoTab(b.dataset.promoTab)));
+  document.querySelectorAll("[data-package-view]").forEach(b=>b.addEventListener("click",()=>showPackageView(b.dataset.packageView)));
+  document.querySelectorAll("[data-package-filter]").forEach(b=>b.addEventListener("click",()=>{
+    packageFilter=b.dataset.packageFilter;
+    document.querySelectorAll("[data-package-filter]").forEach(x=>x.classList.toggle("is-active",x===b));
+    renderPackages();
+  }));
+  try{const saved=localStorage.getItem("c7PromoTab");if(saved&&document.querySelector(`[data-promo-pane="${saved}"]`)) showPromoTab(saved);}catch{}
   $("addLevelBenefitBtn")?.addEventListener("click",()=>$("levelBenefitRows").appendChild(levelBenefitRow()));
   $("levelManualOnly")?.addEventListener("change",syncLevelRuleFields);
   $("levelForm")?.addEventListener("submit",saveLevel);
